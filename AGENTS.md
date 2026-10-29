@@ -185,10 +185,10 @@ Regras de uso:
   requisito — a spec é.
 - Correção de bug trivial, renomeação, ajuste de formatação: direto, sem spec.
 
-> ⚠️ **A constitution (`.specify/memory/constitution.md`) ainda é o template em branco**, com
-> todos os placeholders `[PRINCIPLE_N_NAME]` intactos. Rode `/speckit.constitution` para
-> ratificá-la com os princípios deste projeto (hexagonal, TDD, SDD, simplicidade). Até então,
-> **este AGENTS.md é a referência vigente**, e os dois precisam ficar consistentes depois.
+> A constitution (`.specify/memory/constitution.md`, v1.0.1) define os princípios
+> não-negociáveis e prevalece em caso de conflito; este AGENTS.md documenta como aplicá-los no
+> dia a dia. Toda emenda da constitution sincroniza a seção correspondente daqui na mesma
+> mudança.
 
 ---
 

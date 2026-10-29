@@ -183,7 +183,7 @@ FR-012 para um agregado novo, e o documento não contradiz `V1__cria_tabela_imov
   - §9: o stack acordado passa a incluir o Flyway, e a regra "não mude `ddl-auto`" passa a dizer que o modo rápido usa `update` e o `prod` usa `validate`, ambos acordados.
 
   Não mexer nas outras seções.
-- [ ] T019 [US3] Rodar `/speckit-constitution` para uma emenda **PATCH** (1.0.0 → 1.0.1): incluir o Flyway (migrações versionadas, só PostgreSQL) na seção "Stack Tecnológico e Restrições" de `.specify/memory/constitution.md`, com o Sync Impact Report citando esta feature. Nenhum princípio muda (Governance: constitution e AGENTS.md consistentes na mesma mudança).
+- [X] T019 [US3] Rodar `/speckit-constitution` para uma emenda **PATCH** (1.0.0 → 1.0.1): incluir o Flyway (migrações versionadas, só PostgreSQL) na seção "Stack Tecnológico e Restrições" de `.specify/memory/constitution.md`, com o Sync Impact Report citando esta feature. Nenhum princípio muda (Governance: constitution e AGENTS.md consistentes na mesma mudança).
 
 **Checkpoint**: SC-008 fica preparado para ser verificado na próxima feature de persistência.
 
