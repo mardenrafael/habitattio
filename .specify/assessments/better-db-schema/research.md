@@ -155,12 +155,35 @@ suposições acima.
 6. **O CPF será criptografado no banco.** É regra para quando `Inquilino` for persistido,
    portanto fora do escopo imediato (item 2), mas o padrão definido aqui não deve impedi-la.
 
+### Segunda rodada (2026-10-29)
+
+7. **Critério de "invariante simples"**: é a regra sobre um membro da própria classe que, no
+   código, vira um `if` na entidade (ex.: `NOT NULL`, não vazio, maior que zero). Essas vão ao
+   banco. Regras que dependem de mais de um objeto ou de estado externo ficam na aplicação.
+8. **H2 usa o esquema gerado pelo Hibernate.** As migrações versionadas miram apenas o
+   PostgreSQL. Isso elimina o custo de escrever migrações compatíveis com os dois bancos,
+   apontado em "Evidence Against the Idea".
+9. **Regras de `imoveis` que vão ao banco: todas as candidatas citadas**:
+   - `endereco` não nulo e não vazio (`NOT NULL` + `CHECK`);
+   - `valor_sugerido` não nulo e `> 0` (`NOT NULL` + `CHECK`);
+   - precisão/escala explícitas para `valor_sugerido`;
+   - `endereco` único (`UNIQUE`).
+
+   Observação para a etapa de definição: a unicidade de `endereco` **não existe hoje no
+   domínio** (não há `if` em `Imovel` para isso, nem dá para haver, porque depende de outros
+   imóveis). Pelo critério do item 7, ela seria regra de aplicação; foi incluída por decisão
+   explícita. Falta definir como o domínio/caso de uso reage à violação (mensagem em
+   português, tipo de erro) e como tratar endereços com grafias diferentes.
+10. **Volume esperado: cerca de 14 imóveis e 14 faturas.** É um projeto de estudo com um único
+    cliente, por enquanto. Performance é irrelevante para as decisões de esquema: `bigint`
+    vs. UUID, `numeric` vs. centavos e `STRING` vs. `ORDINAL` se decidem por clareza e
+    correção, não por custo.
+
 ## Gaps & Open Questions
 
-- [NEEDS CLARIFICATION: volume esperado (imóveis, faturas/ano) para confirmar que performance é irrelevante.]
-- [NEEDS CLARIFICATION: a fronteira entre "invariante simples" (vai ao banco) e "regra complexa" (fica na aplicação) precisa de critério explícito. Exemplo: a unicidade `(contrato, mesReferencia)` é simples no banco, mas pertence a `Fatura`, fora do escopo atual.]
-- [NEEDS CLARIFICATION: com PostgreSQL como alvo e H2 "para uso rápido", as migrações também precisam rodar no H2, ou o H2 continua com o esquema gerado pelo Hibernate? Isso pesa, dadas as incompatibilidades citadas acima.]
-- [NEEDS CLARIFICATION: quais regras de `imoveis` vão ao banco? Candidatas: `endereco` não vazio (`CHECK`), `valor_sugerido > 0` (`CHECK`), precisão/escala do valor, unicidade de `endereco`?]
+- Nenhuma pergunta bloqueante restante para a etapa de definição.
+- Pendente de detalhe (pode ir para `/speckit-assess-define`): normalização de `endereco` para a
+  unicidade (maiúsculas/minúsculas, espaços) e o comportamento esperado quando ela é violada.
 - [NEEDS CLARIFICATION: `mesReferencia` deve virar um tipo de competência (ano-mês) no domínio, com coluna própria no banco?]
 - Lacuna de pesquisa: doc atual do Spring Boot 4 / Hibernate 7 sobre `ddl-auto`, `precision`/`scale` padrão e suporte a UUIDv7 não foi consultada diretamente.
 - Lacuna de pesquisa: Guia de Segurança da ANPD para agentes de pequeno porte não foi consultado.
