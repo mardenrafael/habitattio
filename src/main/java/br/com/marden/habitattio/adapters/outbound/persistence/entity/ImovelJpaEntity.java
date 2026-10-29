@@ -17,10 +17,10 @@ public class ImovelJpaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String endereco;
-    
-    @Column(nullable = false)
+
+    @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal valorSugerido;
     
     @Column(nullable = false)
