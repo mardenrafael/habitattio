@@ -167,9 +167,10 @@ suposições acima.
    - `endereco` não nulo e não vazio (`NOT NULL` + `CHECK`);
    - `valor_sugerido` não nulo e `> 0` (`NOT NULL` + `CHECK`);
    - precisão/escala explícitas para `valor_sugerido`;
-   - `endereco` único (`UNIQUE`).
+   - ~~`endereco` único (`UNIQUE`)~~ — **revogado** em problem.md (clarificação 1): vários
+     imóveis podem compartilhar o mesmo endereço (apartamentos).
 
-   Observação para a etapa de definição: a unicidade de `endereco` **não existe hoje no
+   (Superada pela revogação acima.) Observação original para a etapa de definição: a unicidade de `endereco` **não existe hoje no
    domínio** (não há `if` em `Imovel` para isso, nem dá para haver, porque depende de outros
    imóveis). Pelo critério do item 7, ela seria regra de aplicação; foi incluída por decisão
    explícita. Falta definir como o domínio/caso de uso reage à violação (mensagem em
@@ -182,8 +183,8 @@ suposições acima.
 ## Gaps & Open Questions
 
 - Nenhuma pergunta bloqueante restante para a etapa de definição.
-- Pendente de detalhe (pode ir para `/speckit-assess-define`): normalização de `endereco` para a
-  unicidade (maiúsculas/minúsculas, espaços) e o comportamento esperado quando ela é violada.
+- ~~Pendente de detalhe: normalização de `endereco` para a unicidade e comportamento quando
+  violada.~~ Resolvido em problem.md: endereço não é único (clarificações 1 e 2).
 - [NEEDS CLARIFICATION: `mesReferencia` deve virar um tipo de competência (ano-mês) no domínio, com coluna própria no banco?]
 - Lacuna de pesquisa: doc atual do Spring Boot 4 / Hibernate 7 sobre `ddl-auto`, `precision`/`scale` padrão e suporte a UUIDv7 não foi consultada diretamente.
 - Lacuna de pesquisa: Guia de Segurança da ANPD para agentes de pequeno porte não foi consultado.
