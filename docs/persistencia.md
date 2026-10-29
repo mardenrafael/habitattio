@@ -119,7 +119,7 @@ Regras do padrão:
   `flyway_schema_history` e recusa a subida se o arquivo mudar. Corrigir = migração nova.
 - **Mapeamento JPA e migração mudam no mesmo commit.**
 - No profile `prod`, o Flyway migra e depois o Hibernate confere com
-  `spring.jpa.hibernate.ddl-auto=validate` (estado-alvo da feature; ver nota abaixo). O
+  `spring.jpa.hibernate.ddl-auto=validate`. O
   `validate` acusa tabela ausente, coluna ausente e tipo incompatível, e a aplicação não sobe.
   Ele **não** confere `CHECK`, tamanho de `varchar` nem precisão/escala de `numeric`. Por
   isso os testes de constraints e de mapeamento do item (f) são **obrigatórios**: são eles,
@@ -127,9 +127,6 @@ Regras do padrão:
 - **O H2 do modo rápido não segue as migrações**: lá a estrutura sai do mapeamento JPA
   (`ddl-auto=update`, Flyway desligado). Ele não tem os `CHECK`s e pode aceitar dado que o
   PostgreSQL rejeita. A prova das regras roda sempre contra o PostgreSQL.
-
-> Nota: durante a feature 001, o `application-prod.properties` nasceu com `ddl-auto=none` e
-> passa a `validate` na US2 (task T015). Este documento descreve o estado final.
 
 ## (f) Testes
 
@@ -183,6 +180,13 @@ cenário (o cenário altera a estrutura), sem servidor web. Cenários do contrat
 
 Ao criar uma tabela nova, estenda S1 para conferir que ela e suas constraints existem.
 
+- Passe a conexão do container como **argumentos** (`.run("--spring.datasource.url=...")`),
+  não por `SpringApplicationBuilder.properties(...)`: estas são propriedades padrão e perdem
+  para `application.properties`, e a subida tentaria o H2.
+- Mensagens reais, úteis para os asserts: S3 → `Schema validation: missing column [endereco]
+  in table [imoveis]`; S4 → `Migration checksum mismatch for migration version 1`. Ambas
+  chegam embrulhadas em `BeanCreationException`; percorra a cadeia de causas.
+
 ---
 
 ## Modos de execução
@@ -207,8 +211,10 @@ Ao criar uma tabela nova, estenda S1 para conferir que ela e suas constraints ex
   ```
 
 - **Com containers** (sem PostgreSQL próprio): `TestHabitattioApplication`
-  (`./mvnw spring-boot:test-run`), que usa `TestcontainersConfiguration`. Nos testes, o
-  `@ServiceConnection` fornece a conexão e dispensa as variáveis de ambiente.
+  (`./mvnw spring-boot:test-run`), que usa `TestcontainersConfiguration` **e já ativa o
+  profile `prod`** (`.withAdditionalProfiles("prod")`): subir com containers é subir como
+  produção (Flyway + `validate`). Nos testes, o `@ServiceConnection` fornece a conexão e
+  dispensa as variáveis de ambiente.
 - **Versões fixas** dos containers, como constantes em `TestcontainersConfiguration`:
   `POSTGRES_IMAGE = "postgres:18.6"` e `REDIS_IMAGE = "redis:8.10.3"`. Nunca `latest` nem
   tag só de major. Testes novos reutilizam essas constantes.

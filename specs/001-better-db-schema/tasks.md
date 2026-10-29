@@ -142,7 +142,7 @@ ficam verdes.
 
 ### Tests for User Story 2 (escrever primeiro, ver falhar) ⚠️
 
-- [ ] T014 [US2] Criar `src/test/java/br/com/marden/habitattio/EstruturaBancoProducaoTest.java` (R7). Cada cenário sobe a aplicação com `new SpringApplicationBuilder(HabitattioApplication.class).profiles("prod")`, com as propriedades `spring.main.web-application-type=none`, `spring.datasource.url/username/password` do container e `spring.data.redis.host=localhost`, e fecha o contexto em `try-with-resources`. Cada cenário usa um `PostgreSQLContainer` **próprio** (imagem `TestcontainersConfiguration.POSTGRES_IMAGE`), iniciado e parado no teste. As verificações usam JDBC puro (`DriverManager`) contra o container. Métodos:
+- [X] T014 [US2] Criar `src/test/java/br/com/marden/habitattio/EstruturaBancoProducaoTest.java` (R7). Cada cenário sobe a aplicação com `new SpringApplicationBuilder(HabitattioApplication.class).profiles("prod")`, com as propriedades `spring.main.web-application-type=none`, `spring.datasource.url/username/password` do container e `spring.data.redis.host=localhost`, e fecha o contexto em `try-with-resources`. Cada cenário usa um `PostgreSQLContainer` **próprio** (imagem `TestcontainersConfiguration.POSTGRES_IMAGE`), iniciado e parado no teste. As verificações usam JDBC puro (`DriverManager`) contra o container. Métodos:
   - `deveCriarEstruturaDeImoveisEmBancoVazio` (S1, SC-006, US2 #1 e #6): após a subida, `imoveis` existe, `pg_constraint` contém `ck_imoveis_endereco_nao_vazio` e `ck_imoveis_valor_sugerido_positivo`, e `flyway_schema_history` tem a versão `1` com `success = true`.
   - `naoDeveReaplicarMigracoesJaAplicadas` (S2, US2 #2): sobe e fecha duas vezes no mesmo container; `SELECT COUNT(*) FROM flyway_schema_history WHERE version = '1'` é 1, e a segunda subida não lança exceção.
   - `deveRecusarSubidaQuandoEstruturaDiverge` (S3, SC-004, US2 #3): sobe uma vez para migrar, fecha, executa `ALTER TABLE imoveis DROP COLUMN endereco`. A nova subida lança exceção **cuja cadeia de causas contém uma mensagem que menciona `endereco`** (a divergência é informada, analyze A2). Depois disso, a coluna `endereco` **continua ausente** em `information_schema.columns`, ou seja, o banco não foi alterado.
@@ -152,8 +152,8 @@ ficam verdes.
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Em `src/main/resources/application-prod.properties`, trocar `spring.jpa.hibernate.ddl-auto=none` por `spring.jpa.hibernate.ddl-auto=validate` (acordo FR-014). Rodar `./mvnw test -Dtest='EstruturaBancoProducaoTest,ImoveisPostgresConstraintsTest'` até ficar verde, sem editar testes. Se o `validate` acusar diferença de tipo em S1, o ajuste é no mapeamento (T012) ou na migração (T010), **nunca** no teste.
-- [ ] T016 [US2] Em `src/test/java/br/com/marden/habitattio/TestHabitattioApplication.java` (executável de desenvolvimento, não é teste), ativar o profile `prod`, para que subir "com os containers" seja subir como produção (Flyway + `validate`). Usar `.withAdditionalProfiles("prod")` em `SpringApplication.from(...).with(...)` se a API existir no Boot 4.1.2; senão, incluir `--spring.profiles.active=prod` nos `args` repassados. Verificar manualmente com `./mvnw spring-boot:test-run`: o log mostra o Flyway aplicando `V1__cria_tabela_imoveis` e nenhum DDL do Hibernate. Atualizar a nota de `quickstart.md` §6 com a forma escolhida.
+- [X] T015 [US2] Em `src/main/resources/application-prod.properties`, trocar `spring.jpa.hibernate.ddl-auto=none` por `spring.jpa.hibernate.ddl-auto=validate` (acordo FR-014). Rodar `./mvnw test -Dtest='EstruturaBancoProducaoTest,ImoveisPostgresConstraintsTest'` até ficar verde, sem editar testes. Se o `validate` acusar diferença de tipo em S1, o ajuste é no mapeamento (T012) ou na migração (T010), **nunca** no teste.
+- [X] T016 [US2] Em `src/test/java/br/com/marden/habitattio/TestHabitattioApplication.java` (executável de desenvolvimento, não é teste), ativar o profile `prod`, para que subir "com os containers" seja subir como produção (Flyway + `validate`). Usar `.withAdditionalProfiles("prod")` em `SpringApplication.from(...).with(...)` se a API existir no Boot 4.1.2; senão, incluir `--spring.profiles.active=prod` nos `args` repassados. Verificar manualmente com `./mvnw spring-boot:test-run`: o log mostra o Flyway aplicando `V1__cria_tabela_imoveis` e nenhum DDL do Hibernate. Atualizar a nota de `quickstart.md` §6 com a forma escolhida.
 
 **Checkpoint**: SC-003 (100% da estrutura por migração), SC-004 (divergência impede a subida) e SC-006 (banco vazio estruturado só pela subida) atendidos.
 
@@ -168,7 +168,7 @@ decisões prontas (FR-012, FR-013).
 FR-012 para um agregado novo, e o documento não contradiz `V1__cria_tabela_imoveis.sql` nem
 `ImovelJpaEntity` (US3 #1 e #2).
 
-- [ ] T017 [P] [US3] Criar `docs/persistencia.md` (em português) com uma seção por item de FR-012, usando `imoveis` como exemplo concreto e citando os arquivos reais:
+- [X] T017 [P] [US3] Criar `docs/persistencia.md` (em português) com uma seção por item de FR-012, usando `imoveis` como exemplo concreto e citando os arquivos reais:
   - (a) **Nomes**: tabela em português, plural, snake_case; colunas snake_case derivadas do campo Java pela estratégia padrão (sem `@Column(name=...)`); constraints `pk_<tabela>`, `fk_<tabela>_<ref>`, `uq_<tabela>_<colunas>`, `ck_<tabela>_<coluna>_<regra>`.
   - (b) **Dinheiro**: `BigDecimal` ↔ `numeric(19,4)`, `@Column(precision = 19, scale = 4)`; o banco arredonda acima de 4 casas e rejeita mais de 15 dígitos inteiros; o domínio não arredonda (divergência aceita, ver spec).
   - (c) **Chave**: `bigint GENERATED BY DEFAULT AS IDENTITY` + `GenerationType.IDENTITY`, com o motivo do `BY DEFAULT`.
