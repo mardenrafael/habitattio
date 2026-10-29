@@ -79,9 +79,9 @@ contra `postgres:18.6` e o mapeamento no H2 ficam verdes.
   - `deveContarCaracteresENaoUnidadesUtf16NoLimiteDoEndereco`: `"a".repeat(254) + "🏠"` (255 code points, `length() == 256`) é **aceito**.
 
   Rodar `./mvnw test -Dtest=ImovelTest`. Vermelho esperado: `deveRejeitarEnderecoComMaisDe255Caracteres` (ainda não há limite). Os outros dois são **caracterização** e passam de primeira: fixam a fronteira e a contagem por code point contra uma implementação ingênua com `length()`.
-- [ ] T007 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImoveisPostgresConstraintsTest.java` com `@DataJpaTest`, `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`, `@ActiveProfiles("prod")` e `@Import(TestcontainersConfiguration.class)`. Receber `JdbcClient` pelo construtor do teste (`@Autowired` no construtor é permitido em teste). Toda escrita é **SQL direto**, por exemplo `INSERT INTO imoveis (endereco, valor_sugerido, ativo) VALUES (:e, :v, true)`, sem `Imovel` nem `ImovelJpaEntity`. Para os casos nulos, escrever `NULL` literal no SQL. Toda leitura de volta também é por SQL e **nunca lê `ativo`** (FR-011, defeito de reidratação). **Ao menos** um teste por garantia do contrato:
+- [ ] T007 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImoveisPostgresConstraintsTest.java` com `@DataJpaTest`, `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`, `@ActiveProfiles("prod")` e `@Import(TestcontainersConfiguration.class)`. Receber `JdbcClient` pelo construtor do teste (`@Autowired` no construtor é permitido em teste). Se o `@DataJpaTest` do Boot 4.1.2 não autoconfigurar `JdbcClient`, receber o `DataSource` e criar com `JdbcClient.create(dataSource)`, ainda na fase de escrita, antes de o teste contar como visto falhar. Toda escrita é **SQL direto**, por exemplo `INSERT INTO imoveis (endereco, valor_sugerido, ativo) VALUES (:e, :v, true)`, sem `Imovel` nem `ImovelJpaEntity`. Para os casos nulos, escrever `NULL` literal no SQL. Toda leitura de volta também é por SQL e **nunca lê `ativo`** (FR-011, defeito de reidratação). **Ao menos** um teste por garantia do contrato:
   - G1 `deveRejeitarEnderecoNulo`: `assertThrows(DataIntegrityViolationException.class, ...)`.
-  - G2 `deveRejeitarEnderecoVazio`, `deveRejeitarEnderecoSoComEspacos` (`"   "`) e `deveRejeitarEnderecoSoComTabEQuebraDeLinha` (`"\t\n"`): `DataIntegrityViolationException` cuja mensagem contém `ck_imoveis_endereco_nao_vazio`.
+  - G2 `deveRejeitarEnderecoVazio`, `deveRejeitarEnderecoSoComEspacos` (`"   "`), `deveRejeitarEnderecoSoComTabEQuebraDeLinha` (`"\t\n"`) e `deveRejeitarEnderecoSoComRetornoDeCarroFormFeedETabVertical` (`"\r\f\u000B"`): `DataIntegrityViolationException` cuja mensagem contém `ck_imoveis_endereco_nao_vazio`.
   - G3 `deveRejeitarEnderecoCom256Caracteres`: `DataIntegrityViolationException`.
   - G4 `deveAceitarEnderecoCom255Caracteres` (`"a".repeat(255)`): `COUNT(*)` passa a 1.
   - G4b `deveAceitarEnderecoCom255CaracteresMultibyte` (`"ã".repeat(254) + "🏠"`, 255 caracteres e mais de 255 bytes): aceito, provando que o banco conta caracteres e não bytes (spec, Edge Cases).
@@ -97,10 +97,10 @@ contra `postgres:18.6` e o mapeamento no H2 ficam verdes.
 
   Rodar `./mvnw test -Dtest=ImoveisPostgresConstraintsTest`. Vermelho esperado (analyze I2): **qualquer um destes conta como vermelho pelo motivo certo**, que é a ausência da estrutura de produção:
   - (a) **falha de contexto ou de DDL**, porque o profile `prod` ainda não existe e a base herda o `H2Dialect` contra o PostgreSQL;
-  - (b) falhas de asserção em G2, G4b, G6, G7, G8, G9 e G11, se o contexto subir com a tabela gerada pelo Hibernate (sem `CHECK`s, `numeric(38,2)`).
+  - (b) falhas de asserção em G2, G6, G7, G8, G9 e G11, se o contexto subir com a tabela gerada pelo Hibernate (sem `CHECK`s, `numeric(38,2)`).
 
-  No caso (b), G1, G3, G4, G5 e G10 podem passar de primeira, como **caracterização**. Só erro de **compilação** ou de lógica do próprio teste conta como teste mal escrito.
-- [ ] T008 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImovelJpaEntityMapeamentoH2Test.java` (analyze C2) com `@DataJpaTest` no modo padrão (H2 embutido, estrutura gerada pelo Hibernate a partir de `ImovelJpaEntity`; **sem** Testcontainers e **sem** profile). Consultas via `JdbcClient` em `INFORMATION_SCHEMA.COLUMNS` (`TABLE_NAME = 'IMOVEIS'`, nomes em maiúsculas no H2):
+  No caso (b), G1, G3, G4, G4b, G5 e G10 podem passar de primeira (G4b porque o `varchar(255)` gerado pelo Hibernate no PostgreSQL também conta caracteres), como **caracterização**. Só erro de **compilação** ou de lógica do próprio teste conta como teste mal escrito.
+- [ ] T008 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImovelJpaEntityMapeamentoH2Test.java` (analyze C2) com `@DataJpaTest` no modo padrão (H2 embutido, estrutura gerada pelo Hibernate a partir de `ImovelJpaEntity`; **sem** Testcontainers e **sem** profile). Consultas via `JdbcClient` (mesmo fallback de T007: `JdbcClient.create(dataSource)` se não houver bean) em `INFORMATION_SCHEMA.COLUMNS` (`TABLE_NAME = 'IMOVEIS'`, nomes em maiúsculas no H2):
   - `deveMapearValorSugeridoComPrecisao19EEscala4`: para a coluna `VALOR_SUGERIDO`, `NUMERIC_PRECISION = 19` e `NUMERIC_SCALE = 4`.
   - `deveMapearEnderecoComTamanho255`: para `ENDERECO`, `CHARACTER_MAXIMUM_LENGTH = 255`.
 
@@ -266,7 +266,7 @@ Task: "T012 precision/scale/length em ImovelJpaEntity.java"
   implementação parece exigir mudar o teste, o problema é a implementação. Se um teste
   **existente** quebrar, pare e reporte (AGENTS.md §3), sem edição silenciosa.
 - **Caracterização** (passam de primeira, devem ser declarados): T006 (255 e code point), T007
-  (G1, G3, G4, G5, G10, se o contexto subir), T008 (tamanho 255), T014 (S1, S2, S4).
+  (G1, G3, G4, G4b, G5, G10, se o contexto subir), T008 (tamanho 255), T014 (S1, S2, S4).
 - Commitar ao fim de cada task ou grupo lógico, com mensagens em português.
 - Fora de escopo, para abrir à parte depois: defeito de reidratação (`/speckit-bug-assess`) e
   `IllegalArgumentException` do domínio virando HTTP 500 no `ImovelController` (research,

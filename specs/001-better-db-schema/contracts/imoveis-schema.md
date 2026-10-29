@@ -10,7 +10,7 @@ ou não) precisa respeitar.
 | # | Escrita | Resultado | Constraint / erro PostgreSQL |
 |---|---|---|---|
 | G1 | `endereco` nulo | rejeitada | `not_null_violation` (23502) |
-| G2 | `endereco` vazio ou só espaços (`''`, `'   '`, `E'\t\n'`) | rejeitada | `ck_imoveis_endereco_nao_vazio` (23514) |
+| G2 | `endereco` vazio ou só espaços (`''`, `'   '`, `E'\t\n'`, `E'\r\f\v'`) | rejeitada | `ck_imoveis_endereco_nao_vazio` (23514) |
 | G3 | `endereco` com 256 caracteres | rejeitada | `string_data_right_truncation` (22001) |
 | G4 | `endereco` com 255 caracteres | aceita | — |
 | G4b | `endereco` com 255 caracteres multibyte (`"ã"×254 + "🏠"`) | aceita (o limite conta caracteres, não bytes) | — |

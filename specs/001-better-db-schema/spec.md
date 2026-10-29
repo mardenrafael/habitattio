@@ -181,7 +181,7 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 - **FR-002**: O banco de produção MUST rejeitar a gravação de um imóvel cujo endereço seja
   vazio ou composto apenas de espaços em branco, cobrindo **pelo menos** espaço, tab, quebra
   de linha, retorno de carro, form feed e tab vertical. O domínio continua mais estrito
-  (`isBlank`, que também trata espaços Unicode como branco); essa diferença é aceita, porque o
+  (também trata espaços Unicode como branco); essa diferença é aceita, porque o
   domínio é a primeira barreira e o banco a segunda.
 - **FR-002a**: O endereço MUST ter no máximo **255 caracteres**. O banco de produção MUST
   rejeitar endereço mais longo, e o domínio MUST rejeitá-lo na construção de `Imovel` com
