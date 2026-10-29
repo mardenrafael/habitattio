@@ -57,35 +57,33 @@ leitura do código mostra isso diretamente, sem depender de execução.
 
 ## Proposed Remediation
 
-**Preferred**: adicionar a `Imovel` um caminho explícito de reconstituição que recebe o estado
-completo e passa pela mesma validação de invariantes, por exemplo uma fábrica estática
-`public static Imovel reconstituir(Long id, String endereco, BigDecimal valorSugerido, boolean ativo)`
-(ou um construtor de 4 argumentos ao qual o de 3 argumentos delega com `true`). O construtor
-atual continua sendo o de criação, com a mesma semântica (`ativo = true`), e os testes existentes
-seguem válidos. Em `ImovelRepositoryAdapter.salvar`, trocar o `new Imovel(...)` da linha 26 por
-`Imovel.reconstituir(salvo.getId(), salvo.getEndereco(), salvo.getValorSugerido(), salvo.isAtivo())`.
-Isso é Java puro no domínio, sem import de framework, e respeita a §2 do AGENTS.md.
+**Preferred** (decidido pelo usuário em 2026-10-29): adicionar a `Imovel` um **construtor
+público de 4 argumentos** `Imovel(Long id, String endereco, BigDecimal valorSugerido, boolean ativo)`,
+que passa pela mesma validação de invariantes e atribui `ativo` recebido. O construtor atual de 3
+argumentos passa a delegar a ele com `true` (`this(id, endereco, valorSugerido, true)`), mantendo a
+semântica de criação e os testes existentes válidos. Em `ImovelRepositoryAdapter.salvar`, trocar
+o `new Imovel(...)` da linha 26 por
+`new Imovel(salvo.getId(), salvo.getEndereco(), salvo.getValorSugerido(), salvo.isAtivo())`.
+Java puro no domínio, sem import de framework, conforme §2 do AGENTS.md.
 
-**Alternatives**:
-- *Construtor público de 4 argumentos `(id, endereco, valorSugerido, ativo)`*: mais simples, mas
-  deixa ambíguo para quem chama qual construtor usar ao *criar* um imóvel. Com dois construtores
-  públicos, alguém pode criar um imóvel "novo" já inativo. A fábrica nomeada `reconstituir`
-  deixa a intenção explícita.
+**Alternatives** (descartadas):
+- *Fábrica estática `Imovel.reconstituir(...)`*: deixaria explícita a diferença entre criar e
+  reconstituir, mas o usuário preferiu o construtor de 4 argumentos.
 - *Devolver o próprio `imovel` recebido, só com o id gerado*: exigiria um setter de `id`
-  (mutabilidade) e não resolve a leitura futura (`buscarPorId`), que vai precisar reconstituir de
-  qualquer forma.
+  (mutabilidade) e não resolve a leitura futura (`buscarPorId`).
 
 **Files likely to change**:
 - `src/main/java/br/com/marden/habitattio/domain/model/Imovel.java`
 - `src/main/java/br/com/marden/habitattio/adapters/outbound/persistence/ImovelRepositoryAdapter.java`
 - `src/test/java/br/com/marden/habitattio/domain/model/ImovelTest.java` (apenas **adicionar** testes)
+- `src/test/java/br/com/marden/habitattio/application/usecase/CadastrarImovelUseCaseTest.java` (ajuste do `ImovelRepositoryFake`, autorizado)
 - `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImovelRepositoryAdapterTest.java` (novo)
 
 **Tests to add or update** (TDD: escrever primeiro e ver falhar):
-- `ImovelTest.deveReconstituirImovelInativo`: `reconstituir(..., false)` → `isAtivo() == false`.
-- `ImovelTest.deveReconstituirImovelAtivo`: `reconstituir(..., true)` → `isAtivo() == true`.
-- `ImovelTest.deveRejeitarEnderecoVazioAoReconstituir` / valor inválido: a reconstituição também
-  valida as invariantes.
+- `ImovelTest.deveCriarImovelInativoQuandoInformado`: `new Imovel(1L, ..., false)` → `isAtivo() == false`.
+- `ImovelTest.deveCriarImovelAtivoQuandoInformado`: `new Imovel(1L, ..., true)` → `isAtivo() == true`.
+- `ImovelTest.deveRejeitarEnderecoVazioNoConstrutorCompleto` / valor inválido: o construtor de 4
+  argumentos também valida as invariantes.
 - `ImovelRepositoryAdapterTest.deveManterImovelInativoAoSalvar` (`@DataJpaTest` + Testcontainers
   PostgreSQL): salvar um imóvel inativado → retorno com `isAtivo() == false` e linha no banco com
   `ativo = false`. **É o teste que expõe o bug**: tem que falhar antes da correção. Exige Docker.
@@ -100,8 +98,9 @@ Isso é Java puro no domínio, sem import de framework, e respeita a §2 do AGEN
   fluxo de inativação ou consulta.
 - **Guardrail de testes**: o `ImovelRepositoryFake` em `CadastrarImovelUseCaseTest` também
   descarta `ativo`. Ajustá-lo é mexer em teste existente, o que o AGENTS.md §3 só permite com
-  decisão explícita do usuário. Ele não bloqueia a correção, já que nenhum teste atual depende
-  disso, então a recomendação é não tocar agora e registrar a pendência.
+  decisão explícita do usuário. **Autorizado pelo usuário em 2026-10-29**: o fake deve passar a
+  usar o construtor de 4 argumentos, preservando `imovel.isAtivo()`. A mudança é só na fidelidade
+  do fake; nenhuma asserção existente é alterada.
 - Não há migração de schema: a coluna `ativo` já existe e já é gravada.
 - Sem impacto de API: `ImovelResponse` nem expõe `ativo` hoje.
 - Ainda não há nenhum teste de adapter (`src/test/java/.../adapters/` não existe). O primeiro
@@ -109,10 +108,9 @@ Isso é Java puro no domínio, sem import de framework, e respeita a §2 do AGEN
 
 ## Open Questions
 
-- [NEEDS CLARIFICATION: Preferência entre fábrica estática `Imovel.reconstituir(...)`
-  (recomendada) e construtor público de 4 argumentos?]
-- [NEEDS CLARIFICATION: Aplicar o mesmo padrão de reconstituição em `Contrato` e `Fatura` agora,
-  de forma preventiva, ou só quando ganharem adapter? O AGENTS.md (§6, §9 YAGNI) sugere esperar
-  pela feature.]
-- [NEEDS CLARIFICATION: Autoriza ajustar o `ImovelRepositoryFake` de
-  `CadastrarImovelUseCaseTest` para preservar `ativo` (alteração em teste existente)?]
+Todas respondidas pelo usuário em 2026-10-29:
+
+1. **Fábrica estática vs. construtor**: construtor público de 4 argumentos.
+2. **`Contrato` e `Fatura`**: fora do escopo deste bug. Serão corrigidos quando esses agregados
+   ganharem persistência (feature própria).
+3. **Ajuste do `ImovelRepositoryFake`**: autorizado.
