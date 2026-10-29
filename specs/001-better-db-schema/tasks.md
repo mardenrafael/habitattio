@@ -177,7 +177,7 @@ FR-012 para um agregado novo, e o documento não contradiz `V1__cria_tabela_imov
   - (f) **Testes**: o molde de `ImoveisPostgresConstraintsTest` (anotações, SQL direto, ao menos um teste por garantia, assert pelo nome da constraint, não ler estado reidratado), de `ImovelJpaEntityMapeamentoH2Test` e de `EstruturaBancoProducaoTest`.
 
   Incluir uma seção "Modos de execução" (padrão rápido × `prod`, variáveis `SPRING_DATASOURCE_*`, versões fixas `postgres:18.6`/`redis:8.10.3` em `TestcontainersConfiguration`) e uma seção "Fora deste padrão (ainda)" (criptografia do CPF quando `Inquilino` for persistido; o padrão não a impede).
-- [ ] T018 [US3] Atualizar `AGENTS.md` (FR-013), mudando só o necessário:
+- [X] T018 [US3] Atualizar `AGENTS.md` (FR-013), mudando só o necessário:
   - §1: como subir em modo produção (`SPRING_PROFILES_ACTIVE=prod` + `SPRING_DATASOURCE_*`) e que `TestHabitattioApplication` sobe com o profile `prod`.
   - §6: um parágrafo apontando para `docs/persistencia.md` como padrão obrigatório de persistência dos próximos agregados.
   - §9: o stack acordado passa a incluir o Flyway, e a regra "não mude `ddl-auto`" passa a dizer que o modo rápido usa `update` e o `prod` usa `validate`, ambos acordados.
