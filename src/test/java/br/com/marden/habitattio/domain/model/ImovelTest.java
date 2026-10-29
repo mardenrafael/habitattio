@@ -61,4 +61,33 @@ class ImovelTest {
 
         assertFalse(imovel.isAtivo());
     }
+
+    @Test
+    void deveRejeitarEnderecoComMaisDe255Caracteres() {
+        String endereco = "a".repeat(256);
+
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, endereco, new BigDecimal("1500.00")));
+
+        assertEquals("O endereço do imóvel deve ter no máximo 255 caracteres.", excecao.getMessage());
+    }
+
+    @Test
+    void deveAceitarEnderecoCom255Caracteres() {
+        String endereco = "a".repeat(255);
+
+        Imovel imovel = new Imovel(1L, endereco, new BigDecimal("1500.00"));
+
+        assertEquals(endereco, imovel.getEndereco());
+    }
+
+    @Test
+    void deveContarCaracteresENaoUnidadesUtf16NoLimiteDoEndereco() {
+        String endereco = "a".repeat(254) + "🏠";
+
+        Imovel imovel = new Imovel(1L, endereco, new BigDecimal("1500.00"));
+
+        assertEquals(256, endereco.length());
+        assertEquals(endereco, imovel.getEndereco());
+    }
 }
