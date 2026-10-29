@@ -25,6 +25,9 @@ public class Imovel {
         if (endereco == null || endereco.isBlank()) {
             throw new IllegalArgumentException("O endereço do imóvel não pode ser vazio.");
         }
+        if (endereco.codePointCount(0, endereco.length()) > 255) {
+            throw new IllegalArgumentException("O endereço do imóvel deve ter no máximo 255 caracteres.");
+        }
         if (valorSugerido == null || valorSugerido.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("O valor sugerido deve ser maior que zero.");
         }
