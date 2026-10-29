@@ -77,5 +77,7 @@ SPRING_DATASOURCE_USERNAME=... SPRING_DATASOURCE_PASSWORD=... \
 Esperado: o log mostra o Flyway aplicando `V1__cria_tabela_imoveis` na primeira subida e
 "Schema ... is up to date" nas seguintes. Nenhum `alter table`/`create table` do Hibernate.
 
-> `spring-boot:test-run` sobe pelo `TestHabitattioApplication`. Se ele não ativar o
-> profile `prod`, passe `-Dspring-boot.run.profiles=prod`. A decisão final fica na task.
+> `spring-boot:test-run` sobe pelo `TestHabitattioApplication`, que já ativa o profile
+> `prod` via `SpringApplication.from(...).with(TestcontainersConfiguration.class)
+> .withAdditionalProfiles("prod")` (T016). Não é preciso passar profile na linha de comando:
+> subir "com os containers" é subir como produção (Flyway + `ddl-auto=validate`).
