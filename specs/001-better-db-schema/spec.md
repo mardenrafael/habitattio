@@ -144,8 +144,10 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 
 ### Edge Cases
 
-- **Endereço só com espaços**: o domínio já o rejeita como vazio. O banco deve aplicar o
-  mesmo critério, não apenas "string de tamanho zero".
+- **Endereço só com espaços**: o domínio já o rejeita como vazio. O banco também o rejeita,
+  não apenas a "string de tamanho zero", cobrindo pelo menos os espaços ASCII (FR-002). Um
+  endereço só com espaços Unicode exóticos (ex.: `\u2003`) é barrado pelo domínio, mas não
+  pelo banco: divergência aceita.
 - **Valor com mais de 4 casas decimais**: é guardado arredondado para 4 casas (ver FR-004).
   O arredondamento ocorre abaixo do centavo, então não altera nenhum valor exibido em reais.
 - **Valor positivo que arredonda para zero** (ex.: 0.00001): o banco o rejeita, porque o valor
@@ -177,7 +179,10 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 
 - **FR-001**: O banco de produção MUST rejeitar a gravação de um imóvel sem endereço.
 - **FR-002**: O banco de produção MUST rejeitar a gravação de um imóvel cujo endereço seja
-  vazio ou composto apenas de espaços em branco, com o mesmo critério usado pelo domínio.
+  vazio ou composto apenas de espaços em branco, cobrindo **pelo menos** espaço, tab, quebra
+  de linha, retorno de carro, form feed e tab vertical. O domínio continua mais estrito
+  (`isBlank`, que também trata espaços Unicode como branco); essa diferença é aceita, porque o
+  domínio é a primeira barreira e o banco a segunda.
 - **FR-002a**: O endereço MUST ter no máximo **255 caracteres**. O banco de produção MUST
   rejeitar endereço mais longo, e o domínio MUST rejeitá-lo na construção de `Imovel` com
   `IllegalArgumentException` e mensagem em português que diga o limite (regra nova, em TDD).

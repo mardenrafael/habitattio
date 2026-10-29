@@ -10,23 +10,26 @@ Guia para provar a feature de ponta a ponta. Detalhes de estrutura estão em
   `postgres:18.6` e `redis:8.10.3`. Sem Docker, rode só o cenário 1 e declare no relatório
   que os de integração não rodaram.
 
-## 1. Regra nova do domínio (sem Docker)
+## 1. Regra nova do domínio, modo rápido e mapeamento (sem Docker)
 
 ```bash
-./mvnw test -Dtest=ImovelTest
+./mvnw test -Dtest='ImovelTest,ModoRapidoTest,ImovelJpaEntityMapeamentoH2Test'
 ```
 
 Esperado: verde, incluindo os testes novos de 255 (aceita) e 256 (rejeita com
 "O endereço do imóvel deve ter no máximo 255 caracteres.") caracteres. Os testes
-existentes de `ImovelTest` não foram alterados.
+existentes de `ImovelTest` não foram alterados. `ModoRapidoTest` prova que sem profile a
+aplicação sobe com H2 e sem Flyway; `ImovelJpaEntityMapeamentoH2Test` prova `numeric(19,4)` e
+`varchar(255)` no H2.
 
-## 2. Regras no banco de produção (G1–G10)
+## 2. Regras no banco de produção (G1–G11)
 
 ```bash
 ./mvnw test -Dtest=ImoveisPostgresConstraintsTest
 ```
 
-Esperado: um teste por linha do contrato G1–G10, todos verdes. Nenhum lê `ativo`.
+Esperado: **ao menos** um teste por linha do contrato G1–G11 (incluindo G4b), todos verdes.
+Nenhum lê `ativo`.
 
 ## 3. Conferência na subida (S1–S4)
 
@@ -35,7 +38,7 @@ Esperado: um teste por linha do contrato G1–G10, todos verdes. Nenhum lê `ati
 ```
 
 Esperado: banco vazio sobe (S1); a segunda subida não reaplica (S2); a coluna removida
-impede a subida e continua ausente (S3); o checksum adulterado impede a subida (S4).
+impede a subida, com erro que cita `endereco`, e continua ausente (S3); o checksum adulterado impede a subida (S4).
 
 ## 4. Suíte completa
 

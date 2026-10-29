@@ -58,6 +58,11 @@ Fontes verificadas nesta etapa (2026-10-29): POMs do Maven Central
   é ativado explicitamente). Profiles são o mecanismo nativo do Boot e não exigem dependência.
   Nos testes, o `@ServiceConnection` do Testcontainers fornece a conexão e dispensa as
   variáveis de ambiente.
+- **Sequenciamento em TDD** (analyze I1): o profile `prod` nasce na US1 com
+  `ddl-auto=none` (estrutura só pelas migrações, ainda sem conferência) e passa a `validate`
+  na US2, depois de o teste de divergência (S3) ser visto falhar. Do mesmo modo,
+  `spring.flyway.enabled=false` na base só entra depois de `ModoRapidoTest` ser visto falhar
+  com o Flyway no classpath (analyze C1).
 - **Alternatives considered**:
   - *Trocar o padrão para o PostgreSQL*: foi rejeitado na clarificação 3.
   - *Dois profiles (`dev` e `prod`)*: um profile para o modo rápido duplicaria a base sem
@@ -97,8 +102,9 @@ Fontes verificadas nesta etapa (2026-10-29): POMs do Maven Central
     `value too long`, sem truncamento.
 - **Rationale**:
   - A regex `\s` do PostgreSQL cobre espaço, tab, quebra de linha, CR, FF e VT. Isso
-    corresponde ao `String.isBlank()` do domínio para todos os casos práticos. A diferença
-    residual (espaços Unicode exóticos) é aceita, porque o domínio continua sendo a primeira
+    cobre os espaços ASCII. O `String.isBlank()` do domínio é mais estrito (também trata
+    espaços Unicode, como `\u2003`, como branco). A spec (FR-002) aceita essa diferença: o
+    banco garante **pelo menos** os espaços ASCII, e o domínio continua sendo a primeira
     barreira.
   - `btrim(endereco) <> ''` foi descartado porque remove só espaços, e um endereço só com
     tab passaria.
@@ -138,6 +144,15 @@ Fontes verificadas nesta etapa (2026-10-29): POMs do Maven Central
   - Cada teste roda numa transação que sofre rollback, então os testes não interferem entre si.
 - **Rationale**: "contornar o domínio" (FR-011) significa literalmente não passar por
   `Imovel`. O SQL direto é a forma mais honesta de provar que a barreira é do banco.
+- **Mapeamento no H2** (analyze C2): como o PostgreSQL recebe a estrutura da V1 e o
+  `validate` não confere precisão, `precision`/`scale`/`length` do `ImovelJpaEntity` só têm
+  efeito observável no H2 do modo rápido. Um `@DataJpaTest` no modo padrão
+  (`ImovelJpaEntityMapeamentoH2Test`) consulta `INFORMATION_SCHEMA.COLUMNS` do H2 e prova
+  `numeric(19,4)` e `varchar(255)`.
+- **Exceções e vermelho inicial**: os SQLStates 22001 e 22003 viram
+  `DataIntegrityViolationException` pelo fallback de SQLState do Spring (plausível, verificado
+  na primeira execução). Antes do profile `prod`, o teste pode falhar por erro de contexto, o
+  que é aceito como vermelho pelo motivo certo (analyze I2).
 - **Alternatives considered**: gravar via `ImovelJpaEntity` + `saveAndFlush`. Também contorna
   o domínio, mas acopla o teste ao mapeamento. Fica como complemento opcional, não como prova.
 

@@ -13,14 +13,18 @@ ou não) precisa respeitar.
 | G2 | `endereco` vazio ou só espaços (`''`, `'   '`, `E'\t\n'`) | rejeitada | `ck_imoveis_endereco_nao_vazio` (23514) |
 | G3 | `endereco` com 256 caracteres | rejeitada | `string_data_right_truncation` (22001) |
 | G4 | `endereco` com 255 caracteres | aceita | — |
+| G4b | `endereco` com 255 caracteres multibyte (`"ã"×254 + "🏠"`) | aceita (o limite conta caracteres, não bytes) | — |
 | G5 | `valor_sugerido` nulo | rejeitada | `not_null_violation` (23502) |
 | G6 | `valor_sugerido` = 0 ou negativo | rejeitada | `ck_imoveis_valor_sugerido_positivo` (23514) |
 | G7 | `valor_sugerido` = 0.00001 (arredonda para 0) | rejeitada | `ck_imoveis_valor_sugerido_positivo` (23514) |
 | G8 | `valor_sugerido` = 1500.12345 | aceita; lida como `1500.1235` | — |
 | G9 | `valor_sugerido` = 1500.1234 | aceita; lida exatamente como `1500.1234` | — |
 | G10 | dois imóveis com o mesmo `endereco` | ambos aceitos | — |
+| G11 | `valor_sugerido` = 1000000000000000 (16 dígitos inteiros) | rejeitada, sem truncamento | `numeric_value_out_of_range` (22003) |
 
-Cada linha de G1 a G10 corresponde a um teste de persistência (FR-011, SC-002).
+Cada linha de G1 a G11 (incluindo G4b) tem **ao menos** um teste de persistência (FR-011,
+SC-002). G2 e G6 têm mais de um. `G2` cobre os espaços ASCII; espaços Unicode exóticos não são
+garantia do banco (spec FR-002).
 
 ## Garantias que a aplicação oferece na subida (profile `prod`)
 
@@ -28,7 +32,7 @@ Cada linha de G1 a G10 corresponde a um teste de persistência (FR-011, SC-002).
 |---|---|---|
 | S1 | vazio | aplica V1 e sobe |
 | S2 | todas as migrações já aplicadas | não reaplica nada e sobe |
-| S3 | `imoveis` sem uma coluna mapeada, ou com tipo incompatível | **não sobe**; o banco não é alterado |
+| S3 | `imoveis` sem uma coluna mapeada, ou com tipo incompatível | **não sobe**, e o erro identifica a coluna divergente; o banco não é alterado |
 | S4 | checksum de migração aplicada difere do script no repositório | **não sobe** |
 
 ## Evolução
