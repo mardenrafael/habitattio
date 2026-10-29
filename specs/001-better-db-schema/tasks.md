@@ -73,13 +73,13 @@ contra `postgres:18.6` e o mapeamento no H2 ficam verdes.
 
 ### Tests for User Story 1 (escrever primeiro, ver falhar) ⚠️
 
-- [ ] T006 [P] [US1] Adicionar a `src/test/java/br/com/marden/habitattio/domain/model/ImovelTest.java` três métodos novos (JUnit puro, Arrange/Act/Assert separados por linha em branco), **sem tocar nos existentes**:
+- [X] T006 [P] [US1] Adicionar a `src/test/java/br/com/marden/habitattio/domain/model/ImovelTest.java` três métodos novos (JUnit puro, Arrange/Act/Assert separados por linha em branco), **sem tocar nos existentes**:
   - `deveRejeitarEnderecoComMaisDe255Caracteres`: endereço `"a".repeat(256)` lança `IllegalArgumentException` com mensagem exata `"O endereço do imóvel deve ter no máximo 255 caracteres."`.
   - `deveAceitarEnderecoCom255Caracteres`: `"a".repeat(255)` cria o imóvel e `getEndereco()` devolve o mesmo texto.
   - `deveContarCaracteresENaoUnidadesUtf16NoLimiteDoEndereco`: `"a".repeat(254) + "🏠"` (255 code points, `length() == 256`) é **aceito**.
 
   Rodar `./mvnw test -Dtest=ImovelTest`. Vermelho esperado: `deveRejeitarEnderecoComMaisDe255Caracteres` (ainda não há limite). Os outros dois são **caracterização** e passam de primeira: fixam a fronteira e a contagem por code point contra uma implementação ingênua com `length()`.
-- [ ] T007 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImoveisPostgresConstraintsTest.java` com `@DataJpaTest`, `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`, `@ActiveProfiles("prod")` e `@Import(TestcontainersConfiguration.class)`. Receber `JdbcClient` pelo construtor do teste (`@Autowired` no construtor é permitido em teste). Se o `@DataJpaTest` do Boot 4.1.2 não autoconfigurar `JdbcClient`, receber o `DataSource` e criar com `JdbcClient.create(dataSource)`, ainda na fase de escrita, antes de o teste contar como visto falhar. Toda escrita é **SQL direto**, por exemplo `INSERT INTO imoveis (endereco, valor_sugerido, ativo) VALUES (:e, :v, true)`, sem `Imovel` nem `ImovelJpaEntity`. Para os casos nulos, escrever `NULL` literal no SQL. Toda leitura de volta também é por SQL e **nunca lê `ativo`** (FR-011, defeito de reidratação). **Ao menos** um teste por garantia do contrato:
+- [X] T007 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImoveisPostgresConstraintsTest.java` com `@DataJpaTest`, `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`, `@ActiveProfiles("prod")` e `@Import(TestcontainersConfiguration.class)`. Receber `JdbcClient` pelo construtor do teste (`@Autowired` no construtor é permitido em teste). Se o `@DataJpaTest` do Boot 4.1.2 não autoconfigurar `JdbcClient`, receber o `DataSource` e criar com `JdbcClient.create(dataSource)`, ainda na fase de escrita, antes de o teste contar como visto falhar. Toda escrita é **SQL direto**, por exemplo `INSERT INTO imoveis (endereco, valor_sugerido, ativo) VALUES (:e, :v, true)`, sem `Imovel` nem `ImovelJpaEntity`. Para os casos nulos, escrever `NULL` literal no SQL. Toda leitura de volta também é por SQL e **nunca lê `ativo`** (FR-011, defeito de reidratação). **Ao menos** um teste por garantia do contrato:
   - G1 `deveRejeitarEnderecoNulo`: `assertThrows(DataIntegrityViolationException.class, ...)`.
   - G2 `deveRejeitarEnderecoVazio`, `deveRejeitarEnderecoSoComEspacos` (`"   "`), `deveRejeitarEnderecoSoComTabEQuebraDeLinha` (`"\t\n"`) e `deveRejeitarEnderecoSoComRetornoDeCarroFormFeedETabVertical` (`"\r\f\u000B"`): `DataIntegrityViolationException` cuja mensagem contém `ck_imoveis_endereco_nao_vazio`.
   - G3 `deveRejeitarEnderecoCom256Caracteres`: `DataIntegrityViolationException`.
@@ -100,7 +100,7 @@ contra `postgres:18.6` e o mapeamento no H2 ficam verdes.
   - (b) falhas de asserção em G2, G6, G7, G8, G9 e G11, se o contexto subir com a tabela gerada pelo Hibernate (sem `CHECK`s, `numeric(38,2)`).
 
   No caso (b), G1, G3, G4, G4b, G5 e G10 podem passar de primeira (G4b porque o `varchar(255)` gerado pelo Hibernate no PostgreSQL também conta caracteres), como **caracterização**. Só erro de **compilação** ou de lógica do próprio teste conta como teste mal escrito.
-- [ ] T008 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImovelJpaEntityMapeamentoH2Test.java` (analyze C2) com `@DataJpaTest` no modo padrão (H2 embutido, estrutura gerada pelo Hibernate a partir de `ImovelJpaEntity`; **sem** Testcontainers e **sem** profile). Consultas via `JdbcClient` (mesmo fallback de T007: `JdbcClient.create(dataSource)` se não houver bean) em `INFORMATION_SCHEMA.COLUMNS` (`TABLE_NAME = 'IMOVEIS'`, nomes em maiúsculas no H2):
+- [X] T008 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/adapters/outbound/persistence/ImovelJpaEntityMapeamentoH2Test.java` (analyze C2) com `@DataJpaTest` no modo padrão (H2 embutido, estrutura gerada pelo Hibernate a partir de `ImovelJpaEntity`; **sem** Testcontainers e **sem** profile). Consultas via `JdbcClient` (mesmo fallback de T007: `JdbcClient.create(dataSource)` se não houver bean) em `INFORMATION_SCHEMA.COLUMNS` (`TABLE_NAME = 'IMOVEIS'`, nomes em maiúsculas no H2):
   - `deveMapearValorSugeridoComPrecisao19EEscala4`: para a coluna `VALOR_SUGERIDO`, `NUMERIC_PRECISION = 19` e `NUMERIC_SCALE = 4`.
   - `deveMapearEnderecoComTamanho255`: para `ENDERECO`, `CHARACTER_MAXIMUM_LENGTH = 255`.
 
@@ -108,8 +108,8 @@ contra `postgres:18.6` e o mapeamento no H2 ficam verdes.
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Em `src/main/java/br/com/marden/habitattio/domain/model/Imovel.java`, dentro de `validar(...)` e **depois** da checagem de vazio (que fica igual), adicionar: se `endereco.codePointCount(0, endereco.length()) > 255`, lançar `new IllegalArgumentException("O endereço do imóvel deve ter no máximo 255 caracteres.")`. Sem imports novos, sem framework (constitution §I). Rodar `./mvnw test -Dtest=ImovelTest` até ficar verde.
-- [ ] T010 [P] [US1] Criar `src/main/resources/db/migration/V1__cria_tabela_imoveis.sql` (data-model, "Tabela imoveis"):
+- [X] T009 [US1] Em `src/main/java/br/com/marden/habitattio/domain/model/Imovel.java`, dentro de `validar(...)` e **depois** da checagem de vazio (que fica igual), adicionar: se `endereco.codePointCount(0, endereco.length()) > 255`, lançar `new IllegalArgumentException("O endereço do imóvel deve ter no máximo 255 caracteres.")`. Sem imports novos, sem framework (constitution §I). Rodar `./mvnw test -Dtest=ImovelTest` até ficar verde.
+- [X] T010 [P] [US1] Criar `src/main/resources/db/migration/V1__cria_tabela_imoveis.sql` (data-model, "Tabela imoveis"):
   ```sql
   CREATE TABLE imoveis (
       id             bigint GENERATED BY DEFAULT AS IDENTITY,
@@ -122,9 +122,9 @@ contra `postgres:18.6` e o mapeamento no H2 ficam verdes.
   );
   ```
   Sem `UNIQUE` em `endereco` (FR-005) e sem `DEFAULT` em `ativo`.
-- [ ] T011 [P] [US1] Criar `src/main/resources/application-prod.properties` (R2) com exatamente: `spring.flyway.enabled=true`; `spring.jpa.hibernate.ddl-auto=none` (passa a `validate` em T015, na US2); `spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect`; `spring.datasource.driver-class-name=org.postgresql.Driver`; e um comentário dizendo que URL, usuário e senha vêm de `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD`. **Nenhuma credencial ou URL em arquivo.**
-- [ ] T012 [P] [US1] Em `src/main/java/br/com/marden/habitattio/adapters/outbound/persistence/entity/ImovelJpaEntity.java`: `valorSugerido` → `@Column(nullable = false, precision = 19, scale = 4)` (justificado pelo vermelho de T008); `endereco` → `@Column(nullable = false, length = 255)` (refatoração: torna explícito o padrão atual, protegida pela caracterização de T008). Sem `name=` explícito (convenção: estratégia padrão, `valorSugerido` → `valor_sugerido`). O adapter `ImovelRepositoryAdapter` não muda.
-- [ ] T013 [US1] Rodar `./mvnw test -Dtest='ImovelTest,ImoveisPostgresConstraintsTest,ImovelJpaEntityMapeamentoH2Test'` até ficar verde, **sem editar nenhum teste visto falhar**. Depois rodar `./mvnw test` completo: `HabitattioApplicationTests` e `ModoRapidoTest` continuam verdes e inalterados.
+- [X] T011 [P] [US1] Criar `src/main/resources/application-prod.properties` (R2) com exatamente: `spring.flyway.enabled=true`; `spring.jpa.hibernate.ddl-auto=none` (passa a `validate` em T015, na US2); `spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect`; `spring.datasource.driver-class-name=org.postgresql.Driver`; e um comentário dizendo que URL, usuário e senha vêm de `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD`. **Nenhuma credencial ou URL em arquivo.**
+- [X] T012 [P] [US1] Em `src/main/java/br/com/marden/habitattio/adapters/outbound/persistence/entity/ImovelJpaEntity.java`: `valorSugerido` → `@Column(nullable = false, precision = 19, scale = 4)` (justificado pelo vermelho de T008); `endereco` → `@Column(nullable = false, length = 255)` (refatoração: torna explícito o padrão atual, protegida pela caracterização de T008). Sem `name=` explícito (convenção: estratégia padrão, `valorSugerido` → `valor_sugerido`). O adapter `ImovelRepositoryAdapter` não muda.
+- [X] T013 [US1] Rodar `./mvnw test -Dtest='ImovelTest,ImoveisPostgresConstraintsTest,ImovelJpaEntityMapeamentoH2Test'` até ficar verde, **sem editar nenhum teste visto falhar**. Depois rodar `./mvnw test` completo: `HabitattioApplicationTests` e `ModoRapidoTest` continuam verdes e inalterados.
 
 **Checkpoint**: SC-001 (6 de 6 garantias no banco) e SC-002 (≥ 5 testes de rejeição) atendidos. A US1 é o MVP.
 
