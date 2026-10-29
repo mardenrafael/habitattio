@@ -9,12 +9,16 @@ public class Imovel {
     private boolean ativo;
 
     public Imovel(Long id, String endereco, BigDecimal valorSugerido) {
+        this(id, endereco, valorSugerido, true);
+    }
+
+    public Imovel(Long id, String endereco, BigDecimal valorSugerido, boolean ativo) {
         validar(endereco, valorSugerido);
 
         this.id = id;
         this.endereco = endereco;
         this.valorSugerido = valorSugerido;
-        this.ativo = true;
+        this.ativo = ativo;
     }
 
     private void validar(String endereco, BigDecimal valorSugerido) {

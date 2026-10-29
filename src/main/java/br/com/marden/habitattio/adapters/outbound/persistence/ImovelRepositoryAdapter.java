@@ -26,7 +26,8 @@ public class ImovelRepositoryAdapter implements ImovelRepositoryPort{
         return new Imovel(
             salvo.getId(),
             salvo.getEndereco(),
-            salvo.getValorSugerido()
+            salvo.getValorSugerido(),
+            salvo.isAtivo()
         );
     }
 }

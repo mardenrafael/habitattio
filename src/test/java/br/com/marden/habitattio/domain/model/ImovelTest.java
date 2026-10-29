@@ -90,4 +90,37 @@ class ImovelTest {
         assertEquals(256, endereco.length());
         assertEquals(endereco, imovel.getEndereco());
     }
+
+    @Test
+    void deveCriarImovelInativoQuandoInformado() {
+        Imovel imovel = new Imovel(1L, "Rua das Flores, 123", new BigDecimal("1500.00"), false);
+
+        assertEquals(1L, imovel.getId());
+        assertEquals("Rua das Flores, 123", imovel.getEndereco());
+        assertEquals(new BigDecimal("1500.00"), imovel.getValorSugerido());
+        assertFalse(imovel.isAtivo());
+    }
+
+    @Test
+    void deveCriarImovelAtivoQuandoInformado() {
+        Imovel imovel = new Imovel(1L, "Rua das Flores, 123", new BigDecimal("1500.00"), true);
+
+        assertTrue(imovel.isAtivo());
+    }
+
+    @Test
+    void deveRejeitarEnderecoVazioNoConstrutorCompleto() {
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, "   ", new BigDecimal("1500.00"), false));
+
+        assertEquals("O endereço do imóvel não pode ser vazio.", excecao.getMessage());
+    }
+
+    @Test
+    void deveRejeitarValorSugeridoInvalidoNoConstrutorCompleto() {
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, "Rua das Flores, 123", BigDecimal.ZERO, false));
+
+        assertEquals("O valor sugerido deve ser maior que zero.", excecao.getMessage());
+    }
 }
