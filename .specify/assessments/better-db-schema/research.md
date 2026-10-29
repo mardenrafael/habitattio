@@ -134,15 +134,33 @@
 - **Fontes externas fracas em parte**: várias são blogs, e as docs oficiais do Spring encontradas
   são de versões antigas — [source: lista de Sources] (confidence: high)
 
+## Clarificações do usuário (2026-10-29)
+
+Respostas do dono do projeto às perguntas abertas desta pesquisa. Prevalecem sobre as
+suposições acima.
+
+1. **Banco de produção: PostgreSQL.** H2 serve só para uso rápido (testes e afins). Portanto
+   PostgreSQL é o alvo de esquema e de migrações; o H2 não define o desenho.
+2. **Escopo: só a tabela `imoveis` por agora**, acertada junto com suas regras para servir de
+   **modelo (padrão de referência)** às tabelas de `Inquilino`, `Contrato`, `Fatura` e
+   `Usuario`, que ficam fora deste escopo.
+3. **Acordo para avaliar migração versionada (Flyway/Liquibase) com `ddl-auto=validate`.**
+   Isso atende à exigência de acordo explícito da constitution §IV para avaliar a opção. A
+   escolha da ferramenta e a dependência concreta continuam para as etapas de shape/plan.
+4. **Invariantes simples vão também para o banco** (`NOT NULL`, `CHECK` de valor positivo,
+   `UNIQUE` e similares). **Regras complexas ficam preferencialmente na aplicação.** O
+   domínio continua validando tudo; o banco é uma segunda barreira para o que é simples.
+5. **O defeito de reidratação fica fora deste escopo** e vira correção à parte (candidato a
+   `/speckit-bug-assess`).
+6. **O CPF será criptografado no banco.** É regra para quando `Inquilino` for persistido,
+   portanto fora do escopo imediato (item 2), mas o padrão definido aqui não deve impedi-la.
+
 ## Gaps & Open Questions
 
-- [NEEDS CLARIFICATION: qual é o banco de produção pretendido? PostgreSQL (como nos testes) ou H2? Isso define se migrações precisam rodar nos dois.]
-- [NEEDS CLARIFICATION: o escopo inclui desenhar as tabelas de `Inquilino`, `Contrato`, `Fatura` e `Usuario`, ou só revisar `imoveis` e definir convenções?]
-- [NEEDS CLARIFICATION: há acordo para avaliar Flyway (ou Liquibase) e `ddl-auto=validate`? Constitution §IV exige decisão explícita.]
-- [NEEDS CLARIFICATION: as regras do §7 devem ser garantidas também no banco (`UNIQUE`, `CHECK`), ou só no domínio?]
-- [NEEDS CLARIFICATION: o defeito de reidratação (estado perdido ao ler/salvar) entra neste escopo ou vira uma correção separada via `/speckit-bug-assess`?]
-- [NEEDS CLARIFICATION: há exigência de proteção do CPF em repouso (criptografia/mascaramento) ou basta controle de acesso?]
 - [NEEDS CLARIFICATION: volume esperado (imóveis, faturas/ano) para confirmar que performance é irrelevante.]
+- [NEEDS CLARIFICATION: a fronteira entre "invariante simples" (vai ao banco) e "regra complexa" (fica na aplicação) precisa de critério explícito. Exemplo: a unicidade `(contrato, mesReferencia)` é simples no banco, mas pertence a `Fatura`, fora do escopo atual.]
+- [NEEDS CLARIFICATION: com PostgreSQL como alvo e H2 "para uso rápido", as migrações também precisam rodar no H2, ou o H2 continua com o esquema gerado pelo Hibernate? Isso pesa, dadas as incompatibilidades citadas acima.]
+- [NEEDS CLARIFICATION: quais regras de `imoveis` vão ao banco? Candidatas: `endereco` não vazio (`CHECK`), `valor_sugerido > 0` (`CHECK`), precisão/escala do valor, unicidade de `endereco`?]
 - [NEEDS CLARIFICATION: `mesReferencia` deve virar um tipo de competência (ano-mês) no domínio, com coluna própria no banco?]
 - Lacuna de pesquisa: doc atual do Spring Boot 4 / Hibernate 7 sobre `ddl-auto`, `precision`/`scale` padrão e suporte a UUIDv7 não foi consultada diretamente.
 - Lacuna de pesquisa: Guia de Segurança da ANPD para agentes de pequeno porte não foi consultado.
