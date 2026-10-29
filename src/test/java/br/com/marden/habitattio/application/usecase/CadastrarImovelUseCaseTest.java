@@ -23,7 +23,7 @@ class CadastrarImovelUseCaseTest {
 
         @Override
         public Imovel salvar(Imovel imovel) {
-            Imovel salvo = new Imovel(proximoId++, imovel.getEndereco(), imovel.getValorSugerido());
+            Imovel salvo = new Imovel(proximoId++, imovel.getEndereco(), imovel.getValorSugerido(), imovel.isAtivo());
             imoveis.put(salvo.getId(), salvo);
             return salvo;
         }
