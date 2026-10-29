@@ -72,21 +72,9 @@ Regras concretas, verificáveis em revisão:
 ### Fiação do Spring
 
 Como o domínio e os casos de uso não têm anotações, os beans são declarados **explicitamente**
-numa classe de configuração em `adapters/` (ou num pacote `config/`), com `@Configuration` e
-métodos `@Bean`. Este é o único lugar onde o Spring e o domínio se encontram.
-
-> ⚠️ **Hoje essa configuração não existe e a suíte está vermelha por causa disso.**
-> `CadastrarImovelUseCase` e `ImovelRepositoryAdapter` não são beans nem estão declarados em
-> nenhum `@Configuration`, então o contexto não sobe. `./mvnw test` falha com:
->
-> ```
-> Parameter 0 of constructor in ...adapters.inbound.rest.ImovelController required a bean
-> of type '...application.usecase.CadastrarImovelUseCase' that could not be found.
-> ```
->
-> A primeira tarefa de quem mexer nessa área é criar essa configuração, declarando
-> `ImovelRepositoryAdapter` (recebendo `SpringDataImovelRepository`) e `CadastrarImovelUseCase`
-> (recebendo a porta) como `@Bean`.
+em `adapters/config/BeanConfiguration.java`, com `@Configuration` e métodos `@Bean`. Este é o
+único lugar onde o Spring e o domínio se encontram. Todo novo adapter/caso de uso ganha seu
+`@Bean` ali (ou numa classe de configuração nova, se o arquivo crescer demais).
 
 ### Ao adicionar uma feature, a ordem é de dentro para fora
 
@@ -102,17 +90,44 @@ métodos `@Bean`. Este é o único lugar onde o Spring e o domínio se encontram
 ## 3. TDD — não negociável
 
 **Red → Green → Refactor.** O teste vem antes da implementação, sempre. Não escreva código de
-produção sem um teste falhando que o justifique.
+produção sem um teste falhando que o justifique. Isso vale **mesmo quando a spec não detalha
+os testes** — a obrigação de TDD é do processo, não da spec.
 
-- Escreva o teste, **rode e veja falhar** pelo motivo esperado. Um teste que passa de primeira
-  não provou nada — ou está errado, ou o código já existia.
-- Implemente o mínimo para passar. Só então refatore, com a suíte verde.
+### Ordem estrita para toda feature nova
+
+1. **Desenhe a interface primeiro, sem lógica**: a porta (`ports/inbound`/`ports/outbound`), a
+   assinatura do caso de uso (`executar(...)`) e os models/commands necessários. Só a forma —
+   corpo vazio, `return null` ou `throw new UnsupportedOperationException()` onde precisar
+   compilar.
+2. **Com base nessas assinaturas, escreva os testes** — cobrindo o happy path e todos os casos
+   de erro esperados (validação, estado inválido, regra de negócio violada) — **antes de
+   qualquer implementação real**.
+3. **Rode e veja falhar** pelo motivo esperado (não por erro de compilação acidental, nem por
+   um teste mal escrito). Um teste que passa de primeira não provou nada.
+4. **Só então implemente de verdade**, até a suíte ficar verde. Refatore com a suíte verde.
+
+Exemplo — feature "pagar fatura": primeiro a porta/assinatura de `PagarFaturaUseCase.executar(...)`
+e o `PagarFaturaCommand`; depois os testes (`devePagarFaturaComValorIntegral`,
+`deveRejeitarPagamentoParcial`, `deveRejeitarPagamentoDeFaturaJaPaga`, ...); só depois o corpo
+real do caso de uso e da regra em `Fatura`.
+
+### Guardrail: teste criado é read-only
+
+**A partir do momento em que um teste é escrito e visto falhar pelo motivo certo, ele não pode
+mais ser alterado, apagado, comentado ou pulado (`@Disabled`) para fazer o build passar.** A
+única via de produção é implementar o código até o teste passar como está.
+
+- Se a implementação parece exigir mudar o teste, o problema é a implementação, não o teste —
+  volte e implemente a regra correta.
+- Se um teste existente (de antes desta mudança) quebra com a sua alteração, pare. Ou a
+  mudança está errada, ou o requisito realmente mudou de propósito — e nesse segundo caso a
+  alteração do teste exige decisão explícita do usuário, nunca uma edição silenciosa do agente.
+  Diga isso no relatório antes de tocar no teste.
+- Isso não impede **adicionar** testes novos para casos ainda não cobertos — só proíbe editar
+  um teste existente para acomodar código que não o satisfaz.
 - Um comportamento por teste. Nome do teste descreve o comportamento em português:
   `deveRejeitarValorNegativo`, `deveMarcarFaturaComoAtrasadaAposVencimento`.
 - Estrutura **Arrange / Act / Assert**, separados por linha em branco.
-- Nunca enfraqueça ou comente um teste para fazer o build passar. Se um teste existente quebra,
-  ou a mudança está errada, ou a regra mudou de propósito — e nesse caso o teste é atualizado
-  deliberadamente, e você diz isso no relatório.
 
 ### Onde cada teste vive
 
@@ -129,9 +144,6 @@ rápidos, não precisam de container e cobrem as regras que importam. Prefira **
 mão** implementando a porta (ex.: um `ImovelRepositoryFake` com `Map` em memória) a mocks —
 são mais legíveis e não acoplam o teste à ordem de chamadas. Use mock só para verificar
 interação que realmente é o comportamento sob teste.
-
-> ⚠️ **Hoje não existe nenhum teste de domínio ou de caso de uso** — só o `contextLoads`.
-> Código já escrito sem teste (ver §6) deve ganhar cobertura antes de ser alterado.
 
 ---
 
@@ -196,24 +208,24 @@ Regras de uso:
 | `Imovel` | id, endereco, valorSugerido, ativo | unidade locável; `inativar()` |
 | `Inquilino` | id, nome, cpf, telefone | locatário |
 | `Contrato` | imovelId, inquilinoId, valorAluguel, diaVencimento, dataInicio, ativo | vínculo inquilino↔imóvel; `encerrar()` |
-| `Fatura` | contratoId, mesReferencia, valor, dataVencimento, status | cobrança mensal; `pagar(valorPago)` |
-| `Usuario` | id, nome, email, hash_senha | operador do sistema |
+| `Fatura` | contratoId, mesReferencia, valor, dataVencimento, status, valorPago, dataPagamento | cobrança mensal; `pagar(valorPago, dataPagamento)`, `verificarAtraso(referencia)` |
+| `Usuario` | id, nome, email, senhaHash | operador do sistema |
 
-`Fatura.StatusFatura`: `PENDENTE`, `PAGA`, `ATRASADA`.
+`Fatura.StatusFatura`: `PENDENTE`, `PAGA`, `ATRASADA`. `PAGA` é terminal — `verificarAtraso` não
+o sobrescreve.
 
 As entidades referenciam-se por **id** (`Long contratoId`), não por objeto. Mantenha isso: cada
 agregado é carregado e persistido por sua própria porta.
 
-### Dívidas conhecidas no domínio (corrigir com teste primeiro)
+Todas as entidades de domínio têm teste unitário cobrindo construção válida, cada rejeição de
+invariante e as transições de estado (`src/test/java/.../domain/model/`).
 
-- `Imovel.validar(...)` existe, é `private` e **nunca é chamada** — o construtor não valida nada.
-- `Fatura.pagar(valorPago)` **ignora `valorPago` na comparação com `valor`**: marca `PAGA` em
-  qualquer pagamento positivo, inclusive parcial. Não existe registro do valor pago nem da data.
-- Nada transiciona uma fatura para `ATRASADA`; a regra de vencimento não está implementada.
-- `Usuario.hash_senha` / `getHash_senha()` fogem do camelCase do resto do código; devem virar
-  `senhaHash` / `getSenhaHash()`. Nenhuma entidade de domínio valida CPF, e-mail ou telefone.
-- `Inquilino` e `Usuario` não validam nada no construtor — aceitam `null` e string vazia.
-- Fora de `Imovel`, nenhum agregado tem porta, caso de uso ou adapter.
+### Dívida restante
+
+- Fora de `Imovel`, nenhum agregado (`Inquilino`, `Contrato`, `Fatura`, `Usuario`) tem porta,
+  caso de uso ou adapter — eles existem só como modelo de domínio, sem forma de entrar ou sair
+  do sistema. Construir isso é feature nova: passa pelo fluxo SDD (§4) e pela ordem estrita de
+  TDD (§3), não por correção pontual.
 
 Não "conserte" isso de passagem. Escreva o teste que expõe o defeito, veja falhar, corrija.
 
