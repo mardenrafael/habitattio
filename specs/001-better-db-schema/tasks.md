@@ -191,12 +191,12 @@ FR-012 para um agregado novo, e o documento não contradiz `V1__cria_tabela_imov
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T020 Rodar `./mvnw test` completo e registrar no relatório: total de testes, verdes e falhas; se os de integração rodaram (Docker); e a lista de testes de caracterização que passaram de primeira (T006, T007, T008, T014). Verificar:
+- [X] T020 Rodar `./mvnw test` completo e registrar no relatório: total de testes, verdes e falhas; se os de integração rodaram (Docker); e a lista de testes de caracterização que passaram de primeira (T006, T007, T008, T014). Verificar:
   - `git diff main -- src/test/java/br/com/marden/habitattio/HabitattioApplicationTests.java` vazio, e `git diff main -- src/test/java/br/com/marden/habitattio/domain/model/ImovelTest.java` só com adições.
   - `grep -rn "org.springframework\|jakarta.persistence" src/main/java/br/com/marden/habitattio/domain src/main/java/br/com/marden/habitattio/application` sem resultados.
   - Nenhum `*JpaEntity` fora de `adapters/outbound/persistence` (`grep -rln JpaEntity src/main/java | grep -v adapters/outbound/persistence` vazio).
-- [ ] T021 Executar os cenários manuais 5 e 6 de [quickstart.md](./quickstart.md): no modo rápido, `./mvnw spring-boot:run` + `curl POST /imoveis` → `201`; no modo produção, o Flyway aparece no log. Registrar o resultado, ou registrar que não foram executados.
-- [ ] T022 Conferir a rastreabilidade: cada FR-001 a FR-015 e SC-001 a SC-007 da [spec.md](./spec.md) tem pelo menos uma task concluída que o atende. Se o escopo mudou durante a implementação, atualizar spec e plan (constitution §III).
+- [X] T021 Executar os cenários manuais 5 e 6 de [quickstart.md](./quickstart.md): no modo rápido, `./mvnw spring-boot:run` + `curl POST /imoveis` → `201`; no modo produção, o Flyway aparece no log. Registrar o resultado, ou registrar que não foram executados.
+- [X] T022 Conferir a rastreabilidade: cada FR-001 a FR-015 e SC-001 a SC-007 da [spec.md](./spec.md) tem pelo menos uma task concluída que o atende. Se o escopo mudou durante a implementação, atualizar spec e plan (constitution §III).
 
 ---
 
