@@ -32,6 +32,9 @@ o `plan.md`.
 - Q: Quantas casas decimais o valor sugerido guarda, e o que acontece com um valor que tenha mais casas? → A: 4 casas decimais (folga para cálculos como juros e rateio). A exibição em centavos é assunto de quem apresenta o valor, não do armazenamento.
 - Q: O dono confirma formalmente a nova dependência (ferramenta de versionamento de estrutura) e o modo "só conferir" contra o PostgreSQL? → A: Sim, as duas (acordo da constitution §IV dado). A escolha da ferramenta fica no plan.
 - Q: A versão do Redis usada nos testes também deve ser fixada? → A: Sim, fixar junto com a do PostgreSQL.
+- Q: O domínio deve arredondar o valor sugerido para 4 casas, para que memória e banco coincidam? → A: Não. O domínio não muda; só o banco arredonda. A diferença entre o valor em memória e o gravado (abaixo de 4 casas) e a rejeição de valores que arredondam para zero pelo banco são aceitas.
+- Q: O endereço deve ter tamanho máximo, imposto pelo banco e pelo domínio? → A: Sim, 255 caracteres, validado no domínio (mensagem em português) e no banco.
+- Q: Ao subir a aplicação sem escolher nada, qual modo roda? → A: O rápido (banco em memória), como hoje. O modo produção (PostgreSQL, registros versionados, só conferir) é ativado explicitamente.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -60,17 +63,19 @@ seguida, gravar um imóvel válido e verificar que é aceito.
    criado.
 2. **Given** o mesmo banco, **When** se grava diretamente um imóvel com endereço vazio ou
    composto só de espaços, **Then** a gravação é rejeitada.
-3. **Given** o mesmo banco, **When** se grava diretamente um imóvel sem valor sugerido,
+3. **Given** o mesmo banco, **When** se grava diretamente um imóvel com endereço de 256
+   caracteres, **Then** a gravação é rejeitada; com 255 caracteres, é aceita.
+4. **Given** o mesmo banco, **When** se grava diretamente um imóvel sem valor sugerido,
    **Then** a gravação é rejeitada.
-4. **Given** o mesmo banco, **When** se grava diretamente um imóvel com valor sugerido igual a
+5. **Given** o mesmo banco, **When** se grava diretamente um imóvel com valor sugerido igual a
    zero ou negativo, **Then** a gravação é rejeitada.
-5. **Given** o mesmo banco, **When** se grava um imóvel com endereço preenchido e valor
+6. **Given** o mesmo banco, **When** se grava um imóvel com endereço preenchido e valor
    sugerido positivo com até 4 casas decimais, **Then** a gravação é aceita e o valor lido
    de volta é exatamente o valor gravado.
-6. **Given** o mesmo banco, **When** se grava um imóvel com valor sugerido positivo com mais
+7. **Given** o mesmo banco, **When** se grava um imóvel com valor sugerido positivo com mais
    de 4 casas decimais (ex.: 1500.12345), **Then** a gravação é aceita e o valor é guardado
    arredondado para 4 casas (1500.1235).
-7. **Given** um imóvel já gravado com o endereço "Rua A, 100, apto 101", **When** se grava
+8. **Given** um imóvel já gravado com o endereço "Rua A, 100, apto 101", **When** se grava
    outro imóvel com o mesmo endereço, **Then** a gravação é aceita: endereço não é único.
 
 ---
@@ -106,9 +111,11 @@ alterado.
 4. **Given** um registro versionado já aplicado ao banco, **When** o conteúdo desse registro é
    modificado no repositório e a aplicação sobe, **Then** a modificação é detectada e a
    aplicação se recusa a iniciar.
-5. **Given** a aplicação rodando no modo de uso rápido (banco em memória), **When** ela sobe,
-   **Then** continua funcionando como hoje, com a estrutura gerada automaticamente e sem
-   exigir os registros versionados.
+5. **Given** nenhuma escolha de modo, **When** a aplicação sobe, **Then** ela roda no modo de
+   uso rápido (banco em memória), como hoje, com a estrutura gerada automaticamente, sem
+   exigir os registros versionados nem um PostgreSQL disponível.
+6. **Given** o modo produção ativado explicitamente, **When** a aplicação sobe, **Then** ela
+   usa o PostgreSQL, aplica os registros versionados pendentes e só confere a estrutura.
 
 ---
 
@@ -142,9 +149,16 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 - **Valor com mais de 4 casas decimais**: é guardado arredondado para 4 casas (ver FR-004).
   O arredondamento ocorre abaixo do centavo, então não altera nenhum valor exibido em reais.
 - **Valor positivo que arredonda para zero** (ex.: 0.00001): o banco o rejeita, porque o valor
-  guardado deixaria de ser maior que zero, embora o domínio o aceite.
+  guardado deixaria de ser maior que zero, embora o domínio o aceite. Divergência **aceita**
+  (ver Clarifications): nenhuma regra nova no domínio para esse caso.
+- **Valor em memória × valor gravado**: ao cadastrar 1500.12345, o objeto de domínio mantém
+  1500.12345 e o banco guarda 1500.1235. Divergência **aceita**: ela só aparece abaixo da 4ª
+  casa decimal.
 - **Valor acima da capacidade máxima do campo**: a gravação é rejeitada, não truncada.
 - **Endereço repetido**: aceito normalmente, sem erro nem aviso.
+- **Endereço no limite**: 255 caracteres é aceito; 256 é rejeitado no domínio (mensagem em
+  português) e, se o domínio for contornado, no banco. O limite conta caracteres, não bytes:
+  acentos ("São João") contam como um caractere cada.
 - **Banco de produção que já tenha `imoveis` criada pela geração automática**: fora do
   previsto. Assume-se que não existe nenhum banco de produção com dados reais (ver
   Assumptions); o primeiro registro versionado cria a tabela do zero.
@@ -164,6 +178,9 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 - **FR-001**: O banco de produção MUST rejeitar a gravação de um imóvel sem endereço.
 - **FR-002**: O banco de produção MUST rejeitar a gravação de um imóvel cujo endereço seja
   vazio ou composto apenas de espaços em branco, com o mesmo critério usado pelo domínio.
+- **FR-002a**: O endereço MUST ter no máximo **255 caracteres**. O banco de produção MUST
+  rejeitar endereço mais longo, e o domínio MUST rejeitá-lo na construção de `Imovel` com
+  `IllegalArgumentException` e mensagem em português que diga o limite (regra nova, em TDD).
 - **FR-003**: O banco de produção MUST rejeitar a gravação de um imóvel sem valor sugerido ou
   com valor sugerido menor ou igual a zero.
 - **FR-004**: O valor sugerido MUST ser armazenado com precisão e número de casas decimais
@@ -173,9 +190,10 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
   vírgula) MUST comportar com folga qualquer valor de aluguel; o número exato é decidido no
   plan.
 - **FR-005**: O banco de produção MUST aceitar vários imóveis com o mesmo endereço.
-- **FR-006**: O domínio MUST continuar validando todas as regras de `Imovel` como hoje. O banco
-  é uma segunda barreira, não substitui a validação do domínio. As mensagens de erro do
-  domínio (em português) não mudam.
+- **FR-006**: O domínio MUST continuar validando todas as regras de `Imovel` como hoje, mais
+  o limite de tamanho do endereço (FR-002a), que é a única regra nova no domínio. O banco é
+  uma segunda barreira, não substitui a validação do domínio. As mensagens de erro existentes
+  (em português) não mudam.
 
 **Estrutura versionada e conferência (G2)**
 
@@ -189,10 +207,12 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 - **FR-010**: O modo de uso rápido (banco em memória) MUST continuar disponível e funcionando
   como hoje, com estrutura gerada automaticamente e sem depender dos registros versionados.
   Rodar como produção (contra PostgreSQL) e rodar rápido MUST ser modos claramente separados.
+  O modo rápido MUST continuar sendo o padrão quando nenhum modo é escolhido; o modo
+  produção MUST ser ativado explicitamente.
 
 **Prova contra o banco real (G3)**
 
-- **FR-011**: Cada regra de FR-001 a FR-005 MUST ter ao menos um teste automatizado que grava
+- **FR-011**: Cada regra de FR-001 a FR-005 (incluindo FR-002a) MUST ter ao menos um teste automatizado que grava
   diretamente no banco de produção, contornando o domínio, e verifica a rejeição (ou a
   aceitação, no caso de FR-005 e do caso válido). Esses testes MUST rodar sempre contra a
   mesma versão fixa do banco de produção, e MUST NOT depender da leitura do estado `ativo`.
@@ -222,7 +242,8 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 ### Key Entities *(include if feature involves data)*
 
 - **Imóvel (tabela `imoveis`)**: unidade locável. Atributos: identificador gerado pelo banco;
-  endereço (texto obrigatório, não em branco, não único, inclui a numeração da unidade);
+  endereço (texto obrigatório, não em branco, até 255 caracteres, não único, inclui a
+  numeração da unidade);
   valor sugerido (monetário, obrigatório, maior que zero, precisão explícita); ativo (indica
   desativação lógica; nada é apagado de fato).
 - **Registro versionado de estrutura**: unidade ordenada e imutável que descreve uma mudança
@@ -235,11 +256,12 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 
 ### Measurable Outcomes
 
-- **SC-001 (M1)**: as 5 garantias de `imoveis` (endereço não nulo, endereço não em branco,
-  valor não nulo, valor > 0, precisão explícita do valor) são impostas pelo próprio banco de
-  produção: de 2 de 5 hoje para **5 de 5**.
+- **SC-001 (M1)**: as 6 garantias de `imoveis` (endereço não nulo, endereço não em branco,
+  endereço com até 255 caracteres, valor não nulo, valor > 0, precisão explícita do valor)
+  são impostas pelo próprio banco de produção e declaradas explicitamente: de 2 de 5 hoje
+  (o limite de 255 existe só como padrão implícito) para **6 de 6**.
 - **SC-002 (M2)**: há ao menos **1 teste de rejeição contra o banco de produção por regra**,
-  totalizando **≥ 4** (hoje: 0), além do teste do caso válido e do endereço repetido.
+  totalizando **≥ 5** (hoje: 0), além do teste do caso válido e do endereço repetido.
 - **SC-003 (M3)**: **100%** das mudanças de estrutura do banco de produção têm registro
   versionado no repositório (hoje: 0%).
 - **SC-004 (M4)**: subir a aplicação contra um banco de produção com estrutura divergente
