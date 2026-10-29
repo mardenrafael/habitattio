@@ -43,8 +43,8 @@ atuais de `ImovelTest` etc.) **não podem ser alterados**; só se adicionam mét
 **Purpose**: dependência acordada (FR-014) e versões fixas (FR-015). Nenhuma mudança de
 comportamento em `src/main/`.
 
-- [ ] T001 Adicionar ao `pom.xml`, dentro de `<dependencies>` e **sem `<version>`** (gerenciadas pelo BOM do Boot 4.1.2, Flyway 12.4.0): `org.springframework.boot:spring-boot-starter-flyway` e `org.flywaydb:flyway-database-postgresql`. Rodar `./mvnw compile` e confirmar sucesso. Não adicionar nenhuma outra dependência (constitution §IV).
-- [ ] T002 [P] Em `src/test/java/br/com/marden/habitattio/TestcontainersConfiguration.java`: tornar a classe `public`; criar `public static final String POSTGRES_IMAGE = "postgres:18.6";` e `public static final String REDIS_IMAGE = "redis:8.10.3";`; usar as constantes em `DockerImageName.parse(...)` no lugar de `postgres:latest` e `redis:latest`. Não mudar os nomes dos métodos `@Bean` nem `@ServiceConnection` (R8). É infraestrutura de teste, não produção.
+- [X] T001 Adicionar ao `pom.xml`, dentro de `<dependencies>` e **sem `<version>`** (gerenciadas pelo BOM do Boot 4.1.2, Flyway 12.4.0): `org.springframework.boot:spring-boot-starter-flyway` e `org.flywaydb:flyway-database-postgresql`. Rodar `./mvnw compile` e confirmar sucesso. Não adicionar nenhuma outra dependência (constitution §IV).
+- [X] T002 [P] Em `src/test/java/br/com/marden/habitattio/TestcontainersConfiguration.java`: tornar a classe `public`; criar `public static final String POSTGRES_IMAGE = "postgres:18.6";` e `public static final String REDIS_IMAGE = "redis:8.10.3";`; usar as constantes em `DockerImageName.parse(...)` no lugar de `postgres:latest` e `redis:latest`. Não mudar os nomes dos métodos `@Bean` nem `@ServiceConnection` (R8). É infraestrutura de teste, não produção.
 
 ---
 

@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Universal ###
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.log
+.env*
