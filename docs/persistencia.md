@@ -227,8 +227,11 @@ Ao criar uma tabela nova, estenda S1 para conferir que ela e suas constraints ex
   não impede: a coluna continua seguindo os itens (a)–(f), e a forma de cifrar entra no
   adapter/mapeamento dessa feature.
 - **Tratamento HTTP de `IllegalArgumentException`** do domínio (hoje chega ao cliente sem
-  handler) e o **defeito de reidratação** de `ativo` em `Imovel` foram observados, mas estão
-  fora do escopo desta feature.
+  handler) foi observado, mas está fora do escopo desta feature.
+- O **defeito de reidratação** de `ativo` em `Imovel` foi corrigido à parte (bug
+  `imovel-ativo-perdido`: construtor `Imovel(id, endereco, valorSugerido, ativo)` usado pelo
+  adapter). A regra de ler de volta por SQL nos testes de constraints continua valendo: o
+  teste prova o banco, não o adapter.
 
 ---
 
