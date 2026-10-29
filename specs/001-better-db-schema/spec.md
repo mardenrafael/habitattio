@@ -25,6 +25,14 @@ O PostgreSQL é citado pelo nome porque é uma restrição já decidida pelo don
 produção), não uma escolha de implementação desta spec. Ferramentas e mecanismos ficam para
 o `plan.md`.
 
+## Clarifications
+
+### Session 2026-10-29
+
+- Q: Quantas casas decimais o valor sugerido guarda, e o que acontece com um valor que tenha mais casas? → A: 4 casas decimais (folga para cálculos como juros e rateio). A exibição em centavos é assunto de quem apresenta o valor, não do armazenamento.
+- Q: O dono confirma formalmente a nova dependência (ferramenta de versionamento de estrutura) e o modo "só conferir" contra o PostgreSQL? → A: Sim, as duas (acordo da constitution §IV dado). A escolha da ferramenta fica no plan.
+- Q: A versão do Redis usada nos testes também deve ser fixada? → A: Sim, fixar junto com a do PostgreSQL.
+
 ## User Scenarios & Testing *(mandatory)*
 
 O "usuário" desta feature é o **desenvolvedor do projeto** (e os agentes de código que seguem
@@ -57,9 +65,12 @@ seguida, gravar um imóvel válido e verificar que é aceito.
 4. **Given** o mesmo banco, **When** se grava diretamente um imóvel com valor sugerido igual a
    zero ou negativo, **Then** a gravação é rejeitada.
 5. **Given** o mesmo banco, **When** se grava um imóvel com endereço preenchido e valor
-   sugerido positivo, **Then** a gravação é aceita e o valor lido de volta é exatamente o
-   valor gravado.
-6. **Given** um imóvel já gravado com o endereço "Rua A, 100, apto 101", **When** se grava
+   sugerido positivo com até 4 casas decimais, **Then** a gravação é aceita e o valor lido
+   de volta é exatamente o valor gravado.
+6. **Given** o mesmo banco, **When** se grava um imóvel com valor sugerido positivo com mais
+   de 4 casas decimais (ex.: 1500.12345), **Then** a gravação é aceita e o valor é guardado
+   arredondado para 4 casas (1500.1235).
+7. **Given** um imóvel já gravado com o endereço "Rua A, 100, apto 101", **When** se grava
    outro imóvel com o mesmo endereço, **Then** a gravação é aceita: endereço não é único.
 
 ---
@@ -128,8 +139,10 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 
 - **Endereço só com espaços**: o domínio já o rejeita como vazio. O banco deve aplicar o
   mesmo critério, não apenas "string de tamanho zero".
-- **Valor com mais casas decimais do que o banco guarda**: o banco não deve arredondar nem
-  truncar silenciosamente um valor monetário (ver FR-004).
+- **Valor com mais de 4 casas decimais**: é guardado arredondado para 4 casas (ver FR-004).
+  O arredondamento ocorre abaixo do centavo, então não altera nenhum valor exibido em reais.
+- **Valor positivo que arredonda para zero** (ex.: 0.00001): o banco o rejeita, porque o valor
+  guardado deixaria de ser maior que zero, embora o domínio o aceite.
 - **Valor acima da capacidade máxima do campo**: a gravação é rejeitada, não truncada.
 - **Endereço repetido**: aceito normalmente, sem erro nem aviso.
 - **Banco de produção que já tenha `imoveis` criada pela geração automática**: fora do
@@ -154,9 +167,11 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 - **FR-003**: O banco de produção MUST rejeitar a gravação de um imóvel sem valor sugerido ou
   com valor sugerido menor ou igual a zero.
 - **FR-004**: O valor sugerido MUST ser armazenado com precisão e número de casas decimais
-  declarados explicitamente na estrutura, nunca com um padrão implícito. O número de casas é
-  [NEEDS CLARIFICATION: quantas casas decimais o valor guarda, e o que acontece com um valor
-  que tenha mais casas do que isso (rejeitar ou arredondar)?].
+  declarados explicitamente na estrutura, nunca com um padrão implícito, com **4 casas
+  decimais**. Um valor com até 4 casas MUST ser guardado e lido exatamente. Um valor com mais
+  de 4 casas MUST ser guardado arredondado para 4 casas. A capacidade total (dígitos antes da
+  vírgula) MUST comportar com folga qualquer valor de aluguel; o número exato é decidido no
+  plan.
 - **FR-005**: O banco de produção MUST aceitar vários imóveis com o mesmo endereço.
 - **FR-006**: O domínio MUST continuar validando todas as regras de `Imovel` como hoje. O banco
   é uma segunda barreira, não substitui a validação do domínio. As mensagens de erro do
@@ -198,12 +213,11 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 
 - **FR-014**: A adição de uma ferramenta de versionamento de estrutura como dependência do
   projeto e a troca para o modo "só conferir" contra o banco de produção MUST ter acordo
-  explícito do dono, conforme a constitution §IV. [NEEDS CLARIFICATION: o dono confirma
-  formalmente as duas mudanças (nova dependência e modo "só conferir")? A research deu acordo
-  apenas para *avaliar*.]
-- **FR-015**: A versão do banco de produção usada nos testes MUST ser fixa (não "a mais
-  recente"). [NEEDS CLARIFICATION: a versão do Redis usada nos testes também deve ser fixada
-  junto, ou fica como está?]
+  explícito do dono, conforme a constitution §IV. **Acordo dado em 2026-10-29** para as duas
+  mudanças (ver Clarifications). A escolha entre as ferramentas fica no plan e não exige novo
+  acordo, desde que seja uma só.
+- **FR-015**: As versões do banco de produção (PostgreSQL) e do Redis usadas nos testes MUST
+  ser fixas e declaradas explicitamente (não "a mais recente").
 
 ### Key Entities *(include if feature involves data)*
 
@@ -231,8 +245,8 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
 - **SC-004 (M4)**: subir a aplicação contra um banco de produção com estrutura divergente
   resulta em falha de inicialização **em 100% das tentativas**, sem nenhuma alteração no banco
   (hoje: o banco é alterado silenciosamente).
-- **SC-005 (M5)**: os testes contra o banco de produção rodam **sempre contra a mesma versão
-  declarada** (hoje: "a mais recente", variável).
+- **SC-005 (M5)**: os testes rodam **sempre contra as mesmas versões declaradas** do
+  PostgreSQL e do Redis (hoje: "a mais recente", variável).
 - **SC-006**: um banco de produção vazio chega à estrutura completa de `imoveis` só pela
   subida da aplicação, sem nenhum passo manual.
 - **SC-007**: o modo de uso rápido continua subindo e a suíte de testes de domínio e de casos
@@ -248,6 +262,9 @@ documentação, responder às perguntas do padrão listadas em FR-012 para um ag
   campo próprio.
 - Docker está disponível onde a suíte roda (os testes contra o banco de produção usam
   containers). Se não estiver, o relatório de implementação diz que eles não rodaram.
+- Valores com mais de 4 casas decimais são arredondados pelo banco, sem regra nova no domínio
+  que os rejeite. Se for preciso rejeitá-los, isso é regra nova de domínio e volta para a
+  spec.
 - A escolha da ferramenta de versionamento (Flyway ou Liquibase) é decisão do `plan.md`, com
   prazo curto. Para uma tabela e um banco só, qualquer uma atende esta spec.
 - A identificação do imóvel continua sendo um número gerado pelo banco. Troca por UUID ou

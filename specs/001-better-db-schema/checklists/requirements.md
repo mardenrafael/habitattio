@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -37,8 +37,9 @@
   versionamento (Flyway/Liquibase) aparece só em Assumptions, como decisão adiada para o
   `plan.md`. Nenhum mecanismo de implementação (anotações, nomes de propriedades, sintaxe de
   migração) entra nos requisitos.
-- **Pendente**: 3 marcadores [NEEDS CLARIFICATION] (FR-004 casas decimais, FR-014 acordo
-  formal de dependência e modo "só conferir", FR-015 fixar o Redis). Aguardando resposta do
-  dono; depois disso a spec segue para `/speckit-clarify` ou `/speckit-plan`.
+- **Clarificações resolvidas (2026-10-29)**: FR-004 → 4 casas decimais, com arredondamento
+  acima disso (suposição registrada em Assumptions); FR-014 → acordo formal dado para a
+  dependência nova e para o modo "só conferir"; FR-015 → Redis fixado junto com o PostgreSQL.
+  Nenhum marcador restante. Todos os itens passam.
 - Pergunta do handoff "Flyway ou Liquibase" **não** virou marcador: é decisão do plan
   (decision.md a classifica assim).
