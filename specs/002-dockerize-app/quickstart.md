@@ -8,7 +8,8 @@ V8–V10 envolvem o Docker Hub e a VPS. O guia permanente de operação é `docs
 
 ## Pré-requisitos
 
-- Docker em execução (testado com 29.9.1, `linux/amd64`, sem o `buildx`).
+- Docker em execução (testado com 29.9.1, `linux/amd64`, `buildx` 0.38.1). O `docker build`
+  usa o BuildKit; o teste automatizado usa o builder clássico do daemon (research R3).
 - JDK 25 **só** para rodar a suíte (`./mvnw test`). A imagem não precisa dele.
 - Para V8–V10: um repositório privado `habitattio` no Docker Hub, um token de leitura e escrita
   na máquina de build e um token **só de leitura** na VPS.
@@ -29,15 +30,20 @@ export TAG="$VERSAO-$REVISAO"
 **Esperado**: verde, incluindo `SaudeAplicacaoTest` e `ImagemContainerTest`. Sem Docker, os
 testes de integração (inclusive o da imagem) falham e o relatório diz isso explicitamente.
 
-## V1 — Build sem testes, no builder clássico (C1, C2)
+## V1 — Build sem testes, nos dois builders (C1, C2)
 
 ```bash
 git status --porcelain     # deve ser vazio antes de gerar uma tag de versão
-docker build --build-arg VERSION=$VERSAO --build-arg REVISION=$REVISAO -t "$REPO:$TAG" .
+docker build --progress=plain --build-arg VERSION=$VERSAO --build-arg REVISION=$REVISAO \
+  -t "$REPO:$TAG" .                                   # BuildKit: a imagem que vai para o push
+DOCKER_BUILDKIT=0 docker build -q -t habitattio:classico .   # clássico: o caminho do teste
+docker rmi habitattio:classico
 ```
 
-**Esperado**: `Successfully tagged …`. Nenhuma linha `Tests run:` do Surefire no log. O aviso
-"legacy builder is deprecated" é normal neste host (research R3).
+**Esperado**: os dois terminam sem erro, e nenhuma linha `Tests run:` do Surefire aparece no
+log. O BuildKit termina com `naming to …$REPO:$TAG done` e `exporting attestation manifest`
+(proveniência padrão, research R3). O clássico mostra o aviso "legacy builder is deprecated",
+que é esperado.
 
 ## V2 — Healthcheck declarado (H1, H2)
 
@@ -88,11 +94,11 @@ docker rm -f hab-prod hab-pg && docker network rm hab-net
 Altere um arquivo em `src/main/java` (uma mudança real, não só um comentário) e reconstrua:
 
 ```bash
-docker build -t habitattio:rebuild . 2>&1 | grep -E "Step|Using cache"
+docker build --progress=plain -t habitattio:rebuild . 2>&1 | grep -E "^#[0-9]+ (\[|CACHED)|Downloading from"
 ```
 
-**Esperado**: `Using cache` no passo `dependency:go-offline` e nas cópias de `dependencies`,
-`spring-boot-loader` e `snapshot-dependencies`. Só `COPY src`, `package`, `extract` e a camada
+**Esperado**: `CACHED` no passo `dependency:go-offline` e nas cópias de `dependencies`,
+`spring-boot-loader` e `snapshot-dependencies` (cerca de 9s no spike). Só `COPY src`, `package`, `extract` e a camada
 `application` são refeitos. Nenhuma linha `Downloading from central`. Desfaça a alteração
 depois.
 
@@ -100,11 +106,12 @@ depois.
 
 ```bash
 touch .env.sentinela        # arquivo que NÃO deve entrar no contexto
-docker build -t habitattio:ctx . 2>&1 | grep "Sending build context"
+docker build --progress=plain -t habitattio:ctx . 2>&1 | grep "transferring context"
 rm .env.sentinela
 ```
 
-**Esperado**: contexto na ordem de centenas de kB, e não de dezenas de MB (`target/` + `.git`).
+**Esperado**: a linha do contexto principal com dezenas a centenas de kB (70 kB no spike), e
+não dezenas de MB (`target/` + `.git`).
 
 ## V7 — Bases por digest e labels (C3, C6)
 
@@ -124,7 +131,8 @@ docker push "$REPO:$TAG"      # anote a linha "digest: sha256:…"
 export DIGEST=sha256:...       # o valor anotado
 ```
 
-**Esperado**: a tag está livre antes do push, e o push imprime o digest. Nada é publicado como
+**Esperado**: a tag está livre antes do push, e o push imprime o digest **do índice** (imagem
+mais atestação; research R3/R10). É esse o valor a anotar. Nada é publicado como
 `latest`.
 
 ## V9 — Pull autenticado na VPS (P3)

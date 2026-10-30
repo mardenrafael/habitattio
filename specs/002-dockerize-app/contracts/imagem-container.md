@@ -8,7 +8,7 @@ item tem o identificador do teste ou da verificação que o garante.
 | ID | Garantia | Verificado por |
 |---|---|---|
 | C1 | `docker build -t <ref> .` na raiz do repositório produz a imagem, sem rodar testes | quickstart V1; `ImagemContainerTest` (build via Testcontainers) |
-| C2 | O Dockerfile só usa instruções do builder clássico (constrói sem `buildx`) | quickstart V1 no host sem `buildx`; `ImagemContainerTest` |
+| C2 | O Dockerfile só usa instruções comuns ao BuildKit e ao builder clássico. O operador constrói com BuildKit e o teste no clássico | quickstart V1 (os dois builds); `ImagemContainerTest` (clássico) |
 | C3 | As bases são fixadas por digest (`@sha256:`) | revisão do Dockerfile; quickstart V7 |
 | C4 | Depois de mudar só `src/`, o rebuild reaproveita o passo de dependências e as 3 primeiras camadas da aplicação | quickstart V5 |
 | C5 | O contexto de build só contém `mvnw`, `pom.xml`, `.mvn/`, `src/` e `docker/` | quickstart V6 (`.dockerignore` em lista de permissão) |
@@ -44,4 +44,4 @@ item tem o identificador do teste ou da verificação que o garante.
 | P1 | Referência `docker.io/<usuario>/habitattio:<versão>-<sha curto>`; nunca `latest` | quickstart V8 |
 | P2 | A tag não existe antes do push (`docker manifest inspect` falha) | quickstart V8 |
 | P3 | O pull sem login é negado; com o token de leitura, funciona | quickstart V9 |
-| P4 | `RepoDigests` da imagem do container em execução na VPS contém o digest do push | quickstart V10 |
+| P4 | `RepoDigests` da imagem do container em execução na VPS contém o digest do push (o do índice, com atestação) | quickstart V10 |

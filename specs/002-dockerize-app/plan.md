@@ -13,8 +13,9 @@ Empacotar o habitattio numa imagem de container construída a partir de um `Dock
   as dependências numa camada cacheada.
 - **Execução**: estágio final `gcr.io/distroless/java25-debian13:nonroot`, só JRE, uid 65532, sem
   shell, com o jar extraído nas 4 camadas do Boot.
-- **Bases e builder**: as duas bases são fixadas por digest, e o Dockerfile só usa recursos do
-  builder clássico, porque o host não tem `buildx`.
+- **Bases e builder**: as duas bases são fixadas por digest. O Dockerfile só usa recursos
+  comuns ao BuildKit, que o operador usa desde que o `buildx` foi instalado, e ao builder
+  clássico, que o `ImageFromDockerfile` do teste usa (R3).
 - **Contexto**: o `.dockerignore` é uma lista de permissão.
 - **Dois modos, uma imagem**: sem profile, modo rápido com H2; com `SPRING_PROFILES_ACTIVE=prod` e
   `SPRING_DATASOURCE_*` por ambiente, PostgreSQL.
@@ -29,7 +30,7 @@ Empacotar o habitattio numa imagem de container construída a partir de um `Dock
   do digest na VPS, documentadas em `docs/container.md`.
 
 Decisões e evidências estão em [research.md](./research.md) (R1–R12). Muitas foram verificadas
-num spike descartável: build clássico, cache, `extract` do Boot 4 e uid.
+num spike descartável: builds clássico e BuildKit, cache, `extract` do Boot 4, atestação e uid.
 
 ## Technical Context
 
@@ -52,13 +53,14 @@ modo rápido.
 **Target Platform**:
 
 - **Execução**: VPS Linux `linux/amd64`, só com o runtime de containers.
-- **Build**: a máquina do dono, Docker 29.9.1 com builder clássico, `linux/amd64`.
+- **Build**: a máquina do dono, Docker 29.9.1 + `buildx` 0.38.1 (BuildKit, driver `docker`),
+  `linux/amd64`. O teste constrói no builder clássico do mesmo daemon.
 
 **Project Type**: web-service (monólito Spring Boot, hexagonal) + artefato de empacotamento.
 
 **Performance Goals**:
 
-- Rebuild só de código com o cache reaproveitado; 17,7s no spike.
+- Rebuild só de código com o cache reaproveitado: 9s no BuildKit e 17,7s no clássico (spike).
 - Subida no modo rápido em cerca de 7s, medida.
 - Healthcheck detecta banco fora em até cerca de 45s.
 

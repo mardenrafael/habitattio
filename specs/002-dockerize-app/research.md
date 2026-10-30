@@ -4,8 +4,9 @@
 
 Fontes verificadas nesta etapa (2026-10-30):
 
-- Docker local: Engine/CLI 29.9.1, `linux/amd64`, image store do containerd ligado e **sem o
-  plugin `buildx`**.
+- Docker local: Engine/CLI 29.9.1, `linux/amd64`, image store do containerd ligado. O plugin
+  `buildx` não existia na primeira rodada; foi **instalado pelo dono em 2026-10-30** (0.38.1,
+  builder `default` com driver `docker`), e o spike foi refeito com ele (ver R3).
 - Imagens puxadas e inspecionadas: `eclipse-temurin:25-jdk`, `eclipse-temurin:25-jre`,
   `gcr.io/distroless/java25-debian13:latest` e `:nonroot`.
 - POM do Maven Central: `spring-boot-starter-actuator:4.1.2`.
@@ -53,26 +54,52 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   wrapper (AGENTS.md §1: "sempre `./mvnw`") e a versão do Maven deve vir de
   `.mvn/wrapper/maven-wrapper.properties`, não da imagem.
 
-## R3 — Builder clássico; sem recursos exclusivos do BuildKit
+## R3 — Dockerfile compatível com os dois builders; sem recursos exclusivos do BuildKit
 
-- **Decision**: o Dockerfile usa **só instruções suportadas pelo builder clássico**: sem
-  `RUN --mount=type=cache`, sem `# syntax=`, sem `COPY --link`, sem heredocs.
+- **Contexto (revisado em 2026-10-30)**: na primeira rodada o host não tinha `buildx`, e o
+  `docker build` caía no builder clássico. O dono instalou o `buildx` 0.38.1. Agora:
+  - o **operador** (`docker build` no CLI) usa o **BuildKit**;
+  - o **teste** (`ImageFromDockerfile` → docker-java → API `/build`) continua no **builder
+    clássico**, que o daemon ainda oferece. `DOCKER_BUILDKIT=0 docker build` funcionou com o
+    mesmo Dockerfile.
+- **Decision**: o Dockerfile usa **só instruções que os dois builders entendem**: sem
+  `RUN --mount=type=cache`, sem `# syntax=`, sem `COPY --link` e sem heredocs. O operador
+  constrói com BuildKit; o teste constrói a mesma receita no clássico.
+- **Verificado no spike com BuildKit** (mesmo Dockerfile de R5, com `ARG` dos digests no topo e
+  `LABEL` por `--build-arg`):
+  - cold build em **59,5s**;
+  - rebuild depois de uma mudança **real** de código (classe nova em `src/main/java`) em
+    **9,0s**, com `CACHED` no `go-offline` e nas camadas `dependencies`, `spring-boot-loader` e
+    `snapshot-dependencies`, e zero `Downloading from` no log;
+  - contexto `transferring context: 70.35kB`;
+  - o mesmo Dockerfile também construiu com `DOCKER_BUILDKIT=0`.
+- **Achado — atestação de proveniência**: com BuildKit e o store do containerd, o build gera
+  um **índice** (`exporting attestation manifest sha256:…`), com o manifesto `linux/amd64` mais
+  o manifesto de atestação. O ID da imagem (`89d4…`) é o digest do índice, diferente do
+  manifesto da plataforma (`c087…`). O build clássico gera só um manifesto. Consequências:
+  - o digest impresso pelo `docker push` é o **do índice**. A conferência de R10 (`RepoDigests`
+    na VPS) continua válida, porque a VPS baixa o mesmo índice;
+  - mantém-se o padrão (proveniência `mode=min`), sem `--provenance=false`. Ela não muda o que
+    roda e pode ser útil ao scan da segunda fatia.
+- **Consequência para o teste**: a imagem do `ImagemContainerTest` (clássica) e a imagem
+  publicada (BuildKit) vêm da **mesma receita**, mas **não são o mesmo artefato byte a byte**.
+  O teste prova a receita, como FR-021 pede. Para fechar a lacuna, o quickstart V3/V4 roda
+  contra a imagem construída pelo operador, a mesma que vai para o push.
 - **Rationale**:
-  - O host não tem o plugin `buildx` (`docker buildx` → "unknown command"). O `docker build`
-    local roda no builder clássico, como o log do spike mostra (`Step n/16`, "Removed
-    intermediate container").
-  - O Testcontainers 2.0.5 constrói via docker-java (`BuildImageCmd`), que fala com a API
-    `/build` no modo clássico. Um Dockerfile só com recursos clássicos funciona do mesmo jeito
-    no CLI do operador e no teste (FR-021).
-  - O cache de dependências sai da ordem das camadas (R5), sem cache mount.
-- **Risco registrado**: o Docker 29.9.1 avisa que "the legacy builder is deprecated and will be
-  removed in a future release". Como o Dockerfile não usa nada exclusivo do clássico, ele também
-  constrói igual no BuildKit. Se o clássico sumir, basta o operador instalar o `buildx` e o
-  Testcontainers seguir o que o daemon oferecer. Esse ponto se reavalia quando acontecer
-  (decision.md: riscos tratados quando aparecerem).
-- **Alternatives considered**: instalar o `buildx` e usar cache mount do `~/.m2`. Seria mais
-  rápido em rebuilds com `pom.xml` alterado, mas é uma mudança de preparo do host (fora de
-  escopo) e o docker-java não usa o BuildKit. Fica para quando houver CI.
+  - Um Dockerfile só com recursos comuns funciona nos dois caminhos, sem mudar o teste.
+  - O cache de dependências sai da ordem das camadas (R5) e já é efetivo no BuildKit (9s).
+- **Risco registrado**: o daemon avisa que o builder clássico "is deprecated and will be removed
+  in a future release". Quando ele sumir, o `ImageFromDockerfile` deixa de construir. A saída é
+  o teste construir pelo CLI (`docker build`) e o Testcontainers só subir a imagem. A decisão se
+  reavalia quando acontecer (decision.md: riscos tratados quando aparecerem).
+- **Alternatives considered**:
+  - *Usar cache mount do `~/.m2` (`RUN --mount=type=cache`) agora que há BuildKit*: o
+    rebuild fica mais rápido **só quando o `pom.xml` muda**; quando só o código muda, a ordem
+    das camadas já dá 9s. O custo é quebrar o build no `ImageFromDockerfile`, que é clássico.
+    Rejeitado.
+  - *Teste construir pelo CLI (`ProcessBuilder` + `docker build`) para usar o mesmo builder do
+    operador*: eliminaria a diferença de builder, mas foge do `ImageFromDockerfile` acordado e
+    acopla o teste ao CLI instalado. Fica como saída do risco acima, não como escolha de agora.
 
 ## R4 — Verificação de saúde do container sem `curl`/`wget`: classe Java compilada no build
 
@@ -122,12 +149,16 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   Estágio final: 4 `COPY --from=build` em ordem de estabilidade (`dependencies`,
   `spring-boot-loader`, `snapshot-dependencies`, `application`) e
   `ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "org.springframework.boot.loader.launch.JarLauncher"]`.
-- **Verificado no spike**:
-  - O cold build levou 68s. O `-o package` depois do `go-offline` passou, ou seja, o `go-offline`
-    resolve tudo o que o `package -DskipTests` precisa.
-  - Depois de mudar só um arquivo em `src/`, o rebuild levou **17,7s**. O passo `go-offline` e as
-    camadas `dependencies`, `spring-boot-loader` e `snapshot-dependencies` vieram com
-    "Using cache" (SC-005).
+- **Verificado no spike** (nos dois builders):
+  - O cold build levou 68s no clássico e 59,5s no BuildKit. O `-o package` depois do
+    `go-offline` passou, ou seja, o `go-offline` resolve tudo o que o `package -DskipTests`
+    precisa.
+  - Rebuild só de código:
+    - no clássico, 17,7s ("Using cache");
+    - no BuildKit, 9,0s com uma mudança real de código (`CACHED`, zero downloads).
+
+    Nos dois, o passo `go-offline` e as camadas `dependencies`, `spring-boot-loader` e
+    `snapshot-dependencies` foram reaproveitados (SC-005).
   - O `extract --layers --launcher` do Boot 4.1.2 gerou as 4 pastas esperadas.
 - **Rationale**:
   - O `-o` garante que, depois de mudar só o código, nenhuma dependência é baixada; um
@@ -224,13 +255,17 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   6. O `.dockerignore` **não** tem cenário próprio aqui. Como cada camada só recebe `COPY`
      explícitos, um arquivo fora da lista nunca chegaria à imagem, mesmo sem `.dockerignore`; o
      que ele protege é o **contexto** enviado ao daemon, que o teste não observa. A verificação
-     está no [quickstart.md](./quickstart.md) (V6): o builder clássico imprime
-     "Sending build context to Docker daemon", e o tamanho deve ser de centenas de kB, e não do
-     tamanho de `target/` + `.git`.
+     está no [quickstart.md](./quickstart.md) (V6): o BuildKit imprime
+     `transferring context: <tamanho>` (70 kB no spike), e o tamanho deve ser de dezenas a
+     centenas de kB, e não do tamanho de `target/` + `.git`.
   7. `deveResponderSaudeSoComEstadoGeral` e `naoDeveExporOutrosEndpointsOperacionais` ficam
      **também** num teste rápido, sem imagem (R9), para dar retorno em segundos. No teste da
      imagem basta o cenário 1 conferir que o corpo é exatamente `{"status":"UP"}`.
-- **Tempo**: o cold build medido no spike foi 68s; com cache, 18s. A subida é de cerca de 8s por
+- **Builder do teste**: o `ImageFromDockerfile` constrói no builder **clássico**, enquanto o
+  operador usa o BuildKit (R3). O teste prova a receita; a imagem publicada é validada pelo
+  quickstart V3/V4. Os caches dos dois builders são separados: o primeiro `./mvnw test` depois
+  de um build do operador ainda faz um cold build clássico.
+- **Tempo**: o cold build clássico medido no spike foi 68s; com cache, 18s. A subida é de cerca de 8s por
   container. O total estimado da classe fica entre 1 e 2,5 min. Isso é aceitável dentro do
   `./mvnw test`, que já sobe containers em quatro classes. **Não** se separa a classe do ciclo
   (FR-022). Se ficar lento demais, a reavaliação é feita com o dono, sem pular o teste.
@@ -273,6 +308,10 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
     que deve conter `<repo>@<digest do push>`. Funciona com o store clássico e com o do
     containerd. Recomendação para o compose, que está fora de escopo: referenciar
     `image: <repo>:<tag>@<digest>`, o que torna a divergência impossível.
+  - **Índice com atestação** (R3): com BuildKit, o digest do push é o do **índice**, e não o
+    do manifesto `linux/amd64` dentro dele. A conferência compara índice com índice: o
+    `RepoDigests` da VPS e o `push` mostram o mesmo valor. Quem olhar o digest pela interface
+    do Docker Hub precisa usar o do índice (a tag), e não o da plataforma.
   - **Pull autenticado**: `docker login` na VPS com um **access token de leitura** do Docker Hub,
     e não com a senha da conta.
 - **Rationale**: atende FR-018, FR-019 e FR-020 e SC-007 só com comandos do Docker, sem script
@@ -298,8 +337,8 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   Os dois digests ficam também como `ARG` no topo do Dockerfile, para a troca ser num lugar só.
 - **Rationale**: atende o edge case "imagem base envelhecida" sem automação (fora de escopo).
   O scan da segunda fatia dirá **quando** atualizar.
-- **Verificado**: no builder clássico do Docker 29.9.1, um `ARG` antes do `FROM` com
-  `imagem@sha256:...` funciona, e um `LABEL` alimentado por `--build-arg` aparece em
+- **Verificado**: nos dois builders do Docker 29.9.1 (clássico e BuildKit via `buildx` 0.38.1),
+  um `ARG` antes do `FROM` com `imagem@sha256:...` funciona, e um `LABEL` alimentado por `--build-arg` aparece em
   `Config.Labels`.
 
 ## R12 — Documentação e governança
