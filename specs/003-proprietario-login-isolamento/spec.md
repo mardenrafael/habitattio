@@ -27,6 +27,16 @@ desta spec: senha guardada como **hash BCrypt** (Q25), autenticação com **Spri
 (Q19) e estrutura do banco alterada por **migração versionada** (módulo 1). Mecanismos
 concretos (sessão ou token, formato das rotas, nomes de colunas) ficam para o `plan.md`.
 
+## Clarifications
+
+### Session 2026-10-30
+
+- Q: O defeito D3 (dado inválido no cadastro de imóvel responde 500 em vez de 400) é corrigido neste módulo ou em fluxo de bug separado? → A: Neste módulo. Um tratamento de erro comum vale para todas as operações do módulo, incluindo o cadastro de imóvel; D3 fica resolvido por esta spec, sem `/speckit-bug-assess`.
+- Q: O dono autoriza adaptar os testes existentes que quebram com dono e identificador obrigatórios (`ImovelTest`, `CadastrarImovelUseCaseTest`, `ImovelRepositoryAdapterTest`, `ImoveisPostgresConstraintsTest`)? → A: Sim, só o mínimo: acrescentar dono e identificador onde os testes constroem ou gravam um imóvel, sem mudar o que cada teste afirma. Qualquer outra mudança nesses testes volta para o dono.
+- Q: Quem pode criar conta de proprietário? → A: Qualquer pessoa, sem convite nem aprovação (auto-cadastro aberto). Não há papel de administrador.
+- Q: Quais operações sobre imóvel, além do cadastro, este módulo entrega para provar o isolamento? → A: Consultar um imóvel pelo id e inativar um imóvel. Edição (RF-09) e listagem (RF-10) ficam fora.
+- Q: A unicidade do identificador por proprietário ignora maiúsculas/minúsculas ("Apto 101" = "APTO 101")? → A: Sim; ignora maiúsculas/minúsculas e espaços nas pontas, mas não acentos. O identificador é exibido como foi digitado, sem os espaços das pontas.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Proprietário cria a própria conta (Priority: P1)
@@ -189,8 +199,8 @@ identificador repetido para donos diferentes é aceito.
 
 **Proprietário (RF-01, RF-02, RNF-12)**
 
-- **FR-001**: O sistema MUST permitir que uma pessoa sem autenticação se cadastre como
-  proprietário informando nome, e-mail e senha.
+- **FR-001**: O sistema MUST permitir que qualquer pessoa sem autenticação se cadastre como
+  proprietário informando nome, e-mail e senha, sem convite nem aprovação de terceiros.
 - **FR-002**: O nome MUST ser obrigatório, não em branco e ter no máximo 100 caracteres.
 - **FR-003**: O e-mail MUST ser obrigatório, ter formato válido, ter no máximo 254 caracteres e
   ser normalizado (sem espaços nas pontas, em minúsculas) antes de qualquer validação, gravação
@@ -228,7 +238,7 @@ identificador repetido para donos diferentes é aceito.
   obrigatório, não em branco, com no máximo 50 caracteres (contados como caracteres, não
   bytes), sem espaços nas pontas.
 - **FR-016**: O identificador MUST ser único **por proprietário**, sem distinguir
-  maiúsculas/minúsculas; proprietários diferentes MAY usar o mesmo identificador. Cadastro com
+  maiúsculas/minúsculas (acentos continuam distinguindo: "Térreo" ≠ "Terreo"); proprietários diferentes MAY usar o mesmo identificador. Cadastro com
   identificador repetido para o mesmo dono MUST ser recusado com mensagem em português.
 - **FR-017**: As regras de imóvel do módulo 1 (endereço obrigatório, não em branco, até 255
   caracteres, não único; valor sugerido > 0) MUST continuar valendo sem mudança.
@@ -265,7 +275,9 @@ identificador repetido para donos diferentes é aceito.
   inativação de imóvel) e o cadastro de imóvel alterado por ele MUST responder a dado inválido
   ou duplicado com uma recusa do cliente (família 4xx) e mensagem em português — nunca com erro
   interno. A distinção entre "inválido", "duplicado", "não autenticado" e "não encontrado" MUST
-  ser observável pela resposta.
+  ser observável pela resposta. Um único tratamento de erro, comum a todas essas operações,
+  MUST produzir essas recusas; isso resolve o defeito D3 de `docs/requisitos-e-der.md`
+  (o cadastro de imóvel deixa de responder 500 a dado inválido).
 
 **Documentação**
 
@@ -307,8 +319,9 @@ identificador repetido para donos diferentes é aceito.
 
 ## Assumptions
 
-- **Auto-cadastro aberto**: qualquer pessoa pode criar uma conta de proprietário, sem convite nem
-  aprovação; é o modelo implícito em Q14 (vários donos usando a mesma instalação).
+- **Auto-cadastro aberto** (decidido em 2026-10-30, ver Clarifications): qualquer pessoa pode
+  criar uma conta de proprietário, sem convite nem aprovação; o isolamento (FR-020) garante que
+  uma conta nova não enxerga dado de ninguém.
 - **Sem confirmação de e-mail, recuperação ou troca de senha** neste módulo; o e-mail só
   identifica a conta.
 - **Limites de tamanho**: nome até 100 caracteres e e-mail até 254 (limite prático de endereço de
@@ -321,8 +334,8 @@ identificador repetido para donos diferentes é aceito.
   volume baixo (RNF-21). Fica como candidato a módulo futuro.
 - **Revelação no cadastro**: recusar um e-mail em uso revela que a conta existe. Isso é aceito
   (é o comportamento esperado de um cadastro); o login, por outro lado, não revela (FR-009).
-- **Consulta e inativação de imóvel** foram escolhidas como as operações mínimas para provar o
-  isolamento em leitura e escrita ("vê e altera"). Edição de dados do imóvel (RF-09) e listagem
+- **Consulta e inativação de imóvel** (decidido em 2026-10-30, ver Clarifications) são as
+  operações mínimas para provar o isolamento em leitura e escrita ("vê e altera"). Edição de dados do imóvel (RF-09) e listagem
   (RF-10) ficam fora.
 - **Modo rápido (banco em memória)** continua o padrão para desenvolvimento; nele também é
   preciso criar uma conta e entrar antes de cadastrar imóveis.
@@ -347,17 +360,19 @@ identificador. Testes existentes que **vão deixar de compilar ou de passar** (c
 `EstruturaBancoProducaoTest` e `ModoRapidoTest` continuam válidos: só conferem a versão 1 e o
 modo rápido, que esta spec não muda.
 Pela regra do AGENTS §3 (teste existente é read-only), a adaptação desses testes exige
-**decisão explícita do dono**, a registrar na `/speckit-clarify` antes do plan.
+**decisão explícita do dono** — **dada em 2026-10-30** (ver Clarifications), com este limite:
+a adaptação MUST se restringir a acrescentar dono e identificador nos dados de preparação
+(construção do imóvel ou linha gravada); nenhuma asserção, nome de teste ou cenário provado
+MUST mudar. Qualquer outra alteração nesses quatro testes exige nova decisão do dono.
 
 ### Pontos a confirmar na `/speckit-clarify`
 
-1. **D3** (erro de validação responde 500): FR-026 já exige 4xx nas operações tocadas por este
-   módulo, o que inclui o cadastro de imóvel. Confirmar se isso basta (D3 resolvido aqui, sem
-   `/speckit-bug-assess` separado) ou se o tratamento de erro deve ficar fora e seguir pelo
-   fluxo de bug.
-2. **Adaptação dos testes existentes de imóvel** (seção acima).
-3. **Padrões assumidos sem decisão do dono**: auto-cadastro aberto; e-mail e identificador sem
-   distinguir maiúsculas/minúsculas; consulta + inativação como operações de isolamento; limites
+1. ~~**D3**~~ — decidido: corrigido neste módulo (ver Clarifications e FR-026).
+2. ~~**Adaptação dos testes existentes de imóvel**~~ — decidido: autorizada, só o mínimo (seção
+   acima).
+3. ~~Identificador sem distinguir maiúsculas/minúsculas~~ — decidido (ver Clarifications).
+   **Ainda assumidos sem decisão do dono** (baixo impacto, ajustáveis no plan): e-mail sem
+   distinguir maiúsculas/minúsculas (prática usual); limites
    de nome (100) e senha (mínimo 8).
 
 ## Out of Scope
