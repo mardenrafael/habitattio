@@ -335,8 +335,17 @@ identificador repetido para donos diferentes é aceito.
 ### Mudança deliberada de requisito existente
 
 O cadastro de imóvel do módulo 1 muda de propósito: passa a exigir autenticação, dono e
-identificador. Testes existentes de `Imovel`, do caso de uso e do adapter de persistência de
-imóvel constroem imóveis sem dono e sem identificador e **vão deixar de compilar ou de passar**.
+identificador. Testes existentes que **vão deixar de compilar ou de passar** (conferido contra a
+`main` em `eb5e715`):
+
+- `ImovelTest`, `CadastrarImovelUseCaseTest` e `ImovelRepositoryAdapterTest`: constroem imóveis
+  sem dono e sem identificador.
+- `ImoveisPostgresConstraintsTest`: grava diretamente em `imoveis` sem dono e sem identificador,
+  o que a nova versão de estrutura passa a recusar (FR-023) antes de chegar à restrição que cada
+  teste quer provar.
+
+`EstruturaBancoProducaoTest` e `ModoRapidoTest` continuam válidos: só conferem a versão 1 e o
+modo rápido, que esta spec não muda.
 Pela regra do AGENTS §3 (teste existente é read-only), a adaptação desses testes exige
 **decisão explícita do dono**, a registrar na `/speckit-clarify` antes do plan.
 

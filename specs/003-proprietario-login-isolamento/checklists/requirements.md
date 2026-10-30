@@ -41,5 +41,10 @@
 - Nenhum marcador `[NEEDS CLARIFICATION]` foi usado: os pontos em aberto têm padrão razoável e
   estão listados em "Pontos a confirmar na `/speckit-clarify`" (D3, adaptação dos testes
   existentes de imóvel exigida pelo AGENTS §3, padrões assumidos).
+- Iteração 2 (reverificação contra a `main` atualizada, `eb5e715`): premissas confirmadas — só
+  a migração V1 existe, `Usuario` só no domínio, sem dependência de autenticação no build, D3
+  ainda aberto (nenhum tratador de erro), AGENTS §6 ainda chama `Usuario` de "operador" (D6),
+  `002` segue reservado por `002-dockerize-app`. Corrigido: a lista de testes existentes
+  afetados não incluía `ImoveisPostgresConstraintsTest`.
 - Bloqueio para o plan: a adaptação dos testes existentes de imóvel precisa de decisão
   explícita do dono antes da implementação (AGENTS §3).
