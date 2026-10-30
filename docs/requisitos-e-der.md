@@ -64,7 +64,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-23 | Emitir **automaticamente** a fatura mensal de cada contrato ativo, **sempre pelo valor integral** do aluguel (sem pro rata, inclusive na primeira e na última), copiado na emissão. A rotina cria a fatura **no dia 1 do mês da competência**; a primeira fatura de um contrato é a do **primeiro vencimento a partir da data de início** (início 20/10, dia 5 → primeira vence 05/11) | 🟡 | **decidido (Q10 + Q13 + Q26)** |
+| RF-23 | Emitir **automaticamente** a fatura mensal de cada contrato ativo, **sempre pelo valor integral** do aluguel (sem pro rata, inclusive na primeira e na última), copiado na emissão. A rotina cria a fatura **no dia 1 do mês da competência**; a primeira fatura de um contrato é a do **primeiro vencimento a partir da data de início** (início 20/10, dia 5 → primeira vence 05/11). Se o primeiro vencimento cai no mesmo mês do início (início 03/10, dia 5 → 05/10), a fatura é **criada junto com o contrato** | 🟡 | **decidido (Q10 + Q13 + Q26 + Q27)** |
 | RF-24 | No máximo uma fatura por contrato e competência | ❌ | `uq_faturas_contrato_mes` |
 | RF-25 | A fatura vence no **dia escolhido em cada contrato** (`diaVencimento`), na competência; em mês mais curto, cai no último dia. Pagar até o vencimento, inclusive, não é atraso (dia 5 → em dia até o dia 5) | ❌ | AGENTS §7 + **decidido (Q12)** |
 | RF-26 | Fatura pendente vira `ATRASADA` a partir do **dia seguinte** ao vencimento, gravado por **rotina diária** | 🟡 | **decidido (Q5 + Q12)**; `verificarAtraso` já usa `referencia.isAfter(dataVencimento)`, falta a rotina |
@@ -251,13 +251,13 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | Q12 | 2026-10-30 | Quando a fatura vence? | **No dia escolhido em cada contrato**. Ex.: dia 5 → pagar até o dia 5 não atrasa |
 | Q13 | 2026-10-30 | Primeira e última fatura proporcionais ou integrais? | **Integrais** |
 | Q26 | 2026-10-30 | Quando a fatura é criada e qual é a primeira? | **Criada no dia 1** do mês da competência; a primeira é a do **primeiro vencimento a partir da data de início** (início 20/10, dia 5 → 05/11) |
+| Q27 | 2026-10-30 | Primeiro vencimento no mesmo mês do início, depois do dia 1? | **A fatura é criada junto com o contrato** |
 | Q25 | 2026-10-30 | Senha com hash ou criptografia? | **Hash BCrypt**. Criptografia foi considerada e descartada: é reversível, e se a chave vazar todas as senhas aparecem |
 
 ## 6. Perguntas em aberto
 
 | # | Pergunta | Sugestão | Trava |
 |---|---|---|---|
-| Q27 | Contrato que começa depois do dia 1 com o primeiro vencimento no mesmo mês (ex.: início 03/10, dia 5 → vence 05/10): a rotina do dia 1 já passou. A fatura é criada junto com o contrato? | Sim, criar na hora em que o contrato é criado | faturas |
 | Q2 | Guardar data de encerramento do contrato? Data de término prevista? | Guardar `data_encerramento` | contratos |
 | Q4 | Validar dígito verificador do CPF? | Sim, no domínio | inquilinos |
 | Q17 | Formas de pagamento aceitas? | `PIX`, `DINHEIRO`, `TRANSFERENCIA`, `BOLETO` (enum) | pagamentos |
@@ -298,6 +298,6 @@ O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consiste
    proprietário, `usuario_id` e `identificador` em `imoveis` (V2), filtro por dono. Vem antes
    de tudo, porque todo agregado depende do dono.
 5. Módulo 3 — Inquilino + Contrato (D1, Q2, Q4, Q18).
-6. Módulo 4 — Faturas: emissão automática e rotina de atraso (D2, Q27).
+6. Módulo 4 — Faturas: emissão automática e rotina de atraso (D2).
 7. Módulo 5 — Pagamentos parciais e painel (D5, Q17, Q21, Q22, Q24).
 8. Atualizar AGENTS.md §6–§7 (D4, D6) quando o módulo 2 for especificado.
