@@ -12,7 +12,7 @@ Este documento consolida os requisitos e o DER. Os IDs entre colchetes (`[Drive 
 o item equivalente no documento do Drive. Quando os dois divergem, vale **este** documento: ele
 incorpora as decisões posteriores (seção 5), e a §7 lista o que precisa ser corrigido no Drive.
 
-Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implementado · ❓ precisa de decisão
+Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implementado · ❓ precisa de decisão · ⏸ fora do escopo atual
 
 ---
 
@@ -48,7 +48,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RF-14 | Inquilino pertence a um proprietário | ❌ | **decidido (Q14)**; `inquilinos.usuario_id` |
 | RF-15 | CPF guardado criptografado | ❌ | decisão de 2026-10-29 |
 | RF-16 | CPF único **por proprietário**: a mesma pessoa pode alugar de dois proprietários | ❌ | **decidido (Q3 + Q14)**; `uq_inquilinos_usuario_cpf (usuario_id, cpf_hash)` |
-| RF-17 | ❓ Validar dígito verificador do CPF | ❓ | Q4 |
+| RF-17 | Validar o dígito verificador do CPF no domínio | ❌ | **decidido (Q4)** |
 
 ### Contrato `[Drive RF04]`
 
@@ -56,8 +56,8 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 |---|---|---|---|
 | RF-18 | Criar contrato ligando imóvel e inquilino **do mesmo proprietário**, com valor do aluguel (> 0), dia de vencimento (1–31) e data de início | 🟡 | domínio valida **só** o dia (D1) |
 | RF-19 | No máximo um contrato ativo por imóvel | ❌ | **decidido (Q1)**; caso de uso + índice único parcial |
-| RF-20 | Anexar o documento do contrato (PDF ou imagem) | ❌ | `[Drive RF04]`; armazenamento em Q18 |
-| RF-21 | Encerrar contrato (desativação lógica) | 🟡 | `encerrar()` não guarda a data (Q2) |
+| RF-20 | Anexar o documento do contrato (PDF ou imagem), guardado em disco local em dev, atrás de uma porta de armazenamento | ❌ | **decidido (Q18)**; tamanho máximo fica para o plan |
+| RF-21 | Encerrar contrato (desativação lógica), guardando a **data de encerramento** | 🟡 | **decidido (Q2)**; `encerrar()` ainda não guarda a data |
 | RF-22 | Contrato encerrado não gera novas faturas | ❌ | AGENTS §7 |
 
 ### Fatura
@@ -71,14 +71,18 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RF-27 | Sem multa nem juros por atraso | ✅ | **decidido (Q6)** |
 | RF-28 | `PAGA` é terminal | ✅ | `FaturaTest` |
 
-### Pagamento `[Drive RF06]`
+### Pagamento `[Drive RF06]` — ⏸ fora do escopo atual
+
+> **Decisão de 2026-10-30:** pagamentos **não entram no escopo agora**. Os requisitos abaixo
+> ficam registrados para quando o módulo for retomado; nenhum deles será especificado ou
+> implementado antes disso. Como a fatura vira `PAGA` enquanto isso é a pergunta Q28.
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-29 | Registrar pagamento de uma fatura com valor (> 0), data e forma de pagamento | ❌ | `[Drive RF06]`; formas em Q17 |
-| RF-30 | **Pagamento parcial permitido**: uma fatura aceita vários pagamentos e fica `PAGA` quando a soma atinge o valor | ❌ | **decidido (Q16)**. Substitui a regra atual de `Fatura.pagar` (ver D5) |
-| RF-31 | Histórico de pagamentos por fatura | ❌ | `[Drive RF06]`; tabela `pagamentos` |
-| RF-32 | ❓ Pagamento acima do saldo devedor | ❓ | Q21 |
+| RF-29 | Registrar pagamento de uma fatura com valor (> 0), data e forma de pagamento | ⏸ | `[Drive RF06]`; formas adiadas (Q17) |
+| RF-30 | **Pagamento parcial permitido**: uma fatura aceita vários pagamentos e fica `PAGA` quando a soma atinge o valor; parcialmente paga não tem status próprio, mostra o saldo | ⏸ | **decidido (Q16 + Q24)**, para quando o módulo voltar (ver D5) |
+| RF-31 | Histórico de pagamentos por fatura | ⏸ | `[Drive RF06]`; tabela `pagamentos` |
+| RF-32 | Pagamento acima do saldo devedor | ⏸ | adiado (Q21) |
 
 ### Painel `[Drive RF05]`
 
@@ -104,12 +108,12 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RNF-10 | Mensagens de erro em português | ✅ domínio |
 | RNF-11 | Erro de validação responde 4xx com mensagem clara | ❌ **defeito D3** |
 | RNF-12 | Senha com hash **BCrypt** (salt embutido, custo ajustável), nunca criptografia reversível; autenticação via **Spring Security** `[Drive RNF04]` | ❌ **decidido (Q19 + Q25)** |
-| RNF-13 | CPF criptografado no banco; dados pessoais tratados conforme LGPD | ❌ |
+| RNF-13 | CPF criptografado no banco (telefone não, por ora); dados pessoais tratados conforme LGPD | ❌ **decidido (Q8)** |
 | RNF-14 | Credenciais só por variável de ambiente | ✅ |
 | RNF-15 | Toda consulta e escrita filtra pelo proprietário autenticado; um proprietário nunca acessa dado de outro, nem por id adivinhado | ❌ (Q14) |
 | RNF-16 | Rotinas automáticas (emissão mensal, atraso diário) são adapters de entrada agendados que chamam casos de uso, e são idempotentes | ❌ |
-| RNF-17 | Pagamentos simultâneos na mesma fatura não podem ultrapassar o saldo (controle de concorrência) | ❌ ver Q22 |
-| RNF-18 | Frontend Next.js (App Router) + Tailwind, **mobile-first** `[Drive RNF01]`; o backend expõe API REST consumível por ele | ❌ ver Q23 |
+| RNF-17 | Pagamentos simultâneos na mesma fatura não podem ultrapassar o saldo: **versão otimista no banco** (`faturas.versao`) | ⏸ **decidido (Q22)**, com o módulo de pagamentos |
+| RNF-18 | Frontend Next.js (App Router) + Tailwind, **mobile-first**, em **repositório separado** `[Drive RNF01]`; o backend expõe API REST consumível por ele | ❌ **decidido (Q23)** |
 | RNF-19 | Redis para cache e locks `[Drive §3]` | ❓ ver Q22 |
 | RNF-20 | Docker Compose para subir o ambiente; CI no GitHub Actions `[Drive §3]` | ❌ |
 | RNF-21 | Volume baixo: desempenho não pesa nas decisões | ✅ decisão registrada |
@@ -125,7 +129,7 @@ erDiagram
     IMOVEIS ||--o{ CONTRATOS : "é alugado em"
     INQUILINOS ||--o{ CONTRATOS : "assina"
     CONTRATOS ||--o{ FATURAS : "gera"
-    FATURAS ||--o{ PAGAMENTOS : "recebe"
+    FATURAS ||--o{ PAGAMENTOS : "recebe (futuro)"
 
     USUARIOS {
         bigint id PK
@@ -156,8 +160,8 @@ erDiagram
         numeric(19_4) valor_aluguel "NOT NULL, > 0"
         smallint dia_vencimento "NOT NULL, 1..31"
         date data_inicio "NOT NULL"
-        date data_encerramento "NULL (Q2)"
-        varchar anexo_chave "NULL (Q18)"
+        date data_encerramento "NULL; preenchida ao encerrar"
+        varchar anexo_chave "NULL; chave no armazenamento"
         boolean ativo "NOT NULL"
     }
     FATURAS {
@@ -167,7 +171,7 @@ erDiagram
         numeric(19_4) valor "NOT NULL, > 0"
         date data_vencimento "NOT NULL"
         varchar status "PENDENTE, PAGA ou ATRASADA"
-        bigint versao "controle otimista (Q22)"
+        bigint versao "controle otimista (futuro, Q22)"
     }
     PAGAMENTOS {
         bigint id PK
@@ -187,7 +191,7 @@ erDiagram
 | Imóvel → Contrato | 1 : 0..N, no máximo 1 ativo | `fk_contratos_imovel`; `CREATE UNIQUE INDEX uq_contratos_imovel_ativo ON contratos (imovel_id) WHERE ativo` |
 | Inquilino → Contrato | 1 : 0..N | `fk_contratos_inquilino` |
 | Contrato → Fatura | 1 : 0..N, uma por competência | `fk_faturas_contrato`; `uq_faturas_contrato_mes (contrato_id, mes_referencia)` |
-| Fatura → Pagamento | 1 : 0..N | `fk_pagamentos_fatura` |
+| Fatura → Pagamento | 1 : 0..N — **⏸ fora do escopo atual** | `fk_pagamentos_fatura` |
 | Imóvel ↔ Inquilino | N : N **via Contrato** | — |
 
 Todas as FKs são `ON DELETE RESTRICT`, porque nada é apagado de fato.
@@ -207,7 +211,8 @@ Todas as FKs são `ON DELETE RESTRICT`, porque nada é apagado de fato.
    `CHECK (mes_referencia ~ '^\d{4}-(0[1-9]|1[0-2])$')` no banco. Hoje é `String` livre (D2).
 5. **`status`** é gravado pela rotina diária (Q5), com
    `CHECK (status IN ('PENDENTE','PAGA','ATRASADA'))`. Uma fatura parcialmente paga continua
-   `PENDENTE` ou `ATRASADA` até quitar (ver Q24).
+   `PENDENTE` ou `ATRASADA` até quitar, sem status próprio (Q24). Isso vale quando pagamentos
+   voltarem ao escopo; até lá, `pagamentos` e a coluna `versao` não são criadas.
 6. **CPF**: `cpf_cifrado` (criptografia com IV aleatório) + `cpf_hash` (HMAC com chave),
    que permite unicidade e busca sem expor o CPF.
 7. **Anexo do contrato**: o arquivo não vai para o banco. A tabela guarda só a chave ou o
@@ -225,7 +230,7 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | D2 | `Fatura` | construtor não valida nada; `mesReferencia` é `String` livre |
 | D3 | `ImovelController` | erro de domínio responde **500** em vez de 400; sem `@Valid` |
 | D4 | AGENTS.md §6 | diz que todas as entidades têm teste para cada invariante, o que não vale para `Contrato` e `Fatura` |
-| D5 | `Fatura.pagar` | proíbe pagamento parcial, o que agora contraria Q16. Os testes `deveRejeitarPagamentoParcial` e `deveRegistrarValorPagoEDataDePagamentoAoPagar` vão mudar **por decisão explícita do dono (2026-10-30)**. A mudança entra pela spec do módulo de pagamentos, não antes |
+| D5 | `Fatura.pagar` | proíbe pagamento parcial, o que agora contraria Q16. Os testes `deveRejeitarPagamentoParcial` e `deveRegistrarValorPagoEDataDePagamentoAoPagar` vão mudar **por decisão explícita do dono (2026-10-30)**. A mudança entra pela spec do módulo de pagamentos, não antes. **Com pagamentos fora do escopo (2026-10-30), `Fatura.pagar` e seus testes ficam como estão** |
 | D6 | AGENTS.md §6 e memória do projeto | descrevem `Usuario` como "operador do sistema" de um único cliente, o que agora contraria Q14 |
 | D7 | módulo 1 | `imoveis` não tem `usuario_id` nem `identificador`; precisa de migração V2 (sem dados de produção, sem migração de dados) |
 | D8 | módulo 1 | ainda não mergeado na `main` |
@@ -252,22 +257,29 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | Q13 | 2026-10-30 | Primeira e última fatura proporcionais ou integrais? | **Integrais** |
 | Q26 | 2026-10-30 | Quando a fatura é criada e qual é a primeira? | **Criada no dia 1** do mês da competência; a primeira é a do **primeiro vencimento a partir da data de início** (início 20/10, dia 5 → 05/11) |
 | Q27 | 2026-10-30 | Primeiro vencimento no mesmo mês do início, depois do dia 1? | **A fatura é criada junto com o contrato** |
+| Q2 | 2026-10-30 | Guardar a data de encerramento do contrato? | **Sim** |
+| Q4 | 2026-10-30 | Validar o dígito verificador do CPF? | **Sim**, no domínio |
+| Q8 | 2026-10-30 | Telefone também criptografado? | **Não**; só o CPF por enquanto |
+| Q11 | 2026-10-30 | Reajuste anual do contrato? | **Fora do escopo agora** |
+| Q18 | 2026-10-30 | Onde guardar o anexo do contrato? | **Disco local em dev**, atrás de porta; tamanho máximo no plan |
+| Q22 | 2026-10-30 | Concorrência de pagamentos? | **Versão otimista no banco** (vale quando pagamentos voltarem) |
+| Q23 | 2026-10-30 | Frontend no mesmo repositório? | **Não**, repositório separado |
+| Q24 | 2026-10-30 | Status próprio para fatura parcialmente paga? | **Não**, basta mostrar o saldo (vale quando pagamentos voltarem) |
+| — | 2026-10-30 | Pagamentos entram no escopo? | **Não, por enquanto.** Q17 (formas de pagamento) e Q21 (pagamento acima do saldo) ficam adiadas |
 | Q25 | 2026-10-30 | Senha com hash ou criptografia? | **Hash BCrypt**. Criptografia foi considerada e descartada: é reversível, e se a chave vazar todas as senhas aparecem |
 
 ## 6. Perguntas em aberto
 
 | # | Pergunta | Sugestão | Trava |
 |---|---|---|---|
-| Q2 | Guardar data de encerramento do contrato? Data de término prevista? | Guardar `data_encerramento` | contratos |
-| Q4 | Validar dígito verificador do CPF? | Sim, no domínio | inquilinos |
-| Q17 | Formas de pagamento aceitas? | `PIX`, `DINHEIRO`, `TRANSFERENCIA`, `BOLETO` (enum) | pagamentos |
-| Q18 | Onde guardar o anexo do contrato (disco local, S3/MinIO)? Tamanho máximo? | Disco local em dev, atrás de porta | contratos |
-| Q21 | Pagamento acima do saldo devedor: rejeitar ou aceitar como crédito? | Rejeitar | pagamentos |
-| Q22 | Controle de concorrência de pagamentos: versão otimista no banco ou lock no Redis? | Versão otimista (`faturas.versao`); Redis só para lock da rotina se houver mais de uma instância | pagamentos |
-| Q23 | Frontend Next.js fica neste repositório ou num separado? | Repositório separado | frontend |
-| Q24 | Fatura parcialmente paga precisa de status próprio (ex.: `PARCIAL`) ou basta mostrar o saldo? | Basta o saldo | pagamentos |
-| Q8 | Telefone também criptografado? Retenção de dados? | Só CPF por enquanto | inquilinos |
-| Q11 | Reajuste anual do contrato? | Fora do escopo agora | — |
+| Q28 | Com pagamentos fora do escopo, como uma fatura vira `PAGA` (o painel mostra "Pago")? | Ação simples **"marcar fatura como paga"** (baixa integral, com data), usando o `Fatura.pagar` que já existe, dentro do módulo de faturas | faturas, painel |
+
+### Adiadas (voltam com o módulo de pagamentos)
+
+| # | Pergunta | Sugestão anterior |
+|---|---|---|
+| Q17 | Formas de pagamento aceitas? | `PIX`, `DINHEIRO`, `TRANSFERENCIA`, `BOLETO` |
+| Q21 | Pagamento acima do saldo devedor: rejeitar ou aceitar como crédito? | Rejeitar |
 
 ---
 
@@ -283,7 +295,7 @@ O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consiste
 | `Contrato.contrato_url` | URL fixa expira ou expõe o arquivo | guardar chave do armazenamento; a URL é gerada na leitura |
 | `Historico` | nome genérico | renomear para `Pagamento` (vocabulário do negócio, AGENTS §5) |
 | `Fatura` no desenho | falta `data_vencimento` (aparece só na lista de tabelas) | adicionar no desenho |
-| `Contrato` | falta `data_encerramento` | adicionar se Q2 = sim |
+| `Contrato` | falta `data_encerramento` | adicionar (Q2 = sim) |
 | RNF04 "criptografia de senhas" | senha não se criptografa, se guarda como **hash** (Q25) | "hash de senha BCrypt" |
 | Ausentes no Drive | regras de cobrança decididas: uma fatura por competência, vencimento no último dia em mês curto, emissão automática, rotina diária de atraso, sem multa/juros, pagamento parcial, um contrato ativo por imóvel, CPF criptografado e único por proprietário | incluir ou apontar para este documento |
 
@@ -297,7 +309,7 @@ O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consiste
 4. **Módulo 2 — Proprietário e isolamento** (`/speckit-specify`): cadastro e login do
    proprietário, `usuario_id` e `identificador` em `imoveis` (V2), filtro por dono. Vem antes
    de tudo, porque todo agregado depende do dono.
-5. Módulo 3 — Inquilino + Contrato (D1, Q2, Q4, Q18).
-6. Módulo 4 — Faturas: emissão automática e rotina de atraso (D2).
-7. Módulo 5 — Pagamentos parciais e painel (D5, Q17, Q21, Q22, Q24).
+5. Módulo 3 — Inquilino + Contrato (D1).
+6. Módulo 4 — Faturas e painel: emissão automática, rotina de atraso e painel mensal (D2, Q28).
+7. ⏸ Módulo 5 — Pagamentos parciais (**fora do escopo atual**; D5, Q17, Q21).
 8. Atualizar AGENTS.md §6–§7 (D4, D6) quando o módulo 2 for especificado.
