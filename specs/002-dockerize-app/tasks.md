@@ -170,27 +170,27 @@ healthcheck de container que funciona sem `curl`/`wget`.
 
 ### Tests for User Story 2 — saúde do container (escrever ANTES do HEALTHCHECK) ⚠️
 
-- [ ] T013 [US2] Em `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java`, adicionar:
+- [X] T013 [US2] Em `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java`, adicionar:
   - `deveFicarSaudavelEmProducaoComPostgresSemRedis`: `containerProducao` com `Wait.forHealthcheck()` e timeout de 2 min. Afirma `estadoDeSaude(c)` igual a `"healthy"` e `GET /actuator/health` com 200 e corpo **exatamente** `{"status":"UP"}`.
   - `deveFicarNaoSaudavelQuandoPostgresFicaInacessivel`: o container de produção encurta o intervalo **só neste teste**, com `withCreateContainerCmdModifier(cmd -> cmd.withHealthcheck(new HealthCheck().withInterval(2_000_000_000L).withRetries(3)))`, sem definir `Test`, para herdar o comando da imagem (contrato H5).
     - Se o daemon não herdar o comando, defina `Test` com o **mesmo** array lido de `docker image inspect` (`Config.Healthcheck.Test`) e registre isso no relatório.
     - Espera `healthy`, chama `postgres.stop()` e espera até 60s, por polling de `estadoDeSaude`, até ficar `"unhealthy"`.
     - Afirma `"unhealthy"` e `GET /actuator/health` com status 503.
-- [ ] T014 [US2] Rodar `./mvnw test -Dtest=ImagemContainerTest` e **ver os dois cenários novos falharem pelo motivo certo**: sem `HEALTHCHECK`, `estadoDeSaude` é `null` e o `Wait.forHealthcheck()` estoura. Os cinco da US1 continuam verdes. Registrar no relatório. Os dois testes ficam read-only.
+- [X] T014 [US2] Rodar `./mvnw test -Dtest=ImagemContainerTest` e **ver os dois cenários novos falharem pelo motivo certo**: sem `HEALTHCHECK`, `estadoDeSaude` é `null` e o `Wait.forHealthcheck()` estoura. Os cinco da US1 continuam verdes. Registrar no relatório. Os dois testes ficam read-only.
 
 ### Implementation for User Story 2 — saúde do container
 
-- [ ] T015 [P] [US2] Criar `docker/VerificarSaude.java`: classe `final` no pacote padrão, só com `java.base` (research R4).
+- [X] T015 [P] [US2] Criar `docker/VerificarSaude.java`: classe `final` no pacote padrão, só com `java.base` (research R4).
   - `main` usa a URL fixa `http://localhost:8080/actuator/health`. A porta é a do `EXPOSE` e do data-model; sem leitura de `SERVER_PORT` (YAGNI, research R4).
   - Abre um `HttpURLConnection` `GET` com `setConnectTimeout(2000)` e `setReadTimeout(2000)`.
   - Chama `System.exit(0)` se o status for 200 e `System.exit(1)` em qualquer outro status ou exceção (`catch (Exception e)`).
   - Sem saída obrigatória; nomes e comentário em português; imports explícitos.
-- [ ] T016 [US2] No `Dockerfile`:
+- [X] T016 [US2] No `Dockerfile`:
   - **Estágio `build`**: depois do `extract`, `COPY docker/VerificarSaude.java docker/` e `RUN javac --release 25 -d verificacao docker/VerificarSaude.java`.
   - **Estágio final**, antes dos `ARG`/`LABEL`:
     - `COPY --from=build /build/verificacao/ /app/verificacao/`;
     - `HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=3 CMD ["java", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xmx16m", "-cp", "/app/verificacao", "VerificarSaude"]`, em forma exec, sem shell (contrato H1/H2).
-- [ ] T017 [US2] Rodar `./mvnw test -Dtest=ImagemContainerTest` e `./mvnw test -Dtest=SaudeAplicacaoTest` até tudo ficar verde, sem tocar em teste. Conferir quickstart V2: `docker image inspect … --format '{{json .Config.Healthcheck}}'` mostra os parâmetros de H2, e `Config.User` é `65532`.
+- [X] T017 [US2] Rodar `./mvnw test -Dtest=ImagemContainerTest` e `./mvnw test -Dtest=SaudeAplicacaoTest` até tudo ficar verde, sem tocar em teste. Conferir quickstart V2: `docker image inspect … --format '{{json .Config.Healthcheck}}'` mostra os parâmetros de H2, e `Config.User` é `65532`.
 
 **Checkpoint**: saúde correta no endpoint e no container; Redis ignorado; banco considerado.
 

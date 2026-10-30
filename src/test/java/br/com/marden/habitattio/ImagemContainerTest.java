@@ -26,6 +26,7 @@ import com.github.dockerjava.api.command.HealthState;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.command.InspectImageResponse;
 import com.github.dockerjava.api.command.TopContainerResponse;
+import com.github.dockerjava.api.model.HealthCheck;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.Container.ExecResult;
@@ -219,6 +220,46 @@ class ImagemContainerTest {
 
 		assertEquals("teste", labels.get("org.opencontainers.image.version"));
 		assertEquals("teste", labels.get("org.opencontainers.image.revision"));
+	}
+
+	@Test
+	void deveFicarSaudavelEmProducaoComPostgresSemRedis() throws IOException, InterruptedException {
+		try (PostgreSQLContainer postgres = novoPostgres()) {
+			postgres.start();
+			try (GenericContainer<?> aplicacao = containerProducao(postgres)
+					.waitingFor(Wait.forHealthcheck().withStartupTimeout(Duration.ofMinutes(2)))) {
+
+				aplicacao.start();
+
+				assertEquals("healthy", estadoDeSaude(aplicacao));
+				Resposta resposta = get(aplicacao, "/actuator/health");
+				assertEquals(200, resposta.status());
+				assertEquals("{\"status\":\"UP\"}", resposta.corpo());
+			}
+		}
+	}
+
+	@Test
+	void deveFicarNaoSaudavelQuandoPostgresFicaInacessivel() throws IOException, InterruptedException {
+		PostgreSQLContainer postgres = novoPostgres();
+		postgres.start();
+		// Intervalo curto só neste container; sem Test, o comando continua o da imagem (contrato H5).
+		try (GenericContainer<?> aplicacao = containerProducao(postgres)
+				.withCreateContainerCmdModifier(comando -> comando.withHealthcheck(new HealthCheck()
+						.withInterval(Duration.ofSeconds(2).toNanos())
+						.withRetries(3)))
+				.waitingFor(Wait.forHealthcheck().withStartupTimeout(Duration.ofMinutes(2)))) {
+			aplicacao.start();
+
+			postgres.stop();
+			long limite = System.nanoTime() + Duration.ofSeconds(60).toNanos();
+			while (!"unhealthy".equals(estadoDeSaude(aplicacao)) && System.nanoTime() < limite) {
+				Thread.sleep(1000);
+			}
+
+			assertEquals("unhealthy", estadoDeSaude(aplicacao));
+			assertEquals(503, get(aplicacao, "/actuator/health").status());
+		}
 	}
 
 	@Test

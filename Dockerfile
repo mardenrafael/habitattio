@@ -17,6 +17,10 @@ COPY src src
 RUN ./mvnw -B -q -o package -DskipTests
 RUN java -Djarmode=tools -jar target/*.jar extract --layers --launcher --destination extracted
 
+# Verificador de saúde: a imagem final não tem curl/wget nem shell (research R4).
+COPY docker/VerificarSaude.java docker/
+RUN javac --release 25 -d verificacao docker/VerificarSaude.java
+
 # Imagem final: só o JRE, usuário nonroot (uid 65532), sem shell.
 FROM ${BASE_RUNTIME}
 WORKDIR /app
@@ -24,7 +28,11 @@ COPY --from=build /build/extracted/dependencies/ ./
 COPY --from=build /build/extracted/spring-boot-loader/ ./
 COPY --from=build /build/extracted/snapshot-dependencies/ ./
 COPY --from=build /build/extracted/application/ ./
+COPY --from=build /build/verificacao/ /app/verificacao/
 EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=3 \
+    CMD ["java", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xmx16m", "-cp", "/app/verificacao", "VerificarSaude"]
 
 ARG VERSION=dev
 ARG REVISION=dev
