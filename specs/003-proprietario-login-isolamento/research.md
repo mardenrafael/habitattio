@@ -188,8 +188,8 @@ abaixo foram conferidas com `javap` nos jars 7.1.2 do Maven Central.
   reais sobre os fakes). Autenticação nos testes de web com `spring-security-test`
   (`authentication(...)` com um `ProprietarioAutenticado`, `csrf()`). Nada de `@MockitoBean`
   (AGENTS §9).
-- O fake privado de `CadastrarImovelUseCaseTest` (existente) **não** é substituído — ver a
-  pendência P1 no plan.
+- O fake privado de `CadastrarImovelUseCaseTest` (existente) **não** é substituído: ganha só os
+  métodos novos da porta, por decisão do dono (P1, opção A).
 - **Isolamento ponta a ponta** (SC-002) e fluxo de sessão: `@SpringBootTest` + MockMvc no profile
   `prod` com Testcontainers, com login real de dois proprietários.
 

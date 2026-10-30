@@ -36,6 +36,7 @@ concretos (sessão ou token, formato das rotas, nomes de colunas) ficam para o `
 - Q: Quem pode criar conta de proprietário? → A: Qualquer pessoa, sem convite nem aprovação (auto-cadastro aberto). Não há papel de administrador.
 - Q: Quais operações sobre imóvel, além do cadastro, este módulo entrega para provar o isolamento? → A: Consultar um imóvel pelo id e inativar um imóvel. Edição (RF-09) e listagem (RF-10) ficam fora.
 - Q: A unicidade do identificador por proprietário ignora maiúsculas/minúsculas ("Apto 101" = "APTO 101")? → A: Sim; ignora maiúsculas/minúsculas e espaços nas pontas, mas não acentos. O identificador é exibido como foi digitado, sem os espaços das pontas.
+- Q (do plan, P1): O fake privado de `CadastrarImovelUseCaseTest` pode implementar os métodos novos da porta de imóveis, o que vai além de "só dados"? → A: Sim (opção A, 2026-10-30). O fake ganha os métodos novos da porta; asserções e nomes de teste continuam intocados. Mantém uma porta por agregado.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -362,8 +363,9 @@ modo rápido, que esta spec não muda.
 Pela regra do AGENTS §3 (teste existente é read-only), a adaptação desses testes exige
 **decisão explícita do dono** — **dada em 2026-10-30** (ver Clarifications), com este limite:
 a adaptação MUST se restringir a acrescentar dono e identificador nos dados de preparação
-(construção do imóvel ou linha gravada); nenhuma asserção, nome de teste ou cenário provado
-MUST mudar. Qualquer outra alteração nesses quatro testes exige nova decisão do dono.
+(construção do imóvel ou linha gravada) e, por decisão posterior do dono (P1 do plan), a
+implementar no fake privado de `CadastrarImovelUseCaseTest` os métodos novos da porta de
+imóveis; nenhuma asserção, nome de teste ou cenário provado MUST mudar. Qualquer outra alteração nesses quatro testes exige nova decisão do dono.
 
 ### Pontos a confirmar na `/speckit-clarify`
 

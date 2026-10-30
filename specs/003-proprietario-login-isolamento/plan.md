@@ -59,13 +59,13 @@ Constitution v1.0.1.
 |---|---|---|---|
 | I. Hexagonal | `domain/` e `application/` sem Spring: hash atrás de `CodificadorSenhaPort`; regra de credencial no `AutenticarProprietarioUseCase`, Spring só no adapter `ProprietarioAuthenticationProvider`; exceções em `domain/exception`; entity e `*Request/*Response` não cruzam fronteira; principal (`ProprietarioAutenticado`) fica em `adapters/inbound/security` e o controller passa só o `Long usuarioId` ao command | ✅ | ✅ |
 | I. Instanciável sem Spring | casos de uso, adapters de persistência, `BCryptCodificadorSenhaAdapter`, `ProprietarioAuthenticationProvider` e controllers recebem tudo por construtor | ✅ | ✅ |
-| II. TDD | ordem de dentro para fora; testes antes; testes existentes adaptados **só** dentro do limite de Clarifications Q2 — ver **P1** | ✅ | ⚠️ P1 |
+| II. TDD | ordem de dentro para fora; testes antes; testes existentes adaptados **só** dentro do limite de Clarifications Q2, ampliado pela decisão P1 | ✅ | ✅ (P1 decidida) |
 | III. SDD | spec clarificada; plan registra decisões técnicas; mudança de escopo volta para a spec | ✅ | ✅ |
 | IV. YAGNI / dependências | uma dependência nova (Spring Security), acordada (Q19); sem JWT, sem Spring Session, sem Lombok/MapStruct/Mockito; portas só para casos de uso reais; mapeamento manual | ✅ | ✅ |
 | V. Convenções | domínio e mensagens em português; sufixos técnicos em inglês; `BigDecimal` intocado; invariantes no construtor com `IllegalArgumentException`; records para commands/DTOs | ✅ | ✅ |
 | Stack | Spring Security entra na lista de stack da constitution e no AGENTS §9 (emenda PATCH 1.0.2, como Flyway em 1.0.1) | ✅ planejado | ✅ planejado |
 
-### P1 — pendência que bloqueia a implementação (não o plan)
+### P1 — ✅ decidida em 2026-10-30: opção A (registrada nas Clarifications da spec)
 
 `CadastrarImovelUseCaseTest` tem um fake **privado** (`ImovelRepositoryFake implements
 ImovelRepositoryPort`). O desenho acrescenta dois métodos à porta (`existeIdentificador`,
@@ -79,8 +79,8 @@ dois métodos. Acrescentar métodos ao fake vai além do limite autorizado em Cl
   buscas), para não tocar o fake. Cria porta extra só para preservar um teste — contra o espírito
   de YAGNI e de "cada agregado por sua própria porta".
 
-Até a decisão, `/speckit-tasks` pode ser gerado com a opção A marcada como dependente de
-confirmação; nenhuma tarefa de implementação começa antes.
+**Decisão do dono: opção A.** O fake privado ganha `existeIdentificador` e
+`buscarDoProprietario`; asserções e nomes de teste ficam intocados.
 
 Os outros três testes existentes cabem no limite autorizado:
 `ImovelTest` (só argumentos de construtor), `ImovelRepositoryAdapterTest` (argumentos; dono é
@@ -210,7 +210,7 @@ em `adapters/config`, como o AGENTS §2 prevê quando `BeanConfiguration` cresce
 
 ## Ordem de implementação (de dentro para fora, TDD)
 
-1. **Pré-condição**: P1 decidida.
+1. **Pré-condição**: P1 decidida (opção A) — ✅.
 2. `pom.xml`: dependências de segurança (o contexto precisa subir com elas antes de tudo; os
    testes de contexto existentes devem continuar verdes, já que nenhuma rota de imóvel está
    coberta por eles).
@@ -244,5 +244,5 @@ em `adapters/config`, como o AGENTS §2 prevê quando `BeanConfiguration` cresce
 
 ## Complexity Tracking
 
-Nenhuma violação da constitution a justificar. A única tensão (P1) é de processo, não de
-desenho, e está registrada acima para decisão do dono.
+Nenhuma violação da constitution a justificar. A única tensão (P1) era de processo, não de
+desenho, e foi decidida pelo dono (opção A).
