@@ -30,6 +30,28 @@ enunciado do problema:
 - **Healthcheck:** aprovado, com acordo explícito para adicionar o Actuator ao `pom.xml`
   (constitution §IV / AGENTS.md §9).
 
+Respostas à segunda rodada de perguntas (2026-10-30):
+
+1. **Critérios obrigatórios de boas práticas:**
+   - build multi-stage, com só o JRE 25 na imagem final;
+   - usuário não-root;
+   - jar extraído em camadas, mais `.dockerignore`;
+   - imagem base fixada por digest;
+   - scan de vulnerabilidades da imagem.
+2. **Entrega na VPS:** build local, push manual para um registry e pull na VPS. Sem CI neste
+   escopo.
+3. **Testes no build da imagem:** o `docker build` não roda testes; a suíte completa roda antes,
+   no host.
+4. **Uso em desenvolvimento:** a mesma imagem serve aos dois modos. Sem profile, sobe no modo
+   rápido (H2). Produção é ativada pelo profile `prod` via variável de ambiente.
+5. **Redis:** o healthcheck ignora Redis (só o indicador de saúde do Redis é desligado); o
+   starter permanece no projeto.
+6. **Actuator:** expõe só `/actuator/health`, sem detalhes por componente.
+7. **Segredos:** por variáveis de ambiente (ex.: `.env` do compose, fora do git), o mesmo modelo
+   que o profile `prod` já usa.
+8. **Aceite em TDD:** teste automatizado que constrói a imagem a partir do Dockerfile e verifica
+   a subida e o healthcheck (Testcontainers).
+
 ## Affected Users & Stakeholders
 
 - **Users**:
@@ -67,7 +89,10 @@ enunciado do problema:
 - Backup, restauração e operação do banco de produção.
 - Mudança no modo rápido (H2) ou no comportamento atual do `./mvnw spring-boot:run`.
 - Imagem nativa (GraalVM/AOT) e buildpacks.
-- CI/CD e registry de imagens, a menos que o dono os inclua (ver Open Questions).
+- CI/CD: o push para o registry é manual (decisão 2).
+- Testes dentro do `docker build` (decisão 3).
+- Endpoints do Actuator além de `health` (decisão 6).
+- Docker secrets em arquivo (decisão 7).
 
 ## Success Metrics
 
@@ -78,10 +103,15 @@ enunciado do problema:
 - O healthcheck reporta "saudável" com o PostgreSQL acessível e "não saudável" quando ele não
   está. (baseline: não há endpoint de saúde)
 - O container não roda como root. (baseline: não se aplica, não há container)
-- Quando só o código mudou, reconstruir a imagem não baixa de novo as dependências Maven.
-  (baseline: não se aplica) — *a medir no plano, critério depende das respostas abaixo*
-- Desenvolvimento: um ambiente novo consegue rodar a aplicação sem instalar JDK 25.
-  (baseline: exige JDK 25) — *qualitativo; depende de como a imagem será usada em dev*
+- Quando só o código mudou, reconstruir a imagem não baixa de novo as dependências Maven e reusa
+  a camada de dependências. (baseline: não se aplica)
+- O scan de vulnerabilidades da imagem final não acusa achados críticos sem triagem.
+  (baseline: não se aplica; o limiar exato fica para o plano)
+- O healthcheck continua "saudável" sem Redis acessível. (baseline: não se aplica)
+- Desenvolvimento: sem profile, a imagem sobe no modo rápido (H2) sem JDK 25 no host.
+  (baseline: exige JDK 25)
+- Um teste automatizado constrói a imagem do Dockerfile e prova a subida e o healthcheck.
+  (baseline: não existe)
 
 ## Cost of Inaction
 
@@ -94,35 +124,10 @@ Context").
 
 ## Open Questions
 
-Perguntas da etapa anterior que continuam abertas, refeitas para resposta do dono:
+As oito perguntas da etapa anterior foram respondidas pelo dono (ver "Decisões já
+registradas"). Restam detalhes menores, que podem ser resolvidos no shape ou no plano:
 
-1. [NEEDS CLARIFICATION: **Critérios de "melhores práticas"**: quais são aceite obrigatório?
-   Candidatos:
-   - build multi-stage (JDK no build, só JRE na execução);
-   - usuário não-root;
-   - imagem base mínima (JRE slim ou distroless);
-   - jar extraído em camadas para cache;
-   - imagem base fixada por digest;
-   - `.dockerignore`;
-   - flags de JVM para limites de memória do container;
-   - scan de vulnerabilidades.]
-2. [NEEDS CLARIFICATION: **Como a imagem chega à VPS**: build direto na VPS a partir do
-   repositório, ou push para um registry (ex.: GHCR) com pull na VPS? CI fica dentro ou fora
-   do escopo?]
-3. [NEEDS CLARIFICATION: **Testes durante o build**: os testes de integração exigem Docker e não
-   rodam dentro do `docker build`. O build da imagem pula todos os testes (que rodariam antes,
-   no host ou em CI), ou roda só os de domínio e aplicação?]
-4. [NEEDS CLARIFICATION: **"Facilitar o desenvolvimento"**: a mesma imagem deve rodar em dev no
-   modo rápido (H2, sem profile), ou dev continua com `./mvnw` e a imagem é só para produção?]
-5. [NEEDS CLARIFICATION: **Redis**: o starter está no `pom.xml` mas não é usado em `src/main`. Com
-   Actuator, o health indicator de Redis provavelmente marca a aplicação como "não saudável" se
-   não houver Redis acessível (ASSUMPTION, não verificado). O Redis vai existir na VPS, ou o
-   healthcheck deve ignorá-lo (ou o starter sai do projeto)?]
-6. [NEEDS CLARIFICATION: **Exposição do Actuator**: só `/actuator/health`, sem detalhes para
-   chamadas externas? Ou outros endpoints (info, metrics)?]
-7. [NEEDS CLARIFICATION: **Segredos**: credenciais do banco (e, no futuro, a chave de
-   criptografia do CPF) entram por variáveis de ambiente (ex.: `.env` do compose) ou por
-   arquivos de Docker secrets?]
-8. [NEEDS CLARIFICATION: **TDD para infraestrutura**: o aceite inclui um teste automatizado que
-   constrói a imagem a partir do Dockerfile e verifica subida e healthcheck (ex.: Testcontainers
-   com imagem gerada do Dockerfile), ou basta uma verificação manual documentada?]
+- [NEEDS CLARIFICATION: Qual registry recebe o push manual (GHCR, Docker Hub, outro) e se a
+  imagem é privada?]
+- [NEEDS CLARIFICATION: Ferramenta e limiar do scan de vulnerabilidades (ex.: falhar com achado
+  crítico, ou só reportar)?]
