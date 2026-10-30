@@ -113,15 +113,18 @@ rm .env.sentinela
 **Esperado**: a linha do contexto principal com dezenas a centenas de kB (70 kB no spike), e
 não dezenas de MB (`target/` + `.git`).
 
-## V7 — Bases por digest e labels (C3, C6)
+## V7 — Bases por digest, labels e plataforma (C3, C6, C7)
 
 ```bash
 grep -nE '^(ARG|FROM)' Dockerfile    # toda base com @sha256:
 docker image inspect "$REPO:$TAG" --format '{{json .Config.Labels}}'
+docker image inspect "$REPO:$TAG" --format '{{.Os}}/{{.Architecture}}'
 ```
 
-**Esperado**: `org.opencontainers.image.version=$VERSAO` e
-`org.opencontainers.image.revision=$REVISAO`.
+**Esperado**:
+
+- `org.opencontainers.image.version=$VERSAO` e `org.opencontainers.image.revision=$REVISAO`;
+- `linux/amd64` (FR-008, contrato C7).
 
 ## V8 — Publicação com tag imutável (P1, P2, US3)
 

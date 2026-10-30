@@ -111,6 +111,9 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   - A classe usa só `java.base` (`HttpURLConnection` com timeout de conexão e de leitura de 2s).
     Faz `GET http://localhost:8080/actuator/health` e sai com 0 se o status for 200 e 1 em
     qualquer outro caso, inclusive exceção.
+  - A porta é **fixa em 8080**, como o `EXPOSE` e o data-model. Ler `SERVER_PORT` seria um
+    caminho de código sem teste e sem requisito (YAGNI; `/speckit-analyze` D1). Se a porta
+    um dia for configurável, o verificador e o teste mudam juntos.
   - `HEALTHCHECK` em forma exec, sem shell:
     `CMD ["java", "-XX:TieredStopAtLevel=1", "-XX:+UseSerialGC", "-Xmx16m", "-cp", "/app/verificacao", "VerificarSaude"]`.
   - Parâmetros: `--interval=15s --timeout=5s --start-period=60s --retries=3`.
@@ -148,7 +151,7 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
 
   Estágio final: 4 `COPY --from=build` em ordem de estabilidade (`dependencies`,
   `spring-boot-loader`, `snapshot-dependencies`, `application`) e
-  `ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "org.springframework.boot.loader.launch.JarLauncher"]`.
+  `ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]`.
 - **Verificado no spike** (nos dois builders):
   - O cold build levou 68s no clássico e 59,5s no BuildKit. O `-o package` depois do
     `go-offline` passou, ou seja, o `go-offline` resolve tudo o que o `package -DskipTests`
@@ -164,9 +167,10 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   - O `-o` garante que, depois de mudar só o código, nenhuma dependência é baixada; um
     `go-offline` incompleto falharia o build, em vez de baixar escondido.
   - O `JarLauncher` sobre as pastas extraídas evita reempacotar.
-  - `MaxRAMPercentage=75` substitui o padrão de 25% da JVM em container, que deixaria três
-    quartos do limite de memória da VPS ociosos. Ainda pode ser sobrescrito por
-    `JAVA_TOOL_OPTIONS`.
+  - **Sem flags de JVM no `ENTRYPOINT`**. Um `-XX:MaxRAMPercentage=75` chegou a ser
+    considerado, mas não há requisito nem teste que o justifique (`/speckit-analyze` D1). O
+    ajuste de memória, se a VPS pedir, entra por `JAVA_TOOL_OPTIONS` em runtime (data-model),
+    sem rebuild.
 - **Alternatives considered**:
   - *Copiar o fat jar inteiro*: qualquer mudança de código reenviaria todas as dependências no
     push. Rejeitado por FR-004.
@@ -184,6 +188,9 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   `BuildImageCmd` do docker-java, que usa o diretório do Dockerfile como contexto e aplica o
   `.dockerignore` (conhecimento prévio do docker-java). A verificação prática é o tamanho do
   contexto de build (quickstart V6; ver R8, item 6).
+- **Decisão do dono (2026-10-30)**: o `.dockerignore` fica **fora da regra de TDD**
+  (`/speckit-analyze` D1a). Nenhum teste automatizado observa o contexto de build. A
+  verificação é só manual, por quickstart V6 (task T026), e a exceção é declarada no relatório.
 - **Alternatives considered**: lista de exclusão (`target/`, `.git`, ...). Rejeitada porque
   falha aberta: um arquivo novo sensível entraria sem aviso.
 
@@ -230,8 +237,9 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
 - **Decision**: classe `ImagemContainerTest` na raiz do pacote de testes (como
   `EstruturaBancoProducaoTest`), sem contexto Spring.
   - A imagem é construída **uma vez por classe** com
-    `new ImageFromDockerfile("habitattio:teste", false).withDockerfile(Path.of("Dockerfile"))`.
-    O `false` mantém a imagem e o cache de camadas entre execuções.
+    `new ImageFromDockerfile("habitattio:teste", false).withDockerfile(Path.of("Dockerfile"))`,
+    com `withBuildArg("VERSION", "teste")` e `withBuildArg("REVISION", "teste")` para o cenário
+    dos labels. O `false` mantém a imagem e o cache de camadas entre execuções.
   - Os cenários sobem `GenericContainer` dessa imagem.
   - O PostgreSQL é o `postgres:18.6` de `TestcontainersConfiguration.POSTGRES_IMAGE`, numa
     `Network` compartilhada com alias `postgres`.
@@ -248,10 +256,23 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
      comportamento do `docker run --health-interval`; a confirmar na implementação).
   3. `deveSubirSaudavelNoModoRapidoSemBancoExterno`: sem nenhuma variável, sem rede de banco.
      Espera `healthy`.
-  4. `deveRodarProcessoDaAplicacaoSemSerRoot`: `topContainerCmd`. A coluna UID do processo
-     `java` não pode ser `0`/`root`.
+  4. `deveRodarProcessoDaAplicacaoSemSerRoot`: sobe o próprio container (sem estado
+     compartilhado entre testes) e roda `topContainerCmd`. A coluna UID do processo `java` vale
+     `65532`, e não `0`/`root`.
   5. `deveConterSoORuntimeJava`: `execInContainer("java", "--list-modules")` não lista o
-     `jdk.compiler`. O `copyFileFromContainer` de `/app/pom.xml` e de `/app/src` falha.
+     `jdk.compiler`. O `copyFileFromContainer` de `/app/pom.xml`, `/app/src` e `/app/target`
+     falha.
+
+  Cenários acrescentados nas tasks e no `/speckit-analyze` (I1, D1b, E1):
+  - `deveSubirEmProducaoComPostgresSemRedis`: prova a US1 antes do `HEALTHCHECK`, esperando por
+    log (`Started HabitattioApplication`) e respondendo na porta 8080.
+  - `deveRecusarSubidaEmProducaoQuandoBancoDiverge` e `naoDeveSubirEmProducaoSemVariaveisDeConexao`:
+    esperam `Application run failed` no log, fazem polling até `State.Running=false` e afirmam
+    `ExitCode ≠ 0`. Não dependem de `ContainerLaunchException`, porque o Testcontainers remove
+    o container quando o `start()` falha.
+  - `deveRegistrarVersaoERevisaoNosLabels`: `inspectImageCmd` → labels OCI iguais aos build
+    args do teste. É o que justifica o `LABEL`.
+  - `deveSerConstruidaParaLinuxAmd64`: `inspectImageCmd` → `linux`/`amd64` (FR-008).
   6. O `.dockerignore` **não** tem cenário próprio aqui. Como cada camada só recebe `COPY`
      explícitos, um arquivo fora da lista nunca chegaria à imagem, mesmo sem `.dockerignore`; o
      que ele protege é o **contexto** enviado ao daemon, que o teste não observa. A verificação

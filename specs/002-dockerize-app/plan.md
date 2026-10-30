@@ -98,7 +98,7 @@ research.md:
 | Princípio | Verificação | Pré-design | Pós-design |
 |---|---|---|---|
 | I. Hexagonal | Nenhuma mudança em `domain/`, `application/`, `ports/` ou `adapters/`. O Actuator é configuração (`application.properties`), sem classe nova em `src/main/java`. `VerificarSaude` vive em `docker/`, fora da árvore da aplicação, e não entra no jar. | ✅ | ✅ |
-| II. TDD | Toda mudança de produção (dependência, propriedades, Dockerfile, `.dockerignore`, verificador) é precedida por um teste visto vermelho pelo motivo certo (ver "Ordem TDD"). Testes que passarem de primeira são de **caracterização** e declarados no relatório. Nenhum teste existente é editado. | ✅ | ✅ |
+| II. TDD | Toda mudança de produção (dependência, propriedades, Dockerfile, verificador) é precedida por um teste visto vermelho pelo motivo certo (ver "Ordem TDD"). **Exceção decidida pelo dono (2026-10-30)**: o `.dockerignore` fica fora da regra, porque nenhum teste observa o contexto de build; ele é verificado manualmente por quickstart V6. Testes que passarem de primeira são de **caracterização** e declarados no relatório. Nenhum teste existente é editado. | ✅ | ✅ (corrigido após `/speckit-analyze` D1) |
 | III. SDD | Feito: assessment → specify. Este plan; tasks e analyze vêm a seguir. | ✅ | ✅ |
 | IV. YAGNI / acordo | Dependência nova (Actuator) com **acordo explícito** (decision.md, In scope). Sem script de publicação, sem compose, sem grupo de saúde customizado e sem porta de management separada (R7, R10). | ✅ (com acordo) | ✅ |
 | V. Convenções | Nomes de teste e da classe auxiliar em português (`VerificarSaude`, `deveFicarNaoSaudavel…`). Imports explícitos. Sem Lombok. | ✅ | ✅ |
@@ -124,18 +124,27 @@ fora (empacotamento).
      derruba o status. Se derrubar, o teste fica vermelho e justifica
      `management.health.redis.enabled=false`. Se não derrubar, é caracterização, e a
      propriedade ainda é exigida pelo modo produção (cenário 1 da imagem).
-2. **Imagem**: escrever `ImagemContainerTest` com os cenários de R8 antes de existir o
-   Dockerfile. Fica **vermelho** em todos, porque o build falha sem Dockerfile; é uma falha de
-   build aceita como "motivo certo", porque é exatamente a ausência da receita.
-3. **Receita sem healthcheck**: criar `Dockerfile` (multi-stage, bases por digest, camadas,
-   distroless `nonroot`) e `.dockerignore`. Ficam **verdes** `deveRodarProcessoDaAplicacaoSemSerRoot`
-   e `deveConterSoORuntimeJava`. Os três cenários que esperam o estado de saúde do Docker
-   continuam **vermelhos**: sem `HEALTHCHECK`, `State.Health` é nulo e a espera estoura. Isso
-   justifica o passo 4.
-4. **Healthcheck**: criar `docker/VerificarSaude.java`, compilá-lo no estágio de build e
-   declarar o `HEALTHCHECK`. Ficam **verdes** os cenários saudável no modo produção, saudável no
-   modo rápido e não saudável sem PostgreSQL.
-5. **Refactor**: `ARG` dos digests no topo e labels OCI no fim (R10, R11), com a suíte verde.
+2. **Imagem, cenários da receita**: escrever em `ImagemContainerTest`, antes de existir o
+   Dockerfile, os sete cenários da US1 (R8):
+   - subida em produção por log;
+   - recusa de banco divergente;
+   - não subir sem variáveis de conexão;
+   - não-root;
+   - só-runtime;
+   - labels;
+   - `linux/amd64`.
+
+   Ficam **vermelhos** porque o build falha sem Dockerfile; é uma falha de build aceita como
+   "motivo certo", porque é exatamente a ausência da receita.
+3. **Receita sem healthcheck**: criar `Dockerfile` (multi-stage, `ARG` dos digests no topo,
+   camadas, distroless `nonroot`, labels OCI no fim, `ENTRYPOINT` sem flags de JVM) e
+   `.dockerignore` (exceção de TDD). Os sete ficam **verdes**. `deveRegistrarVersaoERevisaoNosLabels`
+   é o que justifica o `LABEL`; não-root, recusa, sem variáveis e amd64 são caracterização.
+4. **Imagem, cenários de saúde**: escrever saudável em produção e não saudável sem PostgreSQL.
+   Ficam **vermelhos**: sem `HEALTHCHECK`, `State.Health` é nulo e a espera estoura.
+5. **Healthcheck**: criar `docker/VerificarSaude.java` (URL fixa na porta 8080), compilá-lo no
+   estágio de build e declarar o `HEALTHCHECK`. Os cenários de saúde ficam **verdes**. Depois,
+   o cenário do modo rápido saudável é escrito como caracterização (US4).
 6. **Suíte completa**: `./mvnw test` com Docker; tudo verde, sem nenhum teste existente
    alterado.
 7. **Documentação e governança**:

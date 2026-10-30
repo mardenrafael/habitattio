@@ -11,21 +11,24 @@ item tem o identificador do teste ou da verificação que o garante.
 | C2 | O Dockerfile só usa instruções comuns ao BuildKit e ao builder clássico. O operador constrói com BuildKit e o teste no clássico | quickstart V1 (os dois builds); `ImagemContainerTest` (clássico) |
 | C3 | As bases são fixadas por digest (`@sha256:`) | revisão do Dockerfile; quickstart V7 |
 | C4 | Depois de mudar só `src/`, o rebuild reaproveita o passo de dependências e as 3 primeiras camadas da aplicação | quickstart V5 |
-| C5 | O contexto de build só contém `mvnw`, `pom.xml`, `.mvn/`, `src/` e `docker/` | quickstart V6 (`.dockerignore` em lista de permissão) |
-| C6 | `--build-arg VERSION=… --build-arg REVISION=…` viram os labels OCI `version` e `revision` | quickstart V7 |
+| C5 | O contexto de build só contém `mvnw`, `pom.xml`, `.mvn/`, `src/` e `docker/` | quickstart V6 (`.dockerignore` em lista de permissão; **exceção de TDD** decidida pelo dono, só verificação manual) |
+| C6 | `--build-arg VERSION=… --build-arg REVISION=…` viram os labels OCI `version` e `revision` | `deveRegistrarVersaoERevisaoNosLabels`; quickstart V7 |
+| C7 | A imagem é `linux/amd64` | `deveSerConstruidaParaLinuxAmd64`; quickstart V7 |
 
 ## Execução
 
 | ID | Garantia | Verificado por |
 |---|---|---|
 | E1 | Sem `SPRING_PROFILES_ACTIVE`: modo rápido (H2 em memória), sem banco externo | `deveSubirSaudavelNoModoRapidoSemBancoExterno` |
-| E2 | `SPRING_PROFILES_ACTIVE=prod` + `SPRING_DATASOURCE_URL/USERNAME/PASSWORD`: PostgreSQL, Flyway, `ddl-auto=validate` | `deveFicarSaudavelEmProducaoComPostgresSemRedis` |
+| E2 | `SPRING_PROFILES_ACTIVE=prod` + `SPRING_DATASOURCE_URL/USERNAME/PASSWORD`: PostgreSQL, Flyway, `ddl-auto=validate` | `deveSubirEmProducaoComPostgresSemRedis`; `deveFicarSaudavelEmProducaoComPostgresSemRedis` |
 | E3 | Redis ausente não impede subida nem saúde | os dois cenários acima, sem Redis |
 | E4 | O processo roda como uid 65532, não root | `deveRodarProcessoDaAplicacaoSemSerRoot` |
-| E5 | A imagem final não tem `jdk.compiler`, `src/` nem `pom.xml` | `deveConterSoORuntimeJava` |
+| E5 | A imagem final não tem `jdk.compiler`, `src/`, `pom.xml` nem `target/` | `deveConterSoORuntimeJava` |
 | E6 | A porta é a 8080 | todos os cenários (mapeamento da porta) |
 | E7 | Nenhum segredo embutido; configuração só por ambiente | revisão do Dockerfile (sem `ENV` de credencial) |
 | E8 | Nenhuma proteção contra subir sem `prod` (risco aceito) | — (FR-012; documentado em `docs/container.md`) |
+| E9 | Em `prod`, com banco divergente (schema não vazio sem histórico Flyway), a aplicação recusa subir: o container para com código ≠ 0 | `deveRecusarSubidaEmProducaoQuandoBancoDiverge` |
+| E10 | Em `prod`, sem `SPRING_DATASOURCE_*`, a aplicação não sobe e não cai para o H2: o container para com código ≠ 0 e sem `Started` no log | `naoDeveSubirEmProducaoSemVariaveisDeConexao` |
 
 ## Saúde do container
 
