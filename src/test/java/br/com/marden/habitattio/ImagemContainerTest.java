@@ -263,6 +263,20 @@ class ImagemContainerTest {
 	}
 
 	@Test
+	void deveSubirSaudavelNoModoRapidoSemBancoExterno() throws IOException, InterruptedException {
+		try (GenericContainer<?> aplicacao = containerRapido()
+				.waitingFor(Wait.forHealthcheck().withStartupTimeout(Duration.ofMinutes(2)))) {
+
+			aplicacao.start();
+
+			assertEquals("healthy", estadoDeSaude(aplicacao));
+			assertEquals(200, get(aplicacao, "/actuator/health").status());
+			assertTrue(aplicacao.getLogs().contains("No active profile set"),
+					"sem variável de profile, a imagem deveria subir no modo rápido");
+		}
+	}
+
+	@Test
 	void deveSerConstruidaParaLinuxAmd64() {
 		InspectImageResponse imagem = inspecionarImagem();
 

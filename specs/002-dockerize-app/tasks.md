@@ -202,13 +202,13 @@ healthcheck de container que funciona sem `curl`/`wget`.
 
 **Independent Test**: `./mvnw test` com Docker; mutação controlada no Dockerfile.
 
-- [ ] T018 [US6] **Verificação por mutação** (US6 cenário 4, SC-008):
+- [X] T018 [US6] **Verificação por mutação** (US6 cenário 4, SC-008):
   1. Trocar temporariamente no `Dockerfile` o `COPY --from=build /build/extracted/application/ ./` por um caminho inexistente (`/build/extracted/aplicacao/`).
   2. Rodar `./mvnw test -Dtest=ImagemContainerTest` e confirmar que **falha** (build da imagem).
   3. Restaurar o `Dockerfile` (`git diff Dockerfile` vazio em relação ao estado de T016) e rodar de novo até ficar verde.
 
   Registrar os dois resultados no relatório. Não commitar a mutação.
-- [ ] T019 [US6] Confirmar que `ImagemContainerTest` e `SaudeAplicacaoTest` rodam dentro de `./mvnw test`, sem exclusão no Surefire e sem `@Disabled` ou assume condicional (FR-022). Medir e registrar o tempo da classe `ImagemContainerTest`, frio (após `docker rmi habitattio:teste`) e com cache. Se passar de cerca de 5 min com cache, **não** separe nem pule: reporte ao dono (research R8).
+- [X] T019 [US6] Confirmar que `ImagemContainerTest` e `SaudeAplicacaoTest` rodam dentro de `./mvnw test`, sem exclusão no Surefire e sem `@Disabled` ou assume condicional (FR-022). Medir e registrar o tempo da classe `ImagemContainerTest`, frio (após `docker rmi habitattio:teste`) e com cache. Se passar de cerca de 5 min com cache, **não** separe nem pule: reporte ao dono (research R8).
 
 **Checkpoint**: a receita é provada automaticamente a cada `./mvnw test`.
 
@@ -222,7 +222,7 @@ conferência de digest.
 **Independent Test**: quickstart V8–V10 (feito pelo dono, porque depende do Docker Hub e da
 VPS).
 
-- [ ] T020 [US3] Criar `docs/container.md` (guia de operação, FR-024) com a seção **"Publicação no Docker Hub"** (research R10, R3). Conteúdo:
+- [X] T020 [US3] Criar `docs/container.md` (guia de operação, FR-024) com a seção **"Publicação no Docker Hub"** (research R10, R3). Conteúdo:
   - repositório `docker.io/<usuario-dockerhub>/habitattio` **privado**;
   - tag `<versão do pom>-<sha curto>`, só com `git status --porcelain` vazio, e **nunca `latest`**;
   - build com `--build-arg VERSION=… --build-arg REVISION=…`;
@@ -236,7 +236,7 @@ VPS).
   - riscos sem mitigação prévia: limites do plano do Docker Hub e suporte a tags imutáveis.
 
   Escrever em português, no tom de `docs/persistencia.md`.
-- [ ] T021 [US3] Registrar no relatório que quickstart V8–V10 (push, pull autenticado, digest na VPS) **não foram executados** por depender da conta do Docker Hub e da VPS do dono, e que ficam para a primeira instalação (SC-001, SC-007).
+- [X] T021 [US3] Registrar no relatório que quickstart V8–V10 (push, pull autenticado, digest na VPS) **não foram executados** por depender da conta do Docker Hub e da VPS do dono, e que ficam para a primeira instalação (SC-001, SC-007).
 
 **Checkpoint**: o operador tem o procedimento completo de publicação e conferência.
 
@@ -250,15 +250,15 @@ VPS).
 **Independent Test**: `ImagemContainerTest.deveSubirSaudavelNoModoRapidoSemBancoExterno`;
 quickstart V3.
 
-- [ ] T022 [US4] Em `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java`, adicionar `deveSubirSaudavelNoModoRapidoSemBancoExterno`: `containerRapido()` com `Wait.forHealthcheck()` e timeout de 2 min. Afirma `"healthy"`, `GET /actuator/health` com 200 e o log contendo `No active profile set`. Rodar: passa de primeira, porque FR-010 já é atendido pela configuração base e pelo healthcheck da US2. **Declarar como caracterização** no relatório; nenhum código de produção é escrito por causa dele.
-- [ ] T023 [US4] Em `docs/container.md`, adicionar a seção **"Execução"**:
+- [X] T022 [US4] Em `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java`, adicionar `deveSubirSaudavelNoModoRapidoSemBancoExterno`: `containerRapido()` com `Wait.forHealthcheck()` e timeout de 2 min. Afirma `"healthy"`, `GET /actuator/health` com 200 e o log contendo `No active profile set`. Rodar: passa de primeira, porque FR-010 já é atendido pela configuração base e pelo healthcheck da US2. **Declarar como caracterização** no relatório; nenhum código de produção é escrito por causa dele.
+- [X] T023 [US4] Em `docs/container.md`, adicionar a seção **"Execução"**:
   - os dois modos, com a tabela de variáveis do data-model ("Configuração de execução"): `SPRING_PROFILES_ACTIVE`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` e `JAVA_TOOL_OPTIONS`, com obrigatoriedade por modo;
   - exemplos de `docker run` para o modo rápido e para o produção, em que os segredos vêm de variável ou de `.env` fora do git, nunca do Dockerfile;
   - porta 8080;
   - estados de saúde e tempos: até cerca de 45s para `unhealthy` e `start-period` de 60s;
   - depuração sem shell (`docker logs` e `/actuator/health`);
   - **o risco aceito**: sem `SPRING_PROFILES_ACTIVE=prod` a imagem sobe em H2 com dados voláteis, inclusive na VPS, e nada impede isso (FR-012; decisão do dono de 2026-10-30).
-- [ ] T024 [US4] Confirmar que o fluxo local não mudou (FR-023): `ModoRapidoTest` e `HabitattioApplicationTests` continuam verdes e intactos (`git diff --stat src/test` sem alteração neles), e `./mvnw spring-boot:run` sobe na porta 8080 em H2. Encerrar depois de ver `Started HabitattioApplication`. Rodar também `./mvnw spring-boot:test-run` (`TestHabitattioApplication`, profile `prod` com containers), ver `Started HabitattioApplication` com `The following 1 profile is active: "prod"` e encerrar.
+- [X] T024 [US4] Confirmar que o fluxo local não mudou (FR-023): `ModoRapidoTest` e `HabitattioApplicationTests` continuam verdes e intactos (`git diff --stat src/test` sem alteração neles), e `./mvnw spring-boot:run` sobe na porta 8080 em H2. Encerrar depois de ver `Started HabitattioApplication`. Rodar também `./mvnw spring-boot:test-run` (`TestHabitattioApplication`, profile `prod` com containers), ver `Started HabitattioApplication` com `The following 1 profile is active: "prod"` e encerrar.
 
 **Checkpoint**: desenvolvimento com a mesma imagem, sem JDK, documentado.
 
@@ -271,14 +271,14 @@ quickstart V3.
 **Independent Test**: quickstart V5 e V6 (verificação manual; o teste automatizado não observa
 cache nem contexto, research R8 item 6).
 
-- [ ] T025 [US5] Executar quickstart **V5**:
+- [X] T025 [US5] Executar quickstart **V5**:
   1. Construir com `docker build --progress=plain -t habitattio:local .`.
   2. Fazer uma mudança **real** e temporária em `src/main/java` (por exemplo, um método privado não usado em `HabitattioApplication`) e reconstruir.
   3. Confirmar `CACHED` no `dependency:go-offline` e nas cópias de `dependencies`, `spring-boot-loader` e `snapshot-dependencies`, e zero `Downloading from`.
   4. Desfazer a mudança.
 
   Registrar o tempo do rebuild (SC-005).
-- [ ] T026 [US5] Executar quickstart **V6**:
+- [X] T026 [US5] Executar quickstart **V6**:
   1. `touch .env.sentinela`.
   2. Rodar o build e anotar o tamanho da linha `transferring context` do contexto principal. Deve ser de dezenas a centenas de kB, e não dezenas de MB.
   3. `rm .env.sentinela`.
@@ -291,7 +291,7 @@ cache nem contexto, research R8 item 6).
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T027 Em `docs/container.md`, completar as seções restantes:
+- [X] T027 Em `docs/container.md`, completar as seções restantes:
   - **"Construção"**: `docker build` com BuildKit; o teste usa o builder clássico; sem testes no build, já que a suíte roda antes no host.
   - **"Atualização das imagens base"**, research R11:
     1. `docker pull` das duas tags (`eclipse-temurin:25-jdk` e `gcr.io/distroless/java25-debian13:nonroot`);
@@ -302,15 +302,15 @@ cache nem contexto, research R8 item 6).
   - **"Fora de escopo nesta fatia"**: scan de vulnerabilidades (segunda fatia), compose, CI.
 
   Adicionar um link para `docs/container.md` no `README.md`, seção "Como rodar", com uma subseção curta "Com a imagem de container".
-- [ ] T028 Atualizar `AGENTS.md`:
+- [X] T028 Atualizar `AGENTS.md`:
   - §1, comandos da imagem: `docker build -t habitattio:local .`, os dois `docker run` (rápido e `prod` por variáveis), a nota de que `ImagemContainerTest` constrói a imagem dentro de `./mvnw test` e exige Docker, e um link para `docs/container.md`;
   - §9, Limites: o Actuator passa a integrar o stack, e só o endpoint `health` é exposto.
-- [ ] T029 Emendar `.specify/memory/constitution.md`:
+- [X] T029 Emendar `.specify/memory/constitution.md`:
   - versão **PATCH 1.0.1 → 1.0.2**;
   - a seção "Stack Tecnológico e Restrições" passa a citar o Spring Boot Actuator (só `health`);
   - o "Sync Impact Report" no topo é reescrito, no formato do atual: origem `002-dockerize-app` (T029), sem mudança de princípio, sincronização com o AGENTS.md feita em T028;
   - a linha final passa a `**Version**: 1.0.2 | **Ratified**: 2026-10-29 | **Last Amended**: <data da implementação>`.
-- [ ] T030 Rodar a suíte completa `./mvnw test` com Docker e registrar o resultado. Se o Docker não estiver disponível, dizer explicitamente que os testes de integração (inclusive `ImagemContainerTest`) não rodaram.
+- [X] T030 Rodar a suíte completa `./mvnw test` com Docker e registrar o resultado. Se o Docker não estiver disponível, dizer explicitamente que os testes de integração (inclusive `ImagemContainerTest`) não rodaram.
 - [ ] T031 Executar o quickstart **V1–V4 e V7** contra a imagem construída com BuildKit (`$REPO:$TAG`, a mesma que iria para o push) e registrar cada resultado esperado/obtido. No V7, incluir `docker image inspect "$REPO:$TAG" --format '{{.Os}}/{{.Architecture}}'`, que deve dar `linux/amd64` (FR-008). Isso fecha a lacuna entre o builder do teste e o do operador (research R3).
 - [ ] T032 Checklist de Definition of Done (AGENTS.md §8), registrado no relatório:
   - `git diff --stat main -- src/main/java` vazio, ou seja, `domain/`, `application/`, `ports/` e `adapters/` intocados;

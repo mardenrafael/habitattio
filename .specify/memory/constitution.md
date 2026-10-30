@@ -1,16 +1,17 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 → 1.0.1 (PATCH)
-Rationale: amendment from feature 001-better-db-schema (task T019). Flyway was added to the
-stack with explicit owner agreement (spec FR-014). The "Stack Tecnológico e Restrições" list is
-updated to describe it; no principle, MUST rule or governance procedure changes, so PATCH.
+Version change: 1.0.1 → 1.0.2 (PATCH)
+Rationale: amendment from feature 002-dockerize-app (task T029). Spring Boot Actuator was added
+to the stack with explicit owner agreement (assessment dockerize-app, decision.md), exposing only
+the health endpoint. The "Stack Tecnológico e Restrições" list is updated to describe it; no
+principle, MUST rule or governance procedure changes, so PATCH.
 Modified principles: none
-Modified sections: Stack Tecnológico e Restrições (Flyway added; Testcontainers versions fixed)
+Modified sections: Stack Tecnológico e Restrições (Actuator added; only `health` exposed)
 Added sections: none
 Removed sections: none
 Templates requiring follow-up: none (.specify/templates/* do not reference the stack list)
-Related sync: AGENTS.md §1/§6/§9 updated in T018; stale §4 note ("constitution ainda é o
-template em branco") removed in the same change set.
+Related sync: AGENTS.md §1 (container image commands) and §9 (Actuator in the stack) updated in
+T028; AGENTS.md §4 version reference bumped to v1.0.2 in the same change set.
 Deferred items: none
 -->
 
@@ -116,7 +117,8 @@ negócio do sistema) e mantém o domínio legível para quem conhece o vocabulá
 Java 25, Spring Boot 4.1.2, Spring Web MVC, Spring Data JPA, Spring Data Redis, Bean Validation,
 PostgreSQL (runtime), H2 (dev/test em memória), Flyway (migrações versionadas, só no PostgreSQL:
 profile `prod` com `ddl-auto=validate`; o modo rápido com H2 usa `ddl-auto=update`, sem
-migrações), Testcontainers (PostgreSQL + Redis, versões fixas) para testes de integração.
+migrações), Spring Boot Actuator (só o endpoint `health`, sem detalhes e sem o Redis no cálculo),
+Testcontainers (PostgreSQL + Redis, versões fixas) para testes de integração.
 
 - Sempre use o wrapper `./mvnw`, nunca um `mvn` global.
 - Testes de integração exigem Docker rodando. Na ausência de Docker, execute apenas os testes de
@@ -170,4 +172,4 @@ consistência.
   não-negociáveis; `AGENTS.md` documenta como aplicá-los no dia a dia — os dois MUST permanecer
   consistentes.
 
-**Version**: 1.0.1 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-10-29
+**Version**: 1.0.2 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-10-30
