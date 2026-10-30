@@ -427,3 +427,8 @@ Registro do que mudou em relação ao texto das tasks. Detalhes em research.md R
 - **T025**: o refactor que move o `VerificarSaude` para antes do `COPY src` foi aplicado e
   validado em T030.
 - **T031**: `unhealthy` em 52s, e não 45s. Os textos foram corrigidos para "até cerca de 60s".
+
+## Phase 10: Convergence
+
+- [ ] T033 Adicionar a `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java` um teste novo `deveResponderSoComEstadoGeralQuandoPostgresFicaInacessivel` (sem alterar os existentes, que são read-only): sobe `containerProducao` com `Wait.forHealthcheck()`, para o PostgreSQL e afirma que `GET /actuator/health` responde 503 com corpo **exatamente** `{"status":"DOWN"}` per FR-014 / contracts/saude-http.md (partial)
+- [ ] T034 Documentar em `docs/container.md` (seção "Execução", junto de "A porta é a 8080") que a porta é fixa na imagem: o `VerificarSaude` consulta `localhost:8080`, então mudar `SERVER_PORT` deixa o container `unhealthy`; registrar que porta configurável exigiria mudar o verificador e o teste juntos per spec Assumptions "porta 8080, configurável por ambiente" / research R4 (contradicts)
