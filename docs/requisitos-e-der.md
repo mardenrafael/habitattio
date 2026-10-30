@@ -33,7 +33,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 |---|---|---|---|
 | RF-06 | Cadastrar inquilino com nome (obrigatório) e CPF (11 dígitos); telefone opcional | 🟡 | só domínio |
 | RF-07 | CPF guardado criptografado no banco | ❌ | decisão de 2026-10-29 |
-| RF-08 | ❓ CPF único entre inquilinos? | ❓ | ver Q3 |
+| RF-08 | CPF único entre inquilinos | ❌ | **decidido (Q3)**: `UNIQUE` sobre coluna de hash com chave do CPF |
 | RF-09 | ❓ Validar dígito verificador do CPF? Hoje só conta 11 dígitos | ❓ | ver Q4 |
 
 ### Contrato
@@ -43,20 +43,20 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RF-10 | Criar contrato ligando um imóvel a um inquilino, com valor do aluguel, dia de vencimento (1–31) e data de início | 🟡 | domínio valida **só** o dia de vencimento |
 | RF-11 | Valor do aluguel estritamente positivo | ❌ | AGENTS §7 manda, `Contrato` não valida |
 | RF-12 | Encerrar contrato (desativação lógica) | 🟡 | `encerrar()` não guarda **quando** encerrou |
-| RF-13 | ❓ No máximo um contrato ativo por imóvel? | ❓ | ver Q1 |
+| RF-13 | No máximo um contrato ativo por imóvel | ❌ | **decidido (Q1)**: validação no caso de uso + índice único parcial |
 | RF-14 | Contrato encerrado não gera novas faturas | ❌ | AGENTS §7 |
 
 ### Fatura
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-15 | Emitir a fatura mensal de um contrato ativo, com o valor do aluguel copiado na emissão | 🟡 | `Fatura` existe, não há emissão |
+| RF-15 | Emitir **automaticamente** a fatura mensal de cada contrato ativo, com o valor do aluguel copiado na emissão | 🟡 | **decidido (Q10)**; `Fatura` existe, não há emissão (ver Q12, Q13) |
 | RF-16 | No máximo uma fatura por contrato e competência | ❌ | AGENTS §7; vira `UNIQUE (contrato_id, mes_referencia)` |
 | RF-17 | Vencimento = `diaVencimento` do contrato na competência; em mês mais curto, cai no último dia | ❌ | AGENTS §7; ninguém calcula hoje |
 | RF-18 | Pagar fatura só com o valor integral; pagamento parcial é rejeitado | ✅ | `Fatura.pagar` (regra está no código e nos testes, mas não no AGENTS §7) |
 | RF-19 | Fatura `PAGA` é terminal | ✅ | `FaturaTest` |
-| RF-20 | Fatura pendente com vencimento passado vira `ATRASADA` | 🟡 | `verificarAtraso(ref)` existe; falta quem o chame (ver Q5) |
-| RF-21 | Fatura atrasada pode ser paga pelo valor original | ✅ | `devePermitirPagarFaturaQueEstavaAtrasada` (ver Q6 sobre multa e juros) |
+| RF-20 | Fatura pendente com vencimento passado vira `ATRASADA`, **gravado por rotina diária** | 🟡 | **decidido (Q5)**; `verificarAtraso(ref)` existe, falta a rotina |
+| RF-21 | Fatura atrasada é paga pelo valor original, **sem multa nem juros** | ✅ | **decidido (Q6)**; `devePermitirPagarFaturaQueEstavaAtrasada`. Pagamento a maior já é rejeitado por RF-18 |
 | RF-22 | Consultar faturas por status (pendentes, pagas, atrasadas) | ❌ | objetivo do produto (README) |
 
 ### Usuário
@@ -89,6 +89,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RNF-14 | Senha guardada com hash forte e salt | ❓ não há biblioteca de hash no `pom.xml` (ver Q7) |
 | RNF-15 | Volume baixo (~14 imóveis, ~14 faturas/mês, um cliente): desempenho não pesa nas decisões | ✅ decisão registrada |
 | RNF-16 | ❓ Redis está no stack, mas nada em `src/main` o usa | ❓ ver Q9 |
+| RNF-17 | Rotinas automáticas (emissão mensal, atraso diário) são **adapters de entrada** agendados que chamam casos de uso; idempotentes (rodar duas vezes no mesmo dia não duplica fatura nem muda resultado) | ❌ |
 
 ---
 
@@ -110,7 +111,7 @@ erDiagram
         bigint id PK
         varchar nome "NOT NULL, não em branco"
         bytea cpf_cifrado "NOT NULL, criptografado"
-        char(64) cpf_hash "UNIQUE? (Q3)"
+        char(64) cpf_hash "NOT NULL, UNIQUE"
         varchar telefone "NULL"
     }
     CONTRATOS {
@@ -153,7 +154,7 @@ erDiagram
 
 **Pontos de revisão do DER:**
 
-1. **Contrato ativo por imóvel (Q1).** Se a regra for "no máximo um ativo", o PostgreSQL
+1. **Contrato ativo por imóvel (Q1 — decidido: no máximo um).** O PostgreSQL
    aceita um índice único parcial: `CREATE UNIQUE INDEX uq_contratos_imovel_ativo ON contratos
    (imovel_id) WHERE ativo`. É regra entre linhas, mas simples e barata, e protege contra
    dois aluguéis do mesmo imóvel.
@@ -166,13 +167,14 @@ erDiagram
    dia 1). Hoje `"2026-13"` ou `"abc"` passam.
 5. **Coerência de pagamento no banco.** Um `CHECK` pode garantir que `status = 'PAGA'` ⇔
    `valor_pago` e `data_pagamento` preenchidos. É uma regra simples sobre a própria linha.
-6. **CPF criptografado × unicidade.** Criptografia com IV aleatório gera um texto cifrado
+6. **CPF criptografado × unicidade (Q3 — decidido: único).** Criptografia com IV aleatório gera um texto cifrado
    diferente a cada gravação, e aí `UNIQUE` sobre ele não funciona. Para o CPF ser único e
    buscável, a saída usual é guardar um **hash com chave (HMAC) do CPF** numa coluna à parte,
-   com `UNIQUE`, ao lado do cifrado. Só é necessário se Q3 = sim.
-7. **`status` persistido × derivado (Q5).** Guardar `ATRASADA` exige um job que rode
-   `verificarAtraso` todo dia. Se não houver job, a alternativa é guardar só `PENDENTE`/`PAGA`
-   e calcular "atrasada" na leitura (`PENDENTE` e `data_vencimento < hoje`).
+   com `UNIQUE`, ao lado do cifrado. Como Q3 = sim, a tabela leva `cpf_cifrado` + `cpf_hash UNIQUE`.
+7. **`status` persistido (Q5 — decidido: rotina diária).** `ATRASADA` é gravada por uma
+   rotina diária que chama `verificarAtraso(hoje)` nas faturas `PENDENTE` vencidas. Entre o
+   vencimento e a próxima execução, a fatura ainda aparece `PENDENTE`: atraso de até um dia,
+   aceito pela decisão. `CHECK (status IN ('PENDENTE','PAGA','ATRASADA'))` no banco.
 
 ---
 
@@ -192,29 +194,39 @@ um se corrige em TDD (teste que expõe → falha → correção), não de passag
 
 ---
 
-## 5. Perguntas para o dono do projeto
+## 5. Decisões e perguntas em aberto
+
+### Decididas em 2026-10-30
+
+| # | Pergunta | Decisão |
+|---|---|---|
+| Q1 | Um imóvel pode ter mais de um contrato ativo ao mesmo tempo? | **Não.** No máximo um (RF-13) |
+| Q3 | O CPF é único entre inquilinos? | **Sim** (RF-08) |
+| Q5 | `ATRASADA` é persistida ou calculada? | **Persistida, por rotina diária** (RF-20) |
+| Q6 | Fatura atrasada tem multa e juros? | **Não** (RF-21) |
+| Q10 | A emissão de faturas é manual ou automática? | **Automática** (RF-15) |
+
+### Ainda em aberto
 
 Cada resposta muda regra de cobrança ou estrutura de tabela, e o AGENTS §7 manda perguntar em
 vez de inventar.
 
 | # | Pergunta | Sugestão |
 |---|---|---|
-| Q1 | Um imóvel pode ter **mais de um contrato ativo** ao mesmo tempo? | Não, com índice único parcial |
-| Q2 | O contrato tem **data de término** prevista? Guardamos a **data de encerramento**? | Guardar `data_encerramento` ao encerrar |
-| Q3 | O **CPF é único** entre inquilinos? | Sim, via coluna de hash com chave |
-| Q4 | Validar o **dígito verificador** do CPF? | Sim, no domínio |
-| Q5 | `ATRASADA` é **persistida** (com job diário) ou **calculada** na consulta? | Calculada (menos peças móveis) |
-| Q6 | Fatura atrasada tem **multa e juros**? Pagamento **a maior** é aceito? | Definir antes do módulo de pagamento |
-| Q7 | Haverá **login** já? Com que hash de senha (BCrypt exige dependência nova)? | Adiar até existir caso de uso |
-| Q8 | **Telefone** também deve ser criptografado? Há prazo de retenção de dados? | Só CPF por enquanto |
-| Q9 | Para que serve o **Redis**? | Se nada precisar, remover do stack (YAGNI) |
-| Q10 | A **emissão de faturas** é manual (operador dispara) ou automática no início do mês? | Manual primeiro |
-| Q11 | Contrato tem **reajuste** anual? | Fora do escopo agora |
+| Q12 | **Quando** a rotina emite a fatura de uma competência? No dia 1 do mês, ou N dias antes do vencimento? | Dia 1 do mês da competência |
+| Q13 | Contrato que começa no meio do mês: a primeira fatura é **proporcional** (pro rata) ou integral? E a do mês do encerramento? | Definir antes do módulo de faturas |
+| Q2 | O contrato tem data de término prevista? Guardamos a data de encerramento? | Guardar `data_encerramento` ao encerrar |
+| Q4 | Validar o dígito verificador do CPF? | Sim, no domínio |
+| Q7 | Haverá login já? Com que hash de senha (BCrypt exige dependência nova)? | Adiar até existir caso de uso |
+| Q8 | Telefone também deve ser criptografado? Há prazo de retenção de dados? | Só CPF por enquanto |
+| Q9 | Para que serve o Redis? | Se nada precisar, remover do stack (YAGNI) |
+| Q11 | Contrato tem reajuste anual? | Fora do escopo agora |
 
 ## 6. Próximo passo sugerido
 
 1. Mergear o módulo 1 na `main`.
 2. Corrigir D3 (resposta 400) via `/speckit-bug-assess`: é defeito do módulo entregue.
-3. Responder Q1–Q5 e Q10, que travam a modelagem de `contratos` e `faturas`.
+3. Responder Q2 e Q4 (travam `contratos` e `inquilinos`) e Q12–Q13 (travam a emissão de
+   `faturas`).
 4. Abrir o módulo 2 com `/speckit-specify` (sugestão: **Inquilino + Contrato**, porque Fatura
    depende de Contrato). D1 e D2 entram nessa spec, em TDD.
