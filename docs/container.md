@@ -78,7 +78,11 @@ docker run -d --name habitattio -p 8080:8080 \
 
 - Segredos vêm do ambiente do host (`-e VAR` sem valor repassa a variável já exportada) ou de
   um `.env` **fora do git** (o `.gitignore` já ignora `.env*`). Nunca do `Dockerfile`.
-- A porta é a **8080**.
+- A porta é a **8080** e é **fixa na imagem**: o `VerificarSaude` consulta
+  `http://localhost:8080/actuator/health`. Mudar `SERVER_PORT` move a aplicação, mas o
+  healthcheck continua batendo na 8080 e o container fica `unhealthy`. Para expor outra porta no
+  host, mapeie (`-p 9090:8080`) em vez de mudar `SERVER_PORT`. Tornar a porta configurável
+  exige mudar o verificador e o `ImagemContainerTest` juntos (research R4).
 - Em produção, a aplicação **recusa subir** se a estrutura do banco divergir do mapeamento, ou
   se faltarem as variáveis de conexão: o container para com código diferente de zero e o motivo
   aparece em `docker logs`.

@@ -263,6 +263,22 @@ class ImagemContainerTest {
 	}
 
 	@Test
+	void deveResponderSoComEstadoGeralQuandoPostgresFicaInacessivel() throws IOException, InterruptedException {
+		PostgreSQLContainer postgres = novoPostgres();
+		postgres.start();
+		try (GenericContainer<?> aplicacao = containerProducao(postgres)
+				.waitingFor(Wait.forHealthcheck().withStartupTimeout(Duration.ofMinutes(2)))) {
+			aplicacao.start();
+			postgres.stop();
+
+			Resposta resposta = get(aplicacao, "/actuator/health");
+
+			assertEquals(503, resposta.status());
+			assertEquals("{\"status\":\"DOWN\"}", resposta.corpo());
+		}
+	}
+
+	@Test
 	void deveSubirSaudavelNoModoRapidoSemBancoExterno() throws IOException, InterruptedException {
 		try (GenericContainer<?> aplicacao = containerRapido()
 				.waitingFor(Wait.forHealthcheck().withStartupTimeout(Duration.ofMinutes(2)))) {
