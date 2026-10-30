@@ -37,6 +37,8 @@ concretos (sessão ou token, formato das rotas, nomes de colunas) ficam para o `
 - Q: Quais operações sobre imóvel, além do cadastro, este módulo entrega para provar o isolamento? → A: Consultar um imóvel pelo id e inativar um imóvel. Edição (RF-09) e listagem (RF-10) ficam fora.
 - Q: A unicidade do identificador por proprietário ignora maiúsculas/minúsculas ("Apto 101" = "APTO 101")? → A: Sim; ignora maiúsculas/minúsculas e espaços nas pontas, mas não acentos. O identificador é exibido como foi digitado, sem os espaços das pontas.
 - Q (do plan, P1): O fake privado de `CadastrarImovelUseCaseTest` pode implementar os métodos novos da porta de imóveis, o que vai além de "só dados"? → A: Sim (opção A, 2026-10-30). O fake ganha os métodos novos da porta; asserções e nomes de teste continuam intocados. Mantém uma porta por agregado.
+- Q (do analyze, C1): O tratamento global de exceções genéricas (resposta 500 para erro não previsto) entra neste módulo? → A: Não. Vira feature à parte: a API ainda não tem mecanismo global que capture e traduza exceções genéricas. Neste módulo, erros de infraestrutura e de aplicação conhecidos MUST ser tratados explicitamente onde ocorrem, sem depender de captura global.
+- Q (do analyze, D1): O acordo Q19 (Spring Security) cobre também o starter de teste `spring-boot-starter-security-test`? → A: Sim.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -254,8 +256,9 @@ identificador repetido para donos diferentes é aceito.
 - **FR-020**: Toda consulta e toda alteração de imóvel MUST considerar apenas os imóveis do
   proprietário autenticado. Um imóvel de outro proprietário MUST receber exatamente a mesma
   resposta de um imóvel inexistente ("não encontrado"), e nenhuma alteração MUST ser aplicada.
-- **FR-021**: A regra de FR-020 MUST valer para qualquer identificador interno informado,
-  inclusive valores adivinhados ou sequenciais.
+  A regra vale para qualquer identificador interno informado, inclusive valores adivinhados ou
+  sequenciais.
+- **FR-021**: *(incorporado ao FR-020; o identificador fica reservado para rastreabilidade.)*
 
 **Banco de produção (RNF-05, RNF-06, RNF-08)**
 
@@ -279,6 +282,10 @@ identificador repetido para donos diferentes é aceito.
   ser observável pela resposta. Um único tratamento de erro, comum a todas essas operações,
   MUST produzir essas recusas; isso resolve o defeito D3 de `docs/requisitos-e-der.md`
   (o cadastro de imóvel deixa de responder 500 a dado inválido).
+  Cada erro conhecido — de domínio, de aplicação ou de infraestrutura — MUST ser tratado
+  explicitamente onde ocorre (por exemplo: violação de unicidade traduzida no adapter de
+  persistência, limite do hash de senha tratado no adapter de hash). Captura global de exceções
+  genéricas (resposta 500 para erro não previsto) está **fora** deste módulo (Clarifications, C1).
 
 **Documentação**
 
@@ -387,3 +394,5 @@ imóveis; nenhuma asserção, nome de teste ou cenário provado MUST mudar. Qual
 - Bloqueio por tentativas, limitação de taxa, autenticação em dois fatores, login social.
 - Frontend (repositório separado, Q23).
 - Atualização do documento do Drive (§7 de `docs/requisitos-e-der.md`).
+- Mecanismo global de captura e tradução de exceções genéricas (resposta 500 padronizada para
+  erro não previsto): feature à parte (Clarifications, C1).

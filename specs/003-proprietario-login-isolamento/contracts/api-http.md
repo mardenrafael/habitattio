@@ -20,7 +20,10 @@ Respostas de erro comuns a todas as rotas protegidas:
 | 401 | sem sessão, sessão expirada ou encerrada | "Autenticação necessária." |
 | 403 | token CSRF ausente/inválido | "Token CSRF ausente ou inválido." |
 | 400 | corpo JSON malformado ou com tipo errado | "Corpo da requisição inválido." |
-| 500 | erro inesperado | "Erro interno. Tente novamente mais tarde." (sem detalhe técnico) |
+
+Erro não previsto não tem formato definido neste módulo: a captura global de exceções genéricas
+é uma feature à parte (spec, Clarifications C1). Todo erro listado neste contrato é tratado
+explicitamente.
 
 ---
 
@@ -52,16 +55,19 @@ Requisição `application/x-www-form-urlencoded`: `email=ana%40exemplo.com&senha
 | 204 | autenticado; novo `JSESSIONID` (id trocado) e novo `XSRF-TOKEN` | — |
 | 401 | e-mail inexistente **ou** senha errada (indistinguíveis) | "E-mail ou senha inválidos." |
 
+---
+
+## Protegidas (exigem sessão)
+
 ### `GET /sessao` — quem está autenticado
 
 | Status | Quando | Corpo |
 |---|---|---|
 | 200 | sessão válida | `{ "id": 1, "nome": "Ana Souza", "email": "ana@exemplo.com" }` |
-| 401 | sem sessão | "Autenticação necessária." (e o cookie `XSRF-TOKEN` já vem na resposta) |
+| 401 | sem sessão | "Autenticação necessária." |
 
----
-
-## Protegidas (exigem sessão)
+Mesmo respondendo 401 sem sessão, a resposta já traz o cookie `XSRF-TOKEN`: é por ela que o
+cliente obtém o token CSRF antes do cadastro e do login.
 
 ### `DELETE /sessao` — sair (FR-011)
 
@@ -93,7 +99,7 @@ Requisição:
 Mudanças em relação ao módulo 1: exige sessão e CSRF; ganha `identificador` na requisição e
 `identificador`/`ativo` na resposta; erro de domínio responde 400 em vez de 500 (D3).
 
-### `GET /imoveis/{id}` — consultar imóvel (FR-018, FR-020, FR-021)
+### `GET /imoveis/{id}` — consultar imóvel (FR-018, FR-020)
 
 | Status | Quando | Corpo |
 |---|---|---|

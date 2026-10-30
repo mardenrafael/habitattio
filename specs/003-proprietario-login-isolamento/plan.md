@@ -25,7 +25,8 @@ traduzida para a mesma exceção (R8).
 
 **Primary Dependencies**: Spring Boot 4.1.2 (Web MVC, Data JPA, Validation, Redis), Flyway;
 **novos**: `spring-boot-starter-security` e `spring-boot-starter-security-test` (Spring Security
-7.1.2 pelo BOM), cobertos pelo acordo Q19 (R12)
+7.1.2 pelo BOM), cobertos pelo acordo Q19 — o starter de teste confirmado pelo dono
+(Clarifications D1) (R12)
 
 **Storage**: PostgreSQL em `prod` (estrutura só por Flyway, `ddl-auto=validate`); H2 em memória no
 modo rápido (padrão, `ddl-auto=update`). Sessões HTTP na memória do container (R1)
@@ -43,11 +44,14 @@ separado, pela mesma origem (proxy) (Q23, R1)
 **Performance Goals**: não pesam (RNF-21, ~14 imóveis). Único custo deliberado: BCrypt custo 12
 em `prod` (~0,25 s por login/cadastro)
 
-**Constraints**: domínio e aplicação sem framework; isolamento sem exceção (FR-020/021); senha
-nunca legível (SC-004); nenhuma resposta 500 nos cenários da spec (SC-007)
+**Constraints**: domínio e aplicação sem framework; isolamento sem exceção (FR-020); senha
+nunca legível (SC-004); nenhuma resposta 500 nos cenários da spec (SC-007), com cada erro
+conhecido tratado explicitamente onde ocorre — sem captura global de `Exception`, que é feature
+à parte (Clarifications C1)
 
-**Scale/Scope**: poucos proprietários, instância única; 6 rotas HTTP (3 novas públicas/de sessão,
-3 de imóvel), 5 casos de uso, 1 migração
+**Scale/Scope**: poucos proprietários, instância única; 7 rotas HTTP (`POST /proprietarios`,
+`POST`/`GET`/`DELETE /sessao`, `POST /imoveis`, `GET /imoveis/{id}`,
+`POST /imoveis/{id}/inativacao`), 5 casos de uso, 1 migração
 
 ## Constitution Check
 
@@ -180,6 +184,7 @@ src/test/java/br/com/marden/habitattio/
 ├── application/usecase/
 │   ├── CadastrarProprietarioUseCaseTest.java    N
 │   ├── AutenticarProprietarioUseCaseTest.java   N
+│   ├── AutenticarProprietarioUseCaseTest.java   N
 │   ├── CadastrarImovelUseCaseTest.java          M  dados adaptados (Q2, P1); testes novos de dono/duplicidade em classe nova
 │   ├── CadastrarImovelComDonoUseCaseTest.java   N
 │   ├── ConsultarImovelUseCaseTest.java          N
@@ -196,8 +201,12 @@ src/test/java/br/com/marden/habitattio/
 │   ├── ProprietarioControllerTest.java          N  @WebMvcTest
 │   ├── ImovelControllerTest.java                N  @WebMvcTest (inclui 400 em vez de 500 — D3)
 │   └── SessaoControllerTest.java                N
-├── EstruturaBancoProducaoTest.java              —  inalterado; nova prova G-S1 em teste novo
-├── SessaoIntegracaoTest.java                    N  login/logout/CSRF/fixação de sessão no prod
+├── adapters/inbound/security/
+│   └── ProprietarioAuthenticationProviderTest.java N  JUnit puro
+├── EstruturaBancoProducaoTest.java              —  inalterado
+├── EstruturaBancoProducaoV2Test.java            N  G-S1: V1 e V2 aplicadas em banco vazio
+├── SessaoIntegracaoTest.java                    N  login/logout/CSRF/fixação de sessão/senha fora do log, no prod
+├── SessaoCookieIntegracaoTest.java              N  servidor real: atributos do cookie de sessão no prod
 └── IsolamentoProprietariosIntegracaoTest.java   N  SC-002, SC-003 com dois donos reais
 
 pom.xml                                          M  spring-boot-starter-security (+ -test)
@@ -214,17 +223,25 @@ em `adapters/config`, como o AGENTS §2 prevê quando `BeanConfiguration` cresce
 2. `pom.xml`: dependências de segurança (o contexto precisa subir com elas antes de tudo; os
    testes de contexto existentes devem continuar verdes, já que nenhuma rota de imóvel está
    coberta por eles).
-3. Domínio: `Senha`, `Usuario` (normalização e limites), `Imovel` (dono, identificador) e as
-   exceções — testes primeiro; adaptação dos dados de `ImovelTest` no mesmo passo em que o
-   construtor muda.
-4. Portas e commands (só forma) → testes dos casos de uso com fakes → implementação. Adaptação
-   de `CadastrarImovelUseCaseTest`.
-5. Persistência: V2 + entities + adapters; testes `prod` com Testcontainers (garantias G-*,
-   corrida). Adaptação de `ImovelRepositoryAdapterTest` e `ImoveisPostgresConstraintsTest`.
-6. Adapter BCrypt (teste JUnit puro).
-7. Segurança + controllers + tratamento de erro (`@WebMvcTest`).
-8. Fiação (`BeanConfiguration`, `SegurancaConfiguration`) e testes ponta a ponta
-   (`SessaoIntegracaoTest`, `IsolamentoProprietariosIntegracaoTest`).
+3. **Fundação — estrutura V2 (US4)**, antes de qualquer entity nova: testes das garantias G-* e
+   G-S1 primeiro, depois a V2, depois a adaptação de `ImoveisPostgresConstraintsTest`. Motivo: no
+   profile `prod`, `ddl-auto=validate` recusa a subida com uma entity sem tabela, então
+   `UsuarioJpaEntity` (US1) não pode existir antes de `usuarios`. Colunas a mais em `imoveis`
+   não quebram a validação, e o `POST /imoveis` fica bloqueado pela segurança até a US3, então o
+   banco à frente do código não tem efeito observável no intervalo.
+4. **US1 (cadastro)**, de dentro para fora: `Senha`, `Usuario` → portas/command (só forma) →
+   testes com fakes → caso de uso → adapter BCrypt → `UsuarioJpaEntity` + adapter → controller,
+   `TratamentoErrosHandler` e a primeira `SegurancaConfiguration` (CSRF, rota pública de
+   cadastro, 403).
+5. **US2 (login)**: caso de uso de autenticação → `ProprietarioAuthenticationProvider` →
+   `formLogin`/`logout`, resposta 401 e `GET /sessao`; testes ponta a ponta de sessão.
+6. **US3 (imóveis com dono)**: `Imovel` com dono e identificador (adaptação de `ImovelTest`,
+   `CadastrarImovelUseCaseTest` e `ImovelRepositoryAdapterTest` no mesmo passo em que o
+   construtor e a porta mudam) → casos de uso → persistência → controller → teste de isolamento
+   ponta a ponta.
+7. Fiação de cada passo em `BeanConfiguration`/`SegurancaConfiguration` junto da história que a
+   exige.
+8. *(sem passo próprio: tratamento global de exceções genéricas está fora — spec, Clarifications C1)*.
 9. Documentação (FR-027): AGENTS §2 (pacotes novos), §6 (`Usuario` = proprietário; `Imovel` com
    dono e identificador), §7 (isolamento, identificador único por dono), §9 (Spring Security no
    stack); constitution PATCH 1.0.2 via `/speckit-constitution`; `docs/requisitos-e-der.md`

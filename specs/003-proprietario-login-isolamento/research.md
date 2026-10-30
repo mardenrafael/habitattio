@@ -115,7 +115,12 @@ abaixo foram conferidas com `javap` nos jars 7.1.2 do Maven Central.
   | Imóvel inexistente **ou de outro dono** | `ImovelNaoEncontradoException` | 404 |
   | E-mail já cadastrado | `EmailJaCadastradoException` | 409 |
   | Identificador repetido para o dono | `IdentificadorImovelDuplicadoException` | 409 |
-  | Qualquer outra | `Exception` | 500, mensagem genérica, sem detalhe interno |
+
+- **Sem captura global de `Exception`** (Clarifications, C1): o mecanismo global de tradução de
+  exceções genéricas é uma feature à parte. Neste módulo, cada erro conhecido é tratado
+  explicitamente onde ocorre — violação de unicidade no adapter de persistência (R8), limite de
+  72 bytes no adapter de hash (R3/R4) — e chega ao advice já como exceção de negócio mapeada
+  acima. Erro não previsto segue o comportamento padrão do Spring até a feature dedicada.
 
 - **Rationale**: resolve D3 num ponto só e torna "inválido", "duplicado", "não autenticado",
   "proibido" e "não encontrado" distinguíveis pelo status (FR-026).
