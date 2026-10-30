@@ -79,15 +79,23 @@ Duas ressalvas ficam registradas:
   - A imagem sobe em H2 sem profile, sem JDK no host.
   - O teste automatizado constrói a imagem e prova a subida e o healthcheck.
 - **Carried-forward open questions**:
-  - [NEEDS CLARIFICATION: Arquitetura de CPU da VPS (amd64 ou arm64), que afeta a imagem
-    construída localmente.]
-  - [NEEDS CLARIFICATION: Como evitar (ou aceitar) que produção suba em H2 em memória se
-    `SPRING_PROFILES_ACTIVE=prod` for esquecido. Risco do concept.md que o dono decidiu tratar
-    quando aparecer.]
+  - ~~Arquitetura de CPU da VPS~~ Resolvido em 2026-10-30: **amd64** (`linux/amd64`). A máquina
+    de build local também é x86_64, então não há cross-build.
+  - ~~Proteção contra produção subir em H2 se `SPRING_PROFILES_ACTIVE=prod` for esquecido~~
+    Resolvido em 2026-10-30: **risco aceito**. Nesta fatia não haverá detecção nem proteção; o
+    dono reavalia se o problema aparecer. A spec não deve exigir esse mecanismo.
+  - **Garantir que a VPS roda a imagem publicada** (pergunta do dono, 2026-10-30): a spec deve
+    tratar isso como requisito observável:
+    - a imagem é identificada por uma tag de versão imutável, não `latest`;
+    - a VPS faz pull autenticado do repositório privado;
+    - o digest da imagem em execução na VPS confere com o digest gerado no push.
+
+    O mecanismo concreto fica para o plan.
   - Riscos a observar durante o plan, sem mitigação prévia por decisão do dono:
     - disponibilidade de imagem base JRE 25 mínima e rotina de atualização do digest;
     - comando de healthcheck em imagem sem `curl`/`wget`;
     - tempo do teste que constrói a imagem dentro do `./mvnw test`;
     - confirmação de que só o indicador de Redis é desligado e o do banco continua valendo;
     - limites do plano do Docker Hub para repositório privado e credenciais de pull na VPS.
-  - Segunda fatia (scan): ferramenta e limiar, depois do estudo do dono.
+  - Segunda fatia (scan): ferramenta e limiar, depois do estudo do dono. Confirmado em
+    2026-10-30: o dono fará o estudo e decidirá a ferramenta.
