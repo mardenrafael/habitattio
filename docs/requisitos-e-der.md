@@ -172,6 +172,7 @@ erDiagram
         numeric(19_4) valor "NOT NULL, > 0"
         date data_vencimento "NOT NULL"
         varchar status "PENDENTE, PAGA ou ATRASADA"
+        date data_pagamento "NULL; preenchida ao marcar como paga (RF-34)"
         bigint versao "controle otimista (futuro, Q22)"
     }
     PAGAMENTOS {
@@ -203,7 +204,10 @@ Todas as FKs são `ON DELETE RESTRICT`, porque nada é apagado de fato.
    proprietário pela cadeia de FKs, sem coluna `usuario_id` repetida. A regra "imóvel e
    inquilino do contrato são do mesmo proprietário" depende de duas tabelas. Por isso fica no
    caso de uso (RF-18), pelo critério combinado de 2026-10-29.
-2. **`valor_pago` e `data_pagamento` saem de `faturas`.** Com pagamento parcial (Q16), o valor
+2. **Enquanto pagamentos estão fora do escopo**, `faturas` guarda só `data_pagamento`, preenchida
+   quando o proprietário marca como paga (RF-34); o valor pago é sempre o valor integral, então não
+   precisa de coluna própria. **Quando pagamentos voltarem**, `data_pagamento` sai de `faturas`.
+   Texto original da decisão, que passa a valer nesse momento: **`valor_pago` e `data_pagamento` saem de `faturas`.** Com pagamento parcial (Q16), o valor
    pago é a soma de `pagamentos` e o saldo é `valor − soma`. A fatura vira `PAGA` quando o
    saldo chega a zero. Isso substitui os campos atuais de `Fatura` (D5).
 3. **`Fatura.valor` é cópia** do `valor_aluguel` na emissão. Um reajuste futuro não altera
