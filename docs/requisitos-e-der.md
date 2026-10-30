@@ -1,15 +1,16 @@
-# Revisão de requisitos (RF / RNF) e DER — habitattio
+# Requisitos (RF / RNF) e DER — habitattio
 
-- **Data**: 2026-10-30
+- **Atualizado**: 2026-10-30
 - **Base**: `main` (`f076494`) + módulo 1 `001-better-db-schema` (branch
   `worktree-spec-better-db-schema`, ainda **não mergeada** na `main`).
 - **Fontes**: AGENTS.md §5–§7, `domain/model/*`, `specs/001-better-db-schema/*`,
-  `V1__cria_tabela_imoveis.sql`, memória de decisões de banco (2026-10-29).
+  `V1__cria_tabela_imoveis.sql`, decisões de banco (2026-10-29), decisões do dono
+  (2026-10-30) e o documento do Drive **"Gestor de Aluguéis - Documentação"**
+  (`Documentacao_Gestor_Alugueis.md`, gerado em 2026-10-30).
 
-Até aqui não existia uma lista consolidada de RF/RNF nem um DER. As regras estavam espalhadas
-pelo AGENTS.md, pelos construtores das entidades e pela spec do módulo 1. Este documento junta
-tudo, marca o que já está implementado e lista as lacunas que precisam de **decisão do dono**
-antes de especificar o próximo módulo.
+Este documento consolida os requisitos e o DER. Os IDs entre colchetes (`[Drive RF02]`) apontam
+o item equivalente no documento do Drive. Quando os dois divergem, vale **este** documento: ele
+incorpora as decisões posteriores (seção 5), e a §7 lista o que precisa ser corrigido no Drive.
 
 Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implementado · ❓ precisa de decisão
 
@@ -17,55 +18,73 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 
 ## 1. Requisitos funcionais
 
-### Imóvel (módulo 1)
+### Proprietário (usuário) `[Drive RF01]`
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-01 | Cadastrar imóvel com endereço (obrigatório, não em branco, ≤ 255 caracteres) e valor sugerido (> 0) | ✅ | `POST /imoveis`, `Imovel`, V1 |
-| RF-02 | Endereço não é único: vários imóveis podem ter o mesmo endereço | ✅ | spec FR-005 |
-| RF-03 | Inativar imóvel (desativação lógica) | 🟡 | só em `Imovel.inativar()`, sem caso de uso nem API |
-| RF-04 | Listar e consultar imóveis | ❌ | fora do escopo do módulo 1 |
-| RF-05 | Imóvel inativo não recebe novo contrato | ❌ | AGENTS §7; regra entre agregados, vai no caso de uso |
+| RF-01 | Cadastrar proprietário com nome, e-mail válido e senha (guardada como hash) | 🟡 | `Usuario` só no domínio |
+| RF-02 | E-mail único entre proprietários | ❌ | `uq_usuarios_email` |
+| RF-03 | Login do proprietário | ❌ | **decidido (Q7 + Q14)**; exige dependência de hash/autenticação (ver Q19) |
+| RF-04 | **Isolamento de dados**: cada proprietário só vê e altera os próprios imóveis, inquilinos, contratos, faturas e pagamentos | ❌ | **decidido (Q14)** |
 
-### Inquilino
-
-| ID | Requisito | Status | Onde |
-|---|---|---|---|
-| RF-06 | Cadastrar inquilino com nome (obrigatório) e CPF (11 dígitos); telefone opcional | 🟡 | só domínio |
-| RF-07 | CPF guardado criptografado no banco | ❌ | decisão de 2026-10-29 |
-| RF-08 | CPF único entre inquilinos | ❌ | **decidido (Q3)**: `UNIQUE` sobre coluna de hash com chave do CPF |
-| RF-09 | ❓ Validar dígito verificador do CPF? Hoje só conta 11 dígitos | ❓ | ver Q4 |
-
-### Contrato
+### Imóvel `[Drive RF02]`
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-10 | Criar contrato ligando um imóvel a um inquilino, com valor do aluguel, dia de vencimento (1–31) e data de início | 🟡 | domínio valida **só** o dia de vencimento |
-| RF-11 | Valor do aluguel estritamente positivo | ❌ | AGENTS §7 manda, `Contrato` não valida |
-| RF-12 | Encerrar contrato (desativação lógica) | 🟡 | `encerrar()` não guarda **quando** encerrou |
-| RF-13 | No máximo um contrato ativo por imóvel | ❌ | **decidido (Q1)**: validação no caso de uso + índice único parcial |
-| RF-14 | Contrato encerrado não gera novas faturas | ❌ | AGENTS §7 |
+| RF-05 | Cadastrar imóvel com endereço (obrigatório, não em branco, ≤ 255 caracteres) e valor sugerido (> 0) | ✅ | `POST /imoveis`, `Imovel`, V1 |
+| RF-06 | Endereço não é único | ✅ | spec FR-005 |
+| RF-07 | Imóvel tem **identificador amigável** (ex.: "Apto 101") além do endereço | ❌ | **decidido (Q15)**; migração V2 (ver Q20) |
+| RF-08 | Imóvel pertence a um proprietário | ❌ | **decidido (Q14)**; `imoveis.usuario_id` |
+| RF-09 | Editar imóvel (identificador, endereço, valor sugerido) | ❌ | `[Drive RF02]` |
+| RF-10 | Listar e consultar os imóveis do proprietário | ❌ | `[Drive RF02]` |
+| RF-11 | Inativar imóvel (desativação lógica) | 🟡 | só `Imovel.inativar()` |
+| RF-12 | Imóvel inativo não recebe novo contrato | ❌ | AGENTS §7; no caso de uso |
+
+### Inquilino `[Drive RF03]`
+
+| ID | Requisito | Status | Onde |
+|---|---|---|---|
+| RF-13 | Cadastrar, editar e listar inquilinos: nome (obrigatório), CPF (11 dígitos), telefone (opcional) | 🟡 | `Inquilino` só no domínio |
+| RF-14 | Inquilino pertence a um proprietário | ❌ | **decidido (Q14)**; `inquilinos.usuario_id` |
+| RF-15 | CPF guardado criptografado | ❌ | decisão de 2026-10-29 |
+| RF-16 | CPF único **por proprietário**: a mesma pessoa pode alugar de dois proprietários | ❌ | **decidido (Q3 + Q14)**; `uq_inquilinos_usuario_cpf (usuario_id, cpf_hash)` |
+| RF-17 | ❓ Validar dígito verificador do CPF | ❓ | Q4 |
+
+### Contrato `[Drive RF04]`
+
+| ID | Requisito | Status | Onde |
+|---|---|---|---|
+| RF-18 | Criar contrato ligando imóvel e inquilino **do mesmo proprietário**, com valor do aluguel (> 0), dia de vencimento (1–31) e data de início | 🟡 | domínio valida **só** o dia (D1) |
+| RF-19 | No máximo um contrato ativo por imóvel | ❌ | **decidido (Q1)**; caso de uso + índice único parcial |
+| RF-20 | Anexar o documento do contrato (PDF ou imagem) | ❌ | `[Drive RF04]`; armazenamento em Q18 |
+| RF-21 | Encerrar contrato (desativação lógica) | 🟡 | `encerrar()` não guarda a data (Q2) |
+| RF-22 | Contrato encerrado não gera novas faturas | ❌ | AGENTS §7 |
 
 ### Fatura
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-15 | Emitir **automaticamente** a fatura mensal de cada contrato ativo, com o valor do aluguel copiado na emissão | 🟡 | **decidido (Q10)**; `Fatura` existe, não há emissão (ver Q12, Q13) |
-| RF-16 | No máximo uma fatura por contrato e competência | ❌ | AGENTS §7; vira `UNIQUE (contrato_id, mes_referencia)` |
-| RF-17 | Vencimento = `diaVencimento` do contrato na competência; em mês mais curto, cai no último dia | ❌ | AGENTS §7; ninguém calcula hoje |
-| RF-18 | Pagar fatura só com o valor integral; pagamento parcial é rejeitado | ✅ | `Fatura.pagar` (regra está no código e nos testes, mas não no AGENTS §7) |
-| RF-19 | Fatura `PAGA` é terminal | ✅ | `FaturaTest` |
-| RF-20 | Fatura pendente com vencimento passado vira `ATRASADA`, **gravado por rotina diária** | 🟡 | **decidido (Q5)**; `verificarAtraso(ref)` existe, falta a rotina |
-| RF-21 | Fatura atrasada é paga pelo valor original, **sem multa nem juros** | ✅ | **decidido (Q6)**; `devePermitirPagarFaturaQueEstavaAtrasada`. Pagamento a maior já é rejeitado por RF-18 |
-| RF-22 | Consultar faturas por status (pendentes, pagas, atrasadas) | ❌ | objetivo do produto (README) |
+| RF-23 | Emitir **automaticamente** a fatura mensal de cada contrato ativo, com o valor do aluguel copiado na emissão | 🟡 | **decidido (Q10)**; ver Q12, Q13 |
+| RF-24 | No máximo uma fatura por contrato e competência | ❌ | `uq_faturas_contrato_mes` |
+| RF-25 | Vencimento = `diaVencimento` na competência; em mês mais curto, cai no último dia | ❌ | AGENTS §7 |
+| RF-26 | Fatura pendente com vencimento passado vira `ATRASADA`, gravado por **rotina diária** | 🟡 | **decidido (Q5)**; `verificarAtraso` existe, falta a rotina |
+| RF-27 | Sem multa nem juros por atraso | ✅ | **decidido (Q6)** |
+| RF-28 | `PAGA` é terminal | ✅ | `FaturaTest` |
 
-### Usuário
+### Pagamento `[Drive RF06]`
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-23 | Cadastrar usuário operador com nome, e-mail válido e hash de senha | 🟡 | só domínio |
-| RF-24 | ❓ Autenticar o usuário (login) | ❓ | ver Q7 |
-| RF-25 | E-mail único | ❌ | implícito; vira `UNIQUE` |
+| RF-29 | Registrar pagamento de uma fatura com valor (> 0), data e forma de pagamento | ❌ | `[Drive RF06]`; formas em Q17 |
+| RF-30 | **Pagamento parcial permitido**: uma fatura aceita vários pagamentos e fica `PAGA` quando a soma atinge o valor | ❌ | **decidido (Q16)**. Substitui a regra atual de `Fatura.pagar` (ver D5) |
+| RF-31 | Histórico de pagamentos por fatura | ❌ | `[Drive RF06]`; tabela `pagamentos` |
+| RF-32 | ❓ Pagamento acima do saldo devedor | ❓ | Q21 |
+
+### Painel `[Drive RF05]`
+
+| ID | Requisito | Status | Onde |
+|---|---|---|---|
+| RF-33 | Painel mensal do proprietário: faturas da competência com status (pendente, paga, atrasada), valor e saldo | ❌ | `[Drive RF05]` |
 
 ---
 
@@ -73,23 +92,27 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 
 | ID | Requisito | Status |
 |---|---|---|
-| RNF-01 | Java 25 + Spring Boot 4.1.2, arquitetura hexagonal, sem framework em `domain/` e `application/` | ✅ |
-| RNF-02 | TDD obrigatório; teste escrito e visto falhar é read-only | ✅ processo |
+| RNF-01 | Backend Java 25 + Spring Boot 4.1.2, arquitetura hexagonal, sem framework em `domain/` e `application/` `[Drive RNF02]` | ✅ |
+| RNF-02 | TDD obrigatório; teste visto falhar é read-only, salvo decisão explícita do dono | ✅ processo |
 | RNF-03 | SDD: feature nova passa por spec → plan → tasks | ✅ processo |
-| RNF-04 | Produção em PostgreSQL; H2 só para uso rápido; modo rápido é o padrão, `prod` explícito | ✅ módulo 1 |
-| RNF-05 | Estrutura do banco só por migrações Flyway versionadas; `ddl-auto=validate` em `prod` | ✅ módulo 1 |
-| RNF-06 | Invariantes simples (NOT NULL, não vazio, > 0, UNIQUE) também no banco, com constraints nomeadas `pk_`/`ck_`/`uq_`/`fk_` | ✅ só em `imoveis` |
+| RNF-04 | Produção em PostgreSQL; H2 só para uso rápido; modo rápido é o padrão, `prod` explícito | ✅ |
+| RNF-05 | Estrutura do banco só por migrações Flyway; `ddl-auto=validate` em `prod` | ✅ |
+| RNF-06 | Invariantes simples também no banco, com constraints nomeadas `pk_`/`ck_`/`uq_`/`fk_` | ✅ só em `imoveis` |
 | RNF-07 | Dinheiro em `BigDecimal` no domínio e `numeric(19,4)` no banco | ✅ só em `imoveis` |
-| RNF-08 | Nada é apagado de fato: desativação lógica e FKs sem `ON DELETE CASCADE` | 🟡 |
-| RNF-09 | Testes de persistência contra PostgreSQL de versão fixa (Testcontainers) | ✅ |
+| RNF-08 | Nada é apagado de fato: desativação lógica e FKs `ON DELETE RESTRICT` | 🟡 |
+| RNF-09 | Testes de integração contra PostgreSQL de versão fixa (Testcontainers) `[Drive RNF03]` | ✅ |
 | RNF-10 | Mensagens de erro em português | ✅ domínio |
-| RNF-11 | **Erro de validação responde 4xx com mensagem clara**: hoje `IllegalArgumentException` vira **500**, porque não há `@ControllerAdvice` nem `@Valid` | ❌ **defeito no módulo 1** |
-| RNF-12 | Dados pessoais (CPF, telefone) protegidos, alinhado à LGPD | ❌ ver Q8 |
-| RNF-13 | Credenciais do banco só por variável de ambiente | ✅ `application-prod.properties` |
-| RNF-14 | Senha guardada com hash forte e salt | ❓ não há biblioteca de hash no `pom.xml` (ver Q7) |
-| RNF-15 | Volume baixo (~14 imóveis, ~14 faturas/mês, um cliente): desempenho não pesa nas decisões | ✅ decisão registrada |
-| RNF-16 | ❓ Redis está no stack, mas nada em `src/main` o usa | ❓ ver Q9 |
-| RNF-17 | Rotinas automáticas (emissão mensal, atraso diário) são **adapters de entrada** agendados que chamam casos de uso; idempotentes (rodar duas vezes no mesmo dia não duplica fatura nem muda resultado) | ❌ |
+| RNF-11 | Erro de validação responde 4xx com mensagem clara | ❌ **defeito D3** |
+| RNF-12 | Senha com hash forte e salt; autenticação segura `[Drive RNF04]` | ❌ ver Q19 |
+| RNF-13 | CPF criptografado no banco; dados pessoais tratados conforme LGPD | ❌ |
+| RNF-14 | Credenciais só por variável de ambiente | ✅ |
+| RNF-15 | Toda consulta e escrita filtra pelo proprietário autenticado; um proprietário nunca acessa dado de outro, nem por id adivinhado | ❌ (Q14) |
+| RNF-16 | Rotinas automáticas (emissão mensal, atraso diário) são adapters de entrada agendados que chamam casos de uso, e são idempotentes | ❌ |
+| RNF-17 | Pagamentos simultâneos na mesma fatura não podem ultrapassar o saldo (controle de concorrência) | ❌ ver Q22 |
+| RNF-18 | Frontend Next.js (App Router) + Tailwind, **mobile-first** `[Drive RNF01]`; o backend expõe API REST consumível por ele | ❌ ver Q23 |
+| RNF-19 | Redis para cache e locks `[Drive §3]` | ❓ ver Q22 |
+| RNF-20 | Docker Compose para subir o ambiente; CI no GitHub Actions `[Drive §3]` | ❌ |
+| RNF-21 | Volume baixo: desempenho não pesa nas decisões | ✅ decisão registrada |
 
 ---
 
@@ -97,21 +120,33 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 
 ```mermaid
 erDiagram
+    USUARIOS ||--o{ IMOVEIS : "possui"
+    USUARIOS ||--o{ INQUILINOS : "cadastra"
     IMOVEIS ||--o{ CONTRATOS : "é alugado em"
     INQUILINOS ||--o{ CONTRATOS : "assina"
     CONTRATOS ||--o{ FATURAS : "gera"
+    FATURAS ||--o{ PAGAMENTOS : "recebe"
 
+    USUARIOS {
+        bigint id PK
+        varchar nome "NOT NULL"
+        varchar email "NOT NULL, UNIQUE"
+        varchar senha_hash "NOT NULL"
+    }
     IMOVEIS {
         bigint id PK
+        bigint usuario_id FK "NOT NULL"
+        varchar identificador "NOT NULL (Q20)"
         varchar(255) endereco "NOT NULL, não em branco"
         numeric(19_4) valor_sugerido "NOT NULL, > 0"
         boolean ativo "NOT NULL"
     }
     INQUILINOS {
         bigint id PK
-        varchar nome "NOT NULL, não em branco"
-        bytea cpf_cifrado "NOT NULL, criptografado"
-        char(64) cpf_hash "NOT NULL, UNIQUE"
+        bigint usuario_id FK "NOT NULL"
+        varchar nome "NOT NULL"
+        bytea cpf_cifrado "NOT NULL"
+        char(64) cpf_hash "NOT NULL; UNIQUE com usuario_id"
         varchar telefone "NULL"
     }
     CONTRATOS {
@@ -122,6 +157,7 @@ erDiagram
         smallint dia_vencimento "NOT NULL, 1..31"
         date data_inicio "NOT NULL"
         date data_encerramento "NULL (Q2)"
+        varchar anexo_chave "NULL (Q18)"
         boolean ativo "NOT NULL"
     }
     FATURAS {
@@ -130,103 +166,135 @@ erDiagram
         char(7) mes_referencia "NOT NULL, AAAA-MM"
         numeric(19_4) valor "NOT NULL, > 0"
         date data_vencimento "NOT NULL"
-        varchar status "PENDENTE | PAGA | ATRASADA"
-        numeric(19_4) valor_pago "NULL; = valor quando PAGA"
-        date data_pagamento "NULL; NOT NULL quando PAGA"
+        varchar status "PENDENTE, PAGA ou ATRASADA"
+        bigint versao "controle otimista (Q22)"
     }
-    USUARIOS {
+    PAGAMENTOS {
         bigint id PK
-        varchar nome "NOT NULL"
-        varchar email "NOT NULL, UNIQUE"
-        varchar senha_hash "NOT NULL"
+        bigint fatura_id FK "NOT NULL"
+        numeric(19_4) valor "NOT NULL, > 0"
+        date data_pagamento "NOT NULL"
+        varchar forma_pagamento "NOT NULL (Q17)"
     }
 ```
 
 ### Relacionamentos e cardinalidade
 
-| Relação | Cardinalidade | Leitura | Restrição no banco |
-|---|---|---|---|
-| Imóvel → Contrato | 1 : 0..N | um imóvel tem vários contratos ao longo do tempo | `fk_contratos_imovel`, `ON DELETE RESTRICT` |
-| Inquilino → Contrato | 1 : 0..N | um inquilino pode ter mais de um contrato (outro imóvel ou renovação) | `fk_contratos_inquilino`, `ON DELETE RESTRICT` |
-| Contrato → Fatura | 1 : 0..N | uma fatura por competência | `fk_faturas_contrato` + `uq_faturas_contrato_mes (contrato_id, mes_referencia)` |
-| Imóvel ↔ Inquilino | N : N, **via Contrato** | `contratos` é a entidade associativa, com atributos próprios | — |
-| Usuário | isolado | operador; não se liga a nenhum outro agregado hoje | `uq_usuarios_email` |
+| Relação | Cardinalidade | Restrição no banco |
+|---|---|---|
+| Usuário → Imóvel | 1 : 0..N | `fk_imoveis_usuario` |
+| Usuário → Inquilino | 1 : 0..N | `fk_inquilinos_usuario`; `uq_inquilinos_usuario_cpf (usuario_id, cpf_hash)` |
+| Imóvel → Contrato | 1 : 0..N, no máximo 1 ativo | `fk_contratos_imovel`; `CREATE UNIQUE INDEX uq_contratos_imovel_ativo ON contratos (imovel_id) WHERE ativo` |
+| Inquilino → Contrato | 1 : 0..N | `fk_contratos_inquilino` |
+| Contrato → Fatura | 1 : 0..N, uma por competência | `fk_faturas_contrato`; `uq_faturas_contrato_mes (contrato_id, mes_referencia)` |
+| Fatura → Pagamento | 1 : 0..N | `fk_pagamentos_fatura` |
+| Imóvel ↔ Inquilino | N : N **via Contrato** | — |
 
-**Pontos de revisão do DER:**
+Todas as FKs são `ON DELETE RESTRICT`, porque nada é apagado de fato.
 
-1. **Contrato ativo por imóvel (Q1 — decidido: no máximo um).** O PostgreSQL
-   aceita um índice único parcial: `CREATE UNIQUE INDEX uq_contratos_imovel_ativo ON contratos
-   (imovel_id) WHERE ativo`. É regra entre linhas, mas simples e barata, e protege contra
-   dois aluguéis do mesmo imóvel.
-2. **`imovel inativo não recebe contrato` e `contrato encerrado não gera fatura`** dependem de
-   outra tabela, então pelo critério combinado ficam **só na aplicação**, nos casos de uso.
-3. **`Fatura.valor` é cópia, não referência.** Ele copia `contratos.valor_aluguel` na emissão,
-   e um reajuste futuro não altera faturas antigas. Está correto, convém só deixar escrito.
-4. **`mes_referencia` como `String` no domínio.** Sugestão: `YearMonth` no domínio e
-   `char(7)` com `CHECK (mes_referencia ~ '^\d{4}-(0[1-9]|1[0-2])$')` no banco (ou `date` no
-   dia 1). Hoje `"2026-13"` ou `"abc"` passam.
-5. **Coerência de pagamento no banco.** Um `CHECK` pode garantir que `status = 'PAGA'` ⇔
-   `valor_pago` e `data_pagamento` preenchidos. É uma regra simples sobre a própria linha.
-6. **CPF criptografado × unicidade (Q3 — decidido: único).** Criptografia com IV aleatório gera um texto cifrado
-   diferente a cada gravação, e aí `UNIQUE` sobre ele não funciona. Para o CPF ser único e
-   buscável, a saída usual é guardar um **hash com chave (HMAC) do CPF** numa coluna à parte,
-   com `UNIQUE`, ao lado do cifrado. Como Q3 = sim, a tabela leva `cpf_cifrado` + `cpf_hash UNIQUE`.
-7. **`status` persistido (Q5 — decidido: rotina diária).** `ATRASADA` é gravada por uma
-   rotina diária que chama `verificarAtraso(hoje)` nas faturas `PENDENTE` vencidas. Entre o
-   vencimento e a próxima execução, a fatura ainda aparece `PENDENTE`: atraso de até um dia,
-   aceito pela decisão. `CHECK (status IN ('PENDENTE','PAGA','ATRASADA'))` no banco.
+### Decisões de modelagem
+
+1. **Dono só em `imoveis` e `inquilinos`.** Contratos, faturas e pagamentos chegam ao
+   proprietário pela cadeia de FKs, sem coluna `usuario_id` repetida. A regra "imóvel e
+   inquilino do contrato são do mesmo proprietário" depende de duas tabelas. Por isso fica no
+   caso de uso (RF-18), pelo critério combinado de 2026-10-29.
+2. **`valor_pago` e `data_pagamento` saem de `faturas`.** Com pagamento parcial (Q16), o valor
+   pago é a soma de `pagamentos` e o saldo é `valor − soma`. A fatura vira `PAGA` quando o
+   saldo chega a zero. Isso substitui os campos atuais de `Fatura` (D5).
+3. **`Fatura.valor` é cópia** do `valor_aluguel` na emissão. Um reajuste futuro não altera
+   faturas antigas.
+4. **`mes_referencia`**: `YearMonth` no domínio, `char(7)` com
+   `CHECK (mes_referencia ~ '^\d{4}-(0[1-9]|1[0-2])$')` no banco. Hoje é `String` livre (D2).
+5. **`status`** é gravado pela rotina diária (Q5), com
+   `CHECK (status IN ('PENDENTE','PAGA','ATRASADA'))`. Uma fatura parcialmente paga continua
+   `PENDENTE` ou `ATRASADA` até quitar (ver Q24).
+6. **CPF**: `cpf_cifrado` (criptografia com IV aleatório) + `cpf_hash` (HMAC com chave),
+   que permite unicidade e busca sem expor o CPF.
+7. **Anexo do contrato**: o arquivo não vai para o banco. A tabela guarda só a chave ou o
+   caminho no armazenamento (Q18), atrás de uma porta outbound `ArmazenamentoArquivoPort`.
 
 ---
 
 ## 4. Defeitos e lacunas no código atual
 
-Estes pontos contrariam regra já escrita, então não precisam de decisão. Pelo AGENTS §6 cada
-um se corrige em TDD (teste que expõe → falha → correção), não de passagem:
+Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 
 | # | Onde | Problema |
 |---|---|---|
-| D1 | `Contrato` | não valida `valorAluguel > 0` (AGENTS §7) nem `imovelId`/`inquilinoId`/`dataInicio` não nulos |
-| D2 | `Fatura` | construtor não valida nada: `valor` pode ser nulo ou negativo, `contratoId`/`dataVencimento` nulos, `mesReferencia` em qualquer formato |
-| D3 | `ImovelController` | erro de domínio responde **500** em vez de 400, e não há `@Valid` no request (RNF-11) |
-| D4 | AGENTS.md §6 | afirma que "todas as entidades têm teste cobrindo cada rejeição de invariante", o que não vale para `Contrato` e `Fatura` |
-| D5 | AGENTS.md §7 | não registra a regra de **pagamento parcial proibido**, que já está no código |
-| D6 | módulo 1 | ainda não mergeado na `main`; o README da branch `worktree-readme` marca o esquema versionado como pendente |
+| D1 | `Contrato` | não valida `valorAluguel > 0` nem `imovelId`/`inquilinoId`/`dataInicio` não nulos |
+| D2 | `Fatura` | construtor não valida nada; `mesReferencia` é `String` livre |
+| D3 | `ImovelController` | erro de domínio responde **500** em vez de 400; sem `@Valid` |
+| D4 | AGENTS.md §6 | diz que todas as entidades têm teste para cada invariante, o que não vale para `Contrato` e `Fatura` |
+| D5 | `Fatura.pagar` | proíbe pagamento parcial, o que agora contraria Q16. Os testes `deveRejeitarPagamentoParcial` e `deveRegistrarValorPagoEDataDePagamentoAoPagar` vão mudar **por decisão explícita do dono (2026-10-30)**. A mudança entra pela spec do módulo de pagamentos, não antes |
+| D6 | AGENTS.md §6 e memória do projeto | descrevem `Usuario` como "operador do sistema" de um único cliente, o que agora contraria Q14 |
+| D7 | módulo 1 | `imoveis` não tem `usuario_id` nem `identificador`; precisa de migração V2 (sem dados de produção, sem migração de dados) |
+| D8 | módulo 1 | ainda não mergeado na `main` |
 
 ---
 
-## 5. Decisões e perguntas em aberto
+## 5. Decisões do dono
 
-### Decididas em 2026-10-30
+| # | Data | Pergunta | Decisão |
+|---|---|---|---|
+| Q1 | 2026-10-30 | Mais de um contrato ativo por imóvel? | **Não** |
+| Q3 | 2026-10-30 | CPF único? | **Sim**, por proprietário (Q14) |
+| Q5 | 2026-10-30 | `ATRASADA` persistida ou calculada? | **Persistida, rotina diária** |
+| Q6 | 2026-10-30 | Multa e juros no atraso? | **Não** |
+| Q7 | 2026-10-30 | Haverá login? | **Sim** (`[Drive RF01]`) |
+| Q9 | 2026-10-30 | Para que serve o Redis? | **Cache e locks** (`[Drive §3]`); uso concreto em Q22 |
+| Q10 | 2026-10-30 | Emissão de faturas manual ou automática? | **Automática** |
+| Q14 | 2026-10-30 | Um cliente ou vários proprietários? | **Multi-proprietário, com isolamento de dados** |
+| Q15 | 2026-10-30 | Identificador amigável × endereço? | **Os dois**: mantém `endereco` e adiciona `identificador` |
+| Q16 | 2026-10-30 | Um pagamento integral ou vários parciais? | **Vários parciais**; autoriza mudar os testes de `Fatura.pagar` (D5) |
 
-| # | Pergunta | Decisão |
+## 6. Perguntas em aberto
+
+| # | Pergunta | Sugestão | Trava |
+|---|---|---|---|
+| Q12 | Em que dia a rotina emite a fatura da competência? | Dia 1 do mês | faturas |
+| Q13 | Primeira e última fatura são proporcionais (pro rata) ou integrais? | Definir antes de faturas | faturas |
+| Q2 | Guardar data de encerramento do contrato? Data de término prevista? | Guardar `data_encerramento` | contratos |
+| Q4 | Validar dígito verificador do CPF? | Sim, no domínio | inquilinos |
+| Q17 | Formas de pagamento aceitas? | `PIX`, `DINHEIRO`, `TRANSFERENCIA`, `BOLETO` (enum) | pagamentos |
+| Q18 | Onde guardar o anexo do contrato (disco local, S3/MinIO)? Tamanho máximo? | Disco local em dev, atrás de porta | contratos |
+| Q19 | Acordo para a dependência de autenticação (Spring Security ou só `spring-security-crypto` + JWT)? AGENTS §9 exige acordo | Spring Security | login |
+| Q20 | `identificador`: obrigatório? Tamanho máximo? Único por proprietário? | Obrigatório, ≤ 50, único por proprietário | imóveis V2 |
+| Q21 | Pagamento acima do saldo devedor: rejeitar ou aceitar como crédito? | Rejeitar | pagamentos |
+| Q22 | Controle de concorrência de pagamentos: versão otimista no banco ou lock no Redis? | Versão otimista (`faturas.versao`); Redis só para lock da rotina se houver mais de uma instância | pagamentos |
+| Q23 | Frontend Next.js fica neste repositório ou num separado? | Repositório separado | frontend |
+| Q24 | Fatura parcialmente paga precisa de status próprio (ex.: `PARCIAL`) ou basta mostrar o saldo? | Basta o saldo | pagamentos |
+| Q8 | Telefone também criptografado? Retenção de dados? | Só CPF por enquanto | inquilinos |
+| Q11 | Reajuste anual do contrato? | Fora do escopo agora | — |
+
+---
+
+## 7. Divergências com o documento do Drive
+
+O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consistente:
+
+| Ponto do Drive | Problema | Correção |
 |---|---|---|
-| Q1 | Um imóvel pode ter mais de um contrato ativo ao mesmo tempo? | **Não.** No máximo um (RF-13) |
-| Q3 | O CPF é único entre inquilinos? | **Sim** (RF-08) |
-| Q5 | `ATRASADA` é persistida ou calculada? | **Persistida, por rotina diária** (RF-20) |
-| Q6 | Fatura atrasada tem multa e juros? | **Não** (RF-21) |
-| Q10 | A emissão de faturas é manual ou automática? | **Automática** (RF-15) |
+| DER: linha `Imovel 1 — 1 Inquilino` | imóvel e inquilino não se ligam diretamente; a relação N:N passa por Contrato | remover a linha; desenhar `Imovel 1 — * Contrato` |
+| DER: falta a linha `Imovel → Contrato` | `contratos.imovel_id` aparece como FK, mas sem relacionamento desenhado | adicionar |
+| `Inquilino` sem `usuario_id` | com multi-proprietário, um dono veria inquilinos do outro (fere `[Drive RF01]`, isolamento) | adicionar `usuario_id` |
+| `Contrato.contrato_url` | URL fixa expira ou expõe o arquivo | guardar chave do armazenamento; a URL é gerada na leitura |
+| `Historico` | nome genérico | renomear para `Pagamento` (vocabulário do negócio, AGENTS §5) |
+| `Fatura` no desenho | falta `data_vencimento` (aparece só na lista de tabelas) | adicionar no desenho |
+| `Contrato` | falta `data_encerramento` | adicionar se Q2 = sim |
+| RNF04 "criptografia de senhas" | senha não se criptografa, se guarda como **hash** | "hash de senha com salt (BCrypt/Argon2)" |
+| Ausentes no Drive | regras de cobrança decididas: uma fatura por competência, vencimento no último dia em mês curto, emissão automática, rotina diária de atraso, sem multa/juros, pagamento parcial, um contrato ativo por imóvel, CPF criptografado e único por proprietário | incluir ou apontar para este documento |
 
-### Ainda em aberto
+---
 
-Cada resposta muda regra de cobrança ou estrutura de tabela, e o AGENTS §7 manda perguntar em
-vez de inventar.
-
-| # | Pergunta | Sugestão |
-|---|---|---|
-| Q12 | **Quando** a rotina emite a fatura de uma competência? No dia 1 do mês, ou N dias antes do vencimento? | Dia 1 do mês da competência |
-| Q13 | Contrato que começa no meio do mês: a primeira fatura é **proporcional** (pro rata) ou integral? E a do mês do encerramento? | Definir antes do módulo de faturas |
-| Q2 | O contrato tem data de término prevista? Guardamos a data de encerramento? | Guardar `data_encerramento` ao encerrar |
-| Q4 | Validar o dígito verificador do CPF? | Sim, no domínio |
-| Q7 | Haverá login já? Com que hash de senha (BCrypt exige dependência nova)? | Adiar até existir caso de uso |
-| Q8 | Telefone também deve ser criptografado? Há prazo de retenção de dados? | Só CPF por enquanto |
-| Q9 | Para que serve o Redis? | Se nada precisar, remover do stack (YAGNI) |
-| Q11 | Contrato tem reajuste anual? | Fora do escopo agora |
-
-## 6. Próximo passo sugerido
+## 8. Próximos passos sugeridos
 
 1. Mergear o módulo 1 na `main`.
-2. Corrigir D3 (resposta 400) via `/speckit-bug-assess`: é defeito do módulo entregue.
-3. Responder Q2 e Q4 (travam `contratos` e `inquilinos`) e Q12–Q13 (travam a emissão de
-   `faturas`).
-4. Abrir o módulo 2 com `/speckit-specify` (sugestão: **Inquilino + Contrato**, porque Fatura
-   depende de Contrato). D1 e D2 entram nessa spec, em TDD.
+2. Corrigir D3 (resposta 400) via `/speckit-bug-assess`.
+3. Responder Q19 e Q20, que travam o módulo 2.
+4. **Módulo 2 — Proprietário e isolamento** (`/speckit-specify`): cadastro e login do
+   proprietário, `usuario_id` e `identificador` em `imoveis` (V2), filtro por dono. Vem antes
+   de tudo, porque todo agregado depende do dono.
+5. Módulo 3 — Inquilino + Contrato (D1, Q2, Q4, Q18).
+6. Módulo 4 — Faturas: emissão automática e rotina de atraso (D2, Q12, Q13).
+7. Módulo 5 — Pagamentos parciais e painel (D5, Q17, Q21, Q22, Q24).
+8. Atualizar AGENTS.md §6–§7 (D4, D6) quando o módulo 2 for especificado.
