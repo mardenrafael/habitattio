@@ -83,7 +83,7 @@ docker run -d --name hab-prod --network hab-net -p 8080:8080 \
   "$REPO:$TAG"
 docker inspect hab-prod --format '{{.State.Health.Status}}'   # healthy
 docker stop hab-pg
-# aguarde até ~45s (3 × 15s)
+# aguarde até ~60s (52s medidos na implementação)
 docker inspect hab-prod --format '{{.State.Health.Status}}'   # unhealthy
 curl -s -i localhost:8080/actuator/health                     # 503 {"status":"DOWN"}
 docker rm -f hab-prod hab-pg && docker network rm hab-net

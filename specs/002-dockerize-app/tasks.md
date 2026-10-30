@@ -255,7 +255,7 @@ quickstart V3.
   - os dois modos, com a tabela de variáveis do data-model ("Configuração de execução"): `SPRING_PROFILES_ACTIVE`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` e `JAVA_TOOL_OPTIONS`, com obrigatoriedade por modo;
   - exemplos de `docker run` para o modo rápido e para o produção, em que os segredos vêm de variável ou de `.env` fora do git, nunca do Dockerfile;
   - porta 8080;
-  - estados de saúde e tempos: até cerca de 45s para `unhealthy` e `start-period` de 60s;
+  - estados de saúde e tempos: até cerca de 60s para `unhealthy` e `start-period` de 60s;
   - depuração sem shell (`docker logs` e `/actuator/health`);
   - **o risco aceito**: sem `SPRING_PROFILES_ACTIVE=prod` a imagem sobe em H2 com dados voláteis, inclusive na VPS, e nada impede isso (FR-012; decisão do dono de 2026-10-30).
 - [X] T024 [US4] Confirmar que o fluxo local não mudou (FR-023): `ModoRapidoTest` e `HabitattioApplicationTests` continuam verdes e intactos (`git diff --stat src/test` sem alteração neles), e `./mvnw spring-boot:run` sobe na porta 8080 em H2. Encerrar depois de ver `Started HabitattioApplication`. Rodar também `./mvnw spring-boot:test-run` (`TestHabitattioApplication`, profile `prod` com containers), ver `Started HabitattioApplication` com `The following 1 profile is active: "prod"` e encerrar.
@@ -311,8 +311,8 @@ cache nem contexto, research R8 item 6).
   - o "Sync Impact Report" no topo é reescrito, no formato do atual: origem `002-dockerize-app` (T029), sem mudança de princípio, sincronização com o AGENTS.md feita em T028;
   - a linha final passa a `**Version**: 1.0.2 | **Ratified**: 2026-10-29 | **Last Amended**: <data da implementação>`.
 - [X] T030 Rodar a suíte completa `./mvnw test` com Docker e registrar o resultado. Se o Docker não estiver disponível, dizer explicitamente que os testes de integração (inclusive `ImagemContainerTest`) não rodaram.
-- [ ] T031 Executar o quickstart **V1–V4 e V7** contra a imagem construída com BuildKit (`$REPO:$TAG`, a mesma que iria para o push) e registrar cada resultado esperado/obtido. No V7, incluir `docker image inspect "$REPO:$TAG" --format '{{.Os}}/{{.Architecture}}'`, que deve dar `linux/amd64` (FR-008). Isso fecha a lacuna entre o builder do teste e o do operador (research R3).
-- [ ] T032 Checklist de Definition of Done (AGENTS.md §8), registrado no relatório:
+- [X] T031 Executar o quickstart **V1–V4 e V7** contra a imagem construída com BuildKit (`$REPO:$TAG`, a mesma que iria para o push) e registrar cada resultado esperado/obtido. No V7, incluir `docker image inspect "$REPO:$TAG" --format '{{.Os}}/{{.Architecture}}'`, que deve dar `linux/amd64` (FR-008). Isso fecha a lacuna entre o builder do teste e o do operador (research R3).
+- [X] T032 Checklist de Definition of Done (AGENTS.md §8), registrado no relatório:
   - `git diff --stat main -- src/main/java` vazio, ou seja, `domain/`, `application/`, `ports/` e `adapters/` intocados;
   - nenhum teste pré-existente alterado (`git diff main --stat -- src/test` mostra só `ImagemContainerTest.java` e `SaudeAplicacaoTest.java` novos);
   - nenhum `@Disabled`;
@@ -405,3 +405,25 @@ Junção:   T013 → T014 → T015 ∥ … → T016 → T017
   antes de tocar nele (AGENTS.md §3).
 - Commit sugerido por fase, com mensagens no estilo do histórico (`feat(...)`, `test(...)`,
   `docs(...)`).
+
+## Notas de implementação (2026-10-30)
+
+Registro do que mudou em relação ao texto das tasks. Detalhes em research.md R13.
+
+- **T008**: o `.dockerignore` ganhou `!Dockerfile`, porque o docker-java exige que o
+  Dockerfile esteja no contexto.
+- **T008**: `ImageFromDockerfile` com `Path.of("Dockerfile").toAbsolutePath()`. É uma edição
+  num teste read-only, **autorizada pelo dono**, sem mudança de asserção.
+- **T011/T012**:
+  - os três cenários de `SaudeAplicacaoTest` ficaram vermelhos com a dependência (discovery
+    200, `groups` presente, 503 pelo Redis), então **nenhum** foi de caracterização;
+  - `naoDeveExporOutrosEndpointsOperacionais` passava antes da dependência (tudo 404) e ficou
+    vermelho com ela;
+  - foi necessária a sexta propriedade `management.endpoint.health.probes.enabled=false`.
+- **T017**: `spring.datasource.hikari.connection-timeout=3000`, por **decisão do dono**, para o
+  503 sair em cerca de 3s com o banco fora.
+- **T022**: `deveSubirSaudavelNoModoRapidoSemBancoExterno` passou de primeira, como previsto
+  (caracterização).
+- **T025**: o refactor que move o `VerificarSaude` para antes do `COPY src` foi aplicado e
+  validado em T030.
+- **T031**: `unhealthy` em 52s, e não 45s. Os textos foram corrigidos para "até cerca de 60s".

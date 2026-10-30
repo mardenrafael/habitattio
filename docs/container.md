@@ -92,7 +92,7 @@ docker run -d --name habitattio -p 8080:8080 \
   `retries=3`) que roda o `VerificarSaude`, uma classe Java mínima, já que a imagem não tem
   `curl`/`wget`.
 - Com o banco fora, o pedido de conexão desiste em 3s (`spring.datasource.hikari.connection-timeout`),
-  o endpoint responde 503 e o container vira `unhealthy` em até cerca de 45s (3 × 15s).
+  o endpoint responde 503 e o container vira `unhealthy` em até cerca de 60s (até 15s para o próximo ciclo + 3 falhas de 15s; 52s medidos).
 - Estado atual: `docker inspect --format '{{.State.Health.Status}}' habitattio`.
 
 ### Depuração

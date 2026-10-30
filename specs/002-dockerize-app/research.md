@@ -129,7 +129,7 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
   - Subida medida no spike: 6,8s no modo rápido (Started ... in 6.828 seconds). O
     `start-period=60s` dá folga para o modo produção com as migrações Flyway (edge case "subida
     lenta").
-  - Tempo até "unhealthy" depois de o banco cair: no máximo cerca de 3 × 15s.
+  - Tempo até "unhealthy" depois de o banco cair: até cerca de 60s (próximo ciclo + 3 falhas de 15s); 52s medidos na implementação.
 - **Alternatives considered**:
   - *Copiar o `curl` estático de outra imagem*: traz um binário de terceiros a mais para o scan
     acompanhar. Rejeitado.
@@ -373,3 +373,35 @@ Itens marcados como "conhecimento prévio" não foram reconferidos e serão prov
     **PATCH 1.0.1 → 1.0.2**, pelo mesmo procedimento de 001 (T019).
 - **Rationale**: Governance da constitution: toda emenda sincroniza o AGENTS.md na mesma
   mudança.
+
+## R13 — Achados da implementação (2026-10-30)
+
+Desvios e confirmações descobertos ao executar as tasks; o restante saiu como planejado.
+
+- **`.dockerignore` precisa liberar o próprio `Dockerfile`** (R6): o docker-java, usado pelo
+  `ImageFromDockerfile`, recusa construir com "Dockerfile is excluded by pattern '*'". O Docker
+  CLI envia o Dockerfile mesmo excluído. A lista de permissão passou a ter `!Dockerfile`.
+- **Caminho absoluto no `ImageFromDockerfile`** (R8): com `Path.of("Dockerfile")` relativo, o
+  docker-java usa `getParentFile()` = `null` como contexto (NPE "baseDirectory is null").
+  A linha passou a `Path.of("Dockerfile").toAbsolutePath()`. É uma edição num teste já visto
+  vermelho, **autorizada pelo dono**, sem mudar nenhuma asserção.
+- **Grupos de probes no Boot 4** (R7): com o Actuator, `/actuator/health` traz
+  `"groups":["liveness","readiness"]` mesmo com `show-components=never`. Foi preciso uma sexta
+  propriedade, `management.endpoint.health.probes.enabled=false` (sem Kubernetes, os probes não
+  têm uso). `management.health.redis.enabled=false` funcionou com esse nome no Boot 4.1.2.
+- **Timeout do Hikari** (R4, R7): com o PostgreSQL fora, `GET /actuator/health` levava cerca de
+  30s para responder 503 (`connection-timeout` padrão do Hikari). **Decisão do dono**:
+  `spring.datasource.hikari.connection-timeout=3000`, nos dois modos. Medido: 503 em 3,0s.
+- **Herança do comando de healthcheck** (contrato H5): confirmada. Um container que só redefine
+  `Interval`/`Retries` mantém o `Test` da imagem.
+- **Ordem do verificador no Dockerfile** (R5): compilar o `VerificarSaude` depois do `COPY src`
+  o refazia a cada mudança de código. Ele foi movido para antes do `COPY src` (refactor com a
+  suíte verde).
+- **Tempos medidos**:
+  - `ImagemContainerTest` (10 cenários): cerca de 2 a 2,3 min, frio ou com cache;
+  - suíte completa: 3 min 19s;
+  - rebuild BuildKit só de código: 11,7s, zero downloads;
+  - `unhealthy` depois de o banco cair: 52s;
+  - subida até `healthy`: 11–12s.
+- **Aviso inofensivo do Testcontainers**: "Unable to pre-fetch an image (${BASE_BUILD})",
+  porque o pre-fetch não resolve `ARG`. O build puxa a base normalmente.

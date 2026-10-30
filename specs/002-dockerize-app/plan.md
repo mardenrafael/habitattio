@@ -62,7 +62,7 @@ modo rápido.
 
 - Rebuild só de código com o cache reaproveitado: 9s no BuildKit e 17,7s no clássico (spike).
 - Subida no modo rápido em cerca de 7s, medida.
-- Healthcheck detecta banco fora em até cerca de 45s.
+- Healthcheck detecta banco fora em até cerca de 60s (52s medidos; o endpoint responde 503 em ~3s).
 
 **Constraints**:
 
