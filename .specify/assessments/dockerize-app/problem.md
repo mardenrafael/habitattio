@@ -127,7 +127,8 @@ Context").
 As oito perguntas da etapa anterior foram respondidas pelo dono (ver "Decisões já
 registradas"). Restam detalhes menores, que podem ser resolvidos no shape ou no plano:
 
-- [NEEDS CLARIFICATION: Qual registry recebe o push manual (GHCR, Docker Hub, outro) e se a
-  imagem é privada?]
+- ~~Qual registry recebe o push manual e se a imagem é privada?~~ Resolvido em 2026-10-30:
+  **Docker Hub, repositório privado.**
 - [NEEDS CLARIFICATION: Ferramenta e limiar do scan de vulnerabilidades (ex.: falhar com achado
-  crítico, ou só reportar)?]
+  crítico, ou só reportar)? Em 2026-10-30 o dono informou que ainda vai estudar as opções do
+  mercado (ver concept.md).]
