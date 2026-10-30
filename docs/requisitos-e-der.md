@@ -22,9 +22,9 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-01 | Cadastrar proprietário com nome, e-mail válido e senha (guardada como hash) | 🟡 | `Usuario` só no domínio |
+| RF-01 | Cadastrar proprietário com nome, e-mail válido e senha (guardada como **hash BCrypt**, nunca recuperável) | 🟡 | `Usuario` só no domínio; **decidido (Q25)** |
 | RF-02 | E-mail único entre proprietários | ❌ | `uq_usuarios_email` |
-| RF-03 | Login do proprietário | ❌ | **decidido (Q7 + Q14)**; exige dependência de hash/autenticação (ver Q19) |
+| RF-03 | Login do proprietário | ❌ | **decidido (Q7 + Q14)**; Spring Security aprovado (Q19) |
 | RF-04 | **Isolamento de dados**: cada proprietário só vê e altera os próprios imóveis, inquilinos, contratos, faturas e pagamentos | ❌ | **decidido (Q14)** |
 
 ### Imóvel `[Drive RF02]`
@@ -33,7 +33,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 |---|---|---|---|
 | RF-05 | Cadastrar imóvel com endereço (obrigatório, não em branco, ≤ 255 caracteres) e valor sugerido (> 0) | ✅ | `POST /imoveis`, `Imovel`, V1 |
 | RF-06 | Endereço não é único | ✅ | spec FR-005 |
-| RF-07 | Imóvel tem **identificador amigável** (ex.: "Apto 101") além do endereço | ❌ | **decidido (Q15)**; migração V2 (ver Q20) |
+| RF-07 | Imóvel tem **identificador amigável** (ex.: "Apto 101") além do endereço: obrigatório, não em branco, ≤ 50 caracteres, único por proprietário | ❌ | **decidido (Q15 + Q20)**; migração V2 |
 | RF-08 | Imóvel pertence a um proprietário | ❌ | **decidido (Q14)**; `imoveis.usuario_id` |
 | RF-09 | Editar imóvel (identificador, endereço, valor sugerido) | ❌ | `[Drive RF02]` |
 | RF-10 | Listar e consultar os imóveis do proprietário | ❌ | `[Drive RF02]` |
@@ -103,7 +103,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RNF-09 | Testes de integração contra PostgreSQL de versão fixa (Testcontainers) `[Drive RNF03]` | ✅ |
 | RNF-10 | Mensagens de erro em português | ✅ domínio |
 | RNF-11 | Erro de validação responde 4xx com mensagem clara | ❌ **defeito D3** |
-| RNF-12 | Senha com hash forte e salt; autenticação segura `[Drive RNF04]` | ❌ ver Q19 |
+| RNF-12 | Senha com hash **BCrypt** (salt embutido, custo ajustável), nunca criptografia reversível; autenticação via **Spring Security** `[Drive RNF04]` | ❌ **decidido (Q19 + Q25)** |
 | RNF-13 | CPF criptografado no banco; dados pessoais tratados conforme LGPD | ❌ |
 | RNF-14 | Credenciais só por variável de ambiente | ✅ |
 | RNF-15 | Toda consulta e escrita filtra pelo proprietário autenticado; um proprietário nunca acessa dado de outro, nem por id adivinhado | ❌ (Q14) |
@@ -131,12 +131,12 @@ erDiagram
         bigint id PK
         varchar nome "NOT NULL"
         varchar email "NOT NULL, UNIQUE"
-        varchar senha_hash "NOT NULL"
+        char(60) senha_hash "NOT NULL, BCrypt"
     }
     IMOVEIS {
         bigint id PK
         bigint usuario_id FK "NOT NULL"
-        varchar identificador "NOT NULL (Q20)"
+        varchar(50) identificador "NOT NULL; UNIQUE com usuario_id"
         varchar(255) endereco "NOT NULL, não em branco"
         numeric(19_4) valor_sugerido "NOT NULL, > 0"
         boolean ativo "NOT NULL"
@@ -182,7 +182,7 @@ erDiagram
 
 | Relação | Cardinalidade | Restrição no banco |
 |---|---|---|
-| Usuário → Imóvel | 1 : 0..N | `fk_imoveis_usuario` |
+| Usuário → Imóvel | 1 : 0..N | `fk_imoveis_usuario`; `uq_imoveis_usuario_identificador (usuario_id, identificador)` |
 | Usuário → Inquilino | 1 : 0..N | `fk_inquilinos_usuario`; `uq_inquilinos_usuario_cpf (usuario_id, cpf_hash)` |
 | Imóvel → Contrato | 1 : 0..N, no máximo 1 ativo | `fk_contratos_imovel`; `CREATE UNIQUE INDEX uq_contratos_imovel_ativo ON contratos (imovel_id) WHERE ativo` |
 | Inquilino → Contrato | 1 : 0..N | `fk_contratos_inquilino` |
@@ -246,6 +246,9 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | Q14 | 2026-10-30 | Um cliente ou vários proprietários? | **Multi-proprietário, com isolamento de dados** |
 | Q15 | 2026-10-30 | Identificador amigável × endereço? | **Os dois**: mantém `endereco` e adiciona `identificador` |
 | Q16 | 2026-10-30 | Um pagamento integral ou vários parciais? | **Vários parciais**; autoriza mudar os testes de `Fatura.pagar` (D5) |
+| Q19 | 2026-10-30 | Acordo para a dependência de autenticação? | **Aprovado: Spring Security** (acordo do AGENTS §9) |
+| Q20 | 2026-10-30 | Regras do `identificador`? | **Obrigatório, ≤ 50 caracteres, único por proprietário** |
+| Q25 | 2026-10-30 | Senha com hash ou criptografia? | **Hash BCrypt**. Criptografia foi considerada e descartada: é reversível, e se a chave vazar todas as senhas aparecem |
 
 ## 6. Perguntas em aberto
 
@@ -257,8 +260,6 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | Q4 | Validar dígito verificador do CPF? | Sim, no domínio | inquilinos |
 | Q17 | Formas de pagamento aceitas? | `PIX`, `DINHEIRO`, `TRANSFERENCIA`, `BOLETO` (enum) | pagamentos |
 | Q18 | Onde guardar o anexo do contrato (disco local, S3/MinIO)? Tamanho máximo? | Disco local em dev, atrás de porta | contratos |
-| Q19 | Acordo para a dependência de autenticação (Spring Security ou só `spring-security-crypto` + JWT)? AGENTS §9 exige acordo | Spring Security | login |
-| Q20 | `identificador`: obrigatório? Tamanho máximo? Único por proprietário? | Obrigatório, ≤ 50, único por proprietário | imóveis V2 |
 | Q21 | Pagamento acima do saldo devedor: rejeitar ou aceitar como crédito? | Rejeitar | pagamentos |
 | Q22 | Controle de concorrência de pagamentos: versão otimista no banco ou lock no Redis? | Versão otimista (`faturas.versao`); Redis só para lock da rotina se houver mais de uma instância | pagamentos |
 | Q23 | Frontend Next.js fica neste repositório ou num separado? | Repositório separado | frontend |
@@ -281,7 +282,7 @@ O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consiste
 | `Historico` | nome genérico | renomear para `Pagamento` (vocabulário do negócio, AGENTS §5) |
 | `Fatura` no desenho | falta `data_vencimento` (aparece só na lista de tabelas) | adicionar no desenho |
 | `Contrato` | falta `data_encerramento` | adicionar se Q2 = sim |
-| RNF04 "criptografia de senhas" | senha não se criptografa, se guarda como **hash** | "hash de senha com salt (BCrypt/Argon2)" |
+| RNF04 "criptografia de senhas" | senha não se criptografa, se guarda como **hash** (Q25) | "hash de senha BCrypt" |
 | Ausentes no Drive | regras de cobrança decididas: uma fatura por competência, vencimento no último dia em mês curto, emissão automática, rotina diária de atraso, sem multa/juros, pagamento parcial, um contrato ativo por imóvel, CPF criptografado e único por proprietário | incluir ou apontar para este documento |
 
 ---
@@ -290,7 +291,7 @@ O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consiste
 
 1. Mergear o módulo 1 na `main`.
 2. Corrigir D3 (resposta 400) via `/speckit-bug-assess`.
-3. Responder Q19 e Q20, que travam o módulo 2.
+3. ~~Responder Q19 e Q20~~ (respondidas): o módulo 2 está desbloqueado.
 4. **Módulo 2 — Proprietário e isolamento** (`/speckit-specify`): cadastro e login do
    proprietário, `usuario_id` e `identificador` em `imoveis` (V2), filtro por dono. Vem antes
    de tudo, porque todo agregado depende do dono.
