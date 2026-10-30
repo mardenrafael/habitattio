@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!mvnw
+!pom.xml
+!.mvn
+!src
+!docker

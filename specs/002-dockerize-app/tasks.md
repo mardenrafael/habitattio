@@ -53,8 +53,8 @@ dependência: US1, US2 e US6 (P1); US3 (P2); US4 e US5 (P3).
 
 **Purpose**: confirmar o ponto de partida antes de qualquer mudança.
 
-- [ ] T001 Rodar `./mvnw test` com Docker no ar e registrar no relatório que a suíte atual (`HabitattioApplicationTests`, `ModoRapidoTest`, `EstruturaBancoProducaoTest`, testes de `adapters/`, `application/` e `domain/`) está verde **antes** de qualquer alteração. Se não estiver, pare e reporte.
-- [ ] T002 Conferir o ambiente de build e registrar as versões no relatório: `docker version` (Engine 29.x, `linux/amd64`), `docker buildx version` (BuildKit disponível) e `DOCKER_BUILDKIT=0 docker build --help` sem erro (builder clássico ainda disponível, necessário para o `ImageFromDockerfile`). Puxar as bases fixadas em research R1/R2 e conferir que os digests ainda resolvem: `docker pull eclipse-temurin:25-jdk@sha256:83f4a7fc27df94dcc7b8de04d14cbbba8da14406f921e966969c3b09000aa507` e `docker pull gcr.io/distroless/java25-debian13:nonroot@sha256:fc6f4aec634ee433ff16a5d18814181e7928f4be9f434b44b48231e2eb7becee`.
+- [X] T001 Rodar `./mvnw test` com Docker no ar e registrar no relatório que a suíte atual (`HabitattioApplicationTests`, `ModoRapidoTest`, `EstruturaBancoProducaoTest`, testes de `adapters/`, `application/` e `domain/`) está verde **antes** de qualquer alteração. Se não estiver, pare e reporte.
+- [X] T002 Conferir o ambiente de build e registrar as versões no relatório: `docker version` (Engine 29.x, `linux/amd64`), `docker buildx version` (BuildKit disponível) e `DOCKER_BUILDKIT=0 docker build --help` sem erro (builder clássico ainda disponível, necessário para o `ImageFromDockerfile`). Puxar as bases fixadas em research R1/R2 e conferir que os digests ainda resolvem: `docker pull eclipse-temurin:25-jdk@sha256:83f4a7fc27df94dcc7b8de04d14cbbba8da14406f921e966969c3b09000aa507` e `docker pull gcr.io/distroless/java25-debian13:nonroot@sha256:fc6f4aec634ee433ff16a5d18814181e7928f4be9f434b44b48231e2eb7becee`.
 
 ---
 
@@ -64,7 +64,7 @@ dependência: US1, US2 e US6 (P1); US3 (P2); US4 e US5 (P3).
 
 **⚠️ CRITICAL**: nenhum cenário de imagem pode ser escrito antes desta fase.
 
-- [ ] T003 Criar `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java` **sem métodos de teste**, só a infraestrutura, sem contexto Spring (como `EstruturaBancoProducaoTest`):
+- [X] T003 Criar `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java` **sem métodos de teste**, só a infraestrutura, sem contexto Spring (como `EstruturaBancoProducaoTest`):
   - (a) Um campo estático `IMAGEM = new ImageFromDockerfile("habitattio:teste", false).withDockerfile(Path.of("Dockerfile")).withBuildArg("VERSION", "teste").withBuildArg("REVISION", "teste")`. Os build args alimentam o cenário dos labels (T004). O `false` mantém a imagem e o cache; o `LazyFuture` constrói uma única vez por JVM.
   - (b) Uma `Network` estática compartilhada.
   - (c) `novoPostgres()`: `PostgreSQLContainer` com `TestcontainersConfiguration.POSTGRES_IMAGE`, `.withNetwork(rede).withNetworkAliases("postgres")`.
@@ -94,7 +94,7 @@ quickstart V1 e V4 (parte "subida").
 
 ### Tests for User Story 1 (escrever ANTES da receita) ⚠️
 
-- [ ] T004 [US1] Em `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java`, adicionar os cenários abaixo, um comportamento por teste, em Arrange/Act/Assert:
+- [X] T004 [US1] Em `src/test/java/br/com/marden/habitattio/ImagemContainerTest.java`, adicionar os cenários abaixo, um comportamento por teste, em Arrange/Act/Assert:
   - `deveSubirEmProducaoComPostgresSemRedis`: `containerProducao` com `Wait.forLogMessage(".*Started HabitattioApplication.*", 1)` e timeout de 2 min. Afirma `isRunning()` e que `GET /imoveis` responde com status diferente de 5xx: 405 é aceito, porque o endpoint só tem `POST`; a afirmação é "a aplicação responde na porta configurada".
   - **Estratégia comum aos dois cenários de falha a seguir** (o container precisa continuar existindo para o código de saída ser lido; não confie em `ContainerLaunchException`, porque o Testcontainers remove o container quando o `start()` falha):
     1. `waitingFor(Wait.forLogMessage(".*Application run failed.*", 1))` com timeout de 2 min;
@@ -106,12 +106,12 @@ quickstart V1 e V4 (parte "subida").
   - `deveConterSoORuntimeJava`: `execInContainer("java", "--list-modules")` termina com 0 e o stdout **não** contém `jdk.compiler`; `copyFileFromContainer("/app/pom.xml", …)`, `copyFileFromContainer("/app/src", …)` e `copyFileFromContainer("/app/target", …)` lançam exceção. FR-002; data-model "não contém `jdk.compiler`, `src/`, `pom.xml` nem `target/`".
   - `deveRegistrarVersaoERevisaoNosLabels`: `DockerClientFactory.instance().client().inspectImageCmd("habitattio:teste").exec()` (força a construção antes, por exemplo com `IMAGEM.get()`). `getConfig().getLabels()` contém `org.opencontainers.image.version=teste` e `org.opencontainers.image.revision=teste`. Contrato C6; é o teste que justifica o `LABEL` de T007.
   - `deveSerConstruidaParaLinuxAmd64`: o mesmo `inspectImageCmd` dá `getOs()` igual a `"linux"` e `getArch()` igual a `"amd64"`. FR-008; contrato C7.
-- [ ] T005 [US1] Rodar `./mvnw test -Dtest=ImagemContainerTest` e **ver todos falharem pelo motivo certo**: o build da imagem falha porque o `Dockerfile` não existe. Registrar a mensagem no relatório. A partir daqui os sete testes são read-only.
+- [X] T005 [US1] Rodar `./mvnw test -Dtest=ImagemContainerTest` e **ver todos falharem pelo motivo certo**: o build da imagem falha porque o `Dockerfile` não existe. Registrar a mensagem no relatório. A partir daqui os sete testes são read-only.
 
 ### Implementation for User Story 1
 
-- [ ] T006 [P] [US1] **(Exceção de TDD decidida pelo dono, sem teste vermelho; verificado em T026.)** Criar `.dockerignore` na raiz em **lista de permissão** (research R6), exatamente com: `*`, `!mvnw`, `!pom.xml`, `!.mvn`, `!src` e `!docker`. FR-006: `.env*`, `target/`, `.git`, `specs/`, `.specify/` e `.claude/` ficam fora por construção.
-- [ ] T007 [US1] Criar `Dockerfile` na raiz, **sem `HEALTHCHECK`** (vem na US2), só com instruções comuns ao clássico e ao BuildKit (research R3, R5, R11):
+- [X] T006 [P] [US1] **(Exceção de TDD decidida pelo dono, sem teste vermelho; verificado em T026.)** Criar `.dockerignore` na raiz em **lista de permissão** (research R6), exatamente com: `*`, `!mvnw`, `!pom.xml`, `!.mvn`, `!src` e `!docker`. FR-006: `.env*`, `target/`, `.git`, `specs/`, `.specify/` e `.claude/` ficam fora por construção.
+- [X] T007 [US1] Criar `Dockerfile` na raiz, **sem `HEALTHCHECK`** (vem na US2), só com instruções comuns ao clássico e ao BuildKit (research R3, R5, R11):
   - **Topo**:
     - `ARG BASE_BUILD=eclipse-temurin:25-jdk@sha256:83f4a7fc27df94dcc7b8de04d14cbbba8da14406f921e966969c3b09000aa507`;
     - `ARG BASE_RUNTIME=gcr.io/distroless/java25-debian13:nonroot@sha256:fc6f4aec634ee433ff16a5d18814181e7928f4be9f434b44b48231e2eb7becee`.
@@ -128,7 +128,7 @@ quickstart V1 e V4 (parte "subida").
     - `ARG VERSION=dev`, `ARG REVISION=dev` e `LABEL org.opencontainers.image.version=${VERSION} org.opencontainers.image.revision=${REVISION}`, **depois** das cópias, para não invalidar o cache;
     - `ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]`. Sem flags de JVM; o ajuste, se precisar, vem por `JAVA_TOOL_OPTIONS` em runtime (research R5).
   - **Proibições**: nenhum `ENV` com credencial (FR-011) e nenhum `USER`, porque a base já é uid 65532.
-- [ ] T008 [US1] Rodar `./mvnw test -Dtest=ImagemContainerTest` até os sete cenários da US1 ficarem verdes, sem tocar nos testes. Declarar no relatório como **caracterização** os cenários que já passam só por decisões anteriores, para que não justifiquem código: `deveRodarProcessoDaAplicacaoSemSerRoot` (base `nonroot`), `deveRecusarSubidaEmProducaoQuandoBancoDiverge` e `naoDeveSubirEmProducaoSemVariaveisDeConexao` (comportamento já existente do profile `prod`) e `deveSerConstruidaParaLinuxAmd64` (o host de build já é amd64). Declarar também a exceção de TDD do `.dockerignore` (T006). Rodar também `docker build -t habitattio:local .` (BuildKit) e confirmar que constrói (contrato C1/C2).
+- [X] T008 [US1] Rodar `./mvnw test -Dtest=ImagemContainerTest` até os sete cenários da US1 ficarem verdes, sem tocar nos testes. Declarar no relatório como **caracterização** os cenários que já passam só por decisões anteriores, para que não justifiquem código: `deveRodarProcessoDaAplicacaoSemSerRoot` (base `nonroot`), `deveRecusarSubidaEmProducaoQuandoBancoDiverge` e `naoDeveSubirEmProducaoSemVariaveisDeConexao` (comportamento já existente do profile `prod`) e `deveSerConstruidaParaLinuxAmd64` (o host de build já é amd64). Declarar também a exceção de TDD do `.dockerignore` (T006). Rodar também `docker build -t habitattio:local .` (BuildKit) e confirmar que constrói (contrato C1/C2).
 
 **Checkpoint**: a imagem sobe em produção, recusa banco divergente e configuração ausente, roda
 sem root e só tem o JRE. A US1 é entregável sozinha (sem healthcheck).
@@ -145,20 +145,20 @@ healthcheck de container que funciona sem `curl`/`wget`.
 
 ### Tests for User Story 2 — contrato HTTP (escrever ANTES do Actuator) ⚠️
 
-- [ ] T009 [P] [US2] Criar `src/test/java/br/com/marden/habitattio/SaudeAplicacaoTest.java` com `@SpringBootTest` e `@AutoConfigureMockMvc` (`org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`). Ele roda no modo rápido, **sem importar `TestcontainersConfiguration`**, ou seja, sem Redis rodando. Contrato [contracts/saude-http.md](./contracts/saude-http.md). Cenários:
+- [X] T009 [P] [US2] Criar `src/test/java/br/com/marden/habitattio/SaudeAplicacaoTest.java` com `@SpringBootTest` e `@AutoConfigureMockMvc` (`org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`). Ele roda no modo rápido, **sem importar `TestcontainersConfiguration`**, ou seja, sem Redis rodando. Contrato [contracts/saude-http.md](./contracts/saude-http.md). Cenários:
   - `deveResponderSaudavelSemRedis`: `GET /actuator/health` responde 200 com `$.status` igual a `"UP"`.
   - `deveResponderSoComEstadoGeral`: o corpo de `GET /actuator/health` não tem `components`, `details` nem `groups` (`jsonPath(...).doesNotExist()`).
   - `naoDeveExporOutrosEndpointsOperacionais`: `/actuator`, `/actuator/env`, `/actuator/metrics`, `/actuator/info`, `/actuator/beans` e `/actuator/configprops` respondem 404 cada um.
-- [ ] T010 [US2] Rodar `./mvnw test -Dtest=SaudeAplicacaoTest` e **ver falhar pelo motivo certo**: `/actuator/health` responde 404, porque não há Actuator. Os três testes ficam read-only daqui em diante.
+- [X] T010 [US2] Rodar `./mvnw test -Dtest=SaudeAplicacaoTest` e **ver falhar pelo motivo certo**: `/actuator/health` responde 404, porque não há Actuator. Os três testes ficam read-only daqui em diante.
 
 ### Implementation for User Story 2 — contrato HTTP
 
-- [ ] T011 [US2] Adicionar ao `pom.xml`, junto dos outros starters, `org.springframework.boot:spring-boot-starter-actuator` **sem versão** (BOM 4.1.2; acordo do dono no decision.md; constitution §IV). Nenhuma dependência `-test` nova. Rodar `./mvnw test -Dtest=SaudeAplicacaoTest` e registrar qual cenário ainda está vermelho e por quê. Esperado:
+- [X] T011 [US2] Adicionar ao `pom.xml`, junto dos outros starters, `org.springframework.boot:spring-boot-starter-actuator` **sem versão** (BOM 4.1.2; acordo do dono no decision.md; constitution §IV). Nenhuma dependência `-test` nova. Rodar `./mvnw test -Dtest=SaudeAplicacaoTest` e registrar qual cenário ainda está vermelho e por quê. Esperado:
   - `naoDeveExporOutrosEndpointsOperacionais` vermelho, porque `/actuator` (discovery) responde 200;
   - `deveResponderSaudavelSemRedis` provavelmente vermelho, porque o indicador de Redis fica `DOWN` sem Redis.
 
   Quem passar só com a dependência (por exemplo `deveResponderSoComEstadoGeral`, pelo padrão do Boot) é declarado como caracterização.
-- [ ] T012 [US2] Adicionar a `src/main/resources/application.properties` (base, vale nos dois modos), com um comentário curto em português no estilo do arquivo, exatamente:
+- [X] T012 [US2] Adicionar a `src/main/resources/application.properties` (base, vale nos dois modos), com um comentário curto em português no estilo do arquivo, exatamente:
   ```properties
   management.endpoints.web.exposure.include=health
   management.endpoints.web.discovery.enabled=false
