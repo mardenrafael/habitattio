@@ -70,12 +70,13 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RF-26 | Fatura pendente vira `ATRASADA` a partir do **dia seguinte** ao vencimento, gravado por **rotina diária** | 🟡 | **decidido (Q5 + Q12)**; `verificarAtraso` já usa `referencia.isAfter(dataVencimento)`, falta a rotina |
 | RF-27 | Sem multa nem juros por atraso | ✅ | **decidido (Q6)** |
 | RF-28 | `PAGA` é terminal | ✅ | `FaturaTest` |
+| RF-34 | O proprietário **marca a fatura como paga** com uma ação simples (baixa integral, informando a data); substitui o registro de pagamentos enquanto ele estiver fora do escopo | 🟡 | **decidido (Q28)**; `Fatura.pagar` já existe e só aceita o valor integral, falta caso de uso e API |
 
 ### Pagamento `[Drive RF06]` — ⏸ fora do escopo atual
 
 > **Decisão de 2026-10-30:** pagamentos **não entram no escopo agora**. Os requisitos abaixo
 > ficam registrados para quando o módulo for retomado; nenhum deles será especificado ou
-> implementado antes disso. Como a fatura vira `PAGA` enquanto isso é a pergunta Q28.
+> implementado antes disso. Enquanto isso, a fatura vira `PAGA` pela ação simples de RF-34 (Q28).
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
@@ -266,13 +267,12 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | Q23 | 2026-10-30 | Frontend no mesmo repositório? | **Não**, repositório separado |
 | Q24 | 2026-10-30 | Status próprio para fatura parcialmente paga? | **Não**, basta mostrar o saldo (vale quando pagamentos voltarem) |
 | — | 2026-10-30 | Pagamentos entram no escopo? | **Não, por enquanto.** Q17 (formas de pagamento) e Q21 (pagamento acima do saldo) ficam adiadas |
+| Q28 | 2026-10-30 | Sem pagamentos, como a fatura vira `PAGA`? | **O próprio proprietário marca como paga**, com uma ação simples (RF-34) |
 | Q25 | 2026-10-30 | Senha com hash ou criptografia? | **Hash BCrypt**. Criptografia foi considerada e descartada: é reversível, e se a chave vazar todas as senhas aparecem |
 
 ## 6. Perguntas em aberto
 
-| # | Pergunta | Sugestão | Trava |
-|---|---|---|---|
-| Q28 | Com pagamentos fora do escopo, como uma fatura vira `PAGA` (o painel mostra "Pago")? | Ação simples **"marcar fatura como paga"** (baixa integral, com data), usando o `Fatura.pagar` que já existe, dentro do módulo de faturas | faturas, painel |
+Nenhuma no escopo atual.
 
 ### Adiadas (voltam com o módulo de pagamentos)
 
@@ -310,6 +310,6 @@ O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consiste
    proprietário, `usuario_id` e `identificador` em `imoveis` (V2), filtro por dono. Vem antes
    de tudo, porque todo agregado depende do dono.
 5. Módulo 3 — Inquilino + Contrato (D1).
-6. Módulo 4 — Faturas e painel: emissão automática, rotina de atraso e painel mensal (D2, Q28).
+6. Módulo 4 — Faturas e painel: emissão automática, rotina de atraso, marcar como paga e painel mensal (D2).
 7. ⏸ Módulo 5 — Pagamentos parciais (**fora do escopo atual**; D5, Q17, Q21).
 8. Atualizar AGENTS.md §6–§7 (D4, D6) quando o módulo 2 for especificado.
