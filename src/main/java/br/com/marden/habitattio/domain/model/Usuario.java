@@ -33,6 +33,10 @@ public class Usuario {
         }
     }
 
+    public static String normalizarEmail(String email) {
+        throw new UnsupportedOperationException();
+    }
+
     public Long getId() {
         return id;
     }
