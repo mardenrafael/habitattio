@@ -1,17 +1,22 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 → 1.0.1 (PATCH)
-Rationale: amendment from feature 001-better-db-schema (task T019). Flyway was added to the
-stack with explicit owner agreement (spec FR-014). The "Stack Tecnológico e Restrições" list is
-updated to describe it; no principle, MUST rule or governance procedure changes, so PATCH.
-Modified principles: none
-Modified sections: Stack Tecnológico e Restrições (Flyway added; Testcontainers versions fixed)
+Version change: 1.0.1 → 1.0.2 (PATCH)
+Rationale: amendment from feature 003-proprietario-login-isolamento (task T066). Spring Security
+was added to the stack with explicit owner agreement (Q19 of the feature 003 clarifications).
+The "Stack Tecnológico e Restrições" section and the Principle IV list of the stack that covers
+the current scope are updated to include it; no principle, MUST rule or governance procedure
+changes, so PATCH.
+Modified principles: none (only the stack list inside IV. Simplicidade e YAGNI is updated)
+Modified sections: Stack Tecnológico e Restrições (Spring Security added); IV (stack list)
 Added sections: none
 Removed sections: none
 Templates requiring follow-up: none (.specify/templates/* do not reference the stack list)
-Related sync: AGENTS.md §1/§6/§9 updated in T018; stale §4 note ("constitution ainda é o
-template em branco") removed in the same change set.
+Related sync: AGENTS.md §9 (stack) updated in this same change set (T065); AGENTS.md §2/§6/§7
+also updated for the feature 003 model and rules.
 Deferred items: none
+
+Previous report — 1.0.0 → 1.0.1 (PATCH): feature 001-better-db-schema (T019) added Flyway to
+the stack with explicit owner agreement (spec FR-014); Testcontainers versions fixed.
 -->
 
 # Habitattio Constitution
@@ -81,8 +86,8 @@ caso de uso real que a exige.
 
 - Dependência nova no `pom.xml`, troca de banco ou de `ddl-auto`, ou introdução de Lombok,
   MapStruct ou framework de mocking MUST ter acordo explícito do usuário antes de ser
-  adicionada — o stack atual (Web MVC, Data JPA, Redis, Validation, PostgreSQL/H2,
-  Testcontainers) cobre o escopo vigente.
+  adicionada — o stack atual (Web MVC, Data JPA, Redis, Validation, Security,
+  PostgreSQL/H2, Flyway, Testcontainers) cobre o escopo vigente.
 - Mapeamento entre camadas (`*JpaEntity ↔` entidade de domínio, `*Request/*Response ↔` domínio)
   é manual e explícito, não automático, para manter a fronteira de arquitetura visível em
   revisão.
@@ -114,6 +119,7 @@ negócio do sistema) e mantém o domínio legível para quem conhece o vocabulá
 ## Stack Tecnológico e Restrições
 
 Java 25, Spring Boot 4.1.2, Spring Web MVC, Spring Data JPA, Spring Data Redis, Bean Validation,
+Spring Security (login por sessão e isolamento por proprietário, acordado na feature 003),
 PostgreSQL (runtime), H2 (dev/test em memória), Flyway (migrações versionadas, só no PostgreSQL:
 profile `prod` com `ddl-auto=validate`; o modo rápido com H2 usa `ddl-auto=update`, sem
 migrações), Testcontainers (PostgreSQL + Redis, versões fixas) para testes de integração.
@@ -170,4 +176,4 @@ consistência.
   não-negociáveis; `AGENTS.md` documenta como aplicá-los no dia a dia — os dois MUST permanecer
   consistentes.
 
-**Version**: 1.0.1 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-10-29
+**Version**: 1.0.2 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-10-30

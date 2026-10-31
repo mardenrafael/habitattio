@@ -2,8 +2,10 @@
 
 - **Atualizado**: 2026-10-30
 - **Base**: `main` (`f076494`) + módulo 1 `001-better-db-schema` (branch
-  `worktree-spec-better-db-schema`, ainda **não mergeada** na `main`).
-- **Fontes**: AGENTS.md §5–§7, `domain/model/*`, `specs/001-better-db-schema/*`,
+  `worktree-spec-better-db-schema`, ainda **não mergeada** na `main`) + módulo 2
+  `003-proprietario-login-isolamento` (branch `worktree-spec-proprietario-isolamento`, ainda
+  **não mergeada** na `main`).
+- **Fontes**: AGENTS.md §5–§7, `domain/model/*`, `specs/001-better-db-schema/*`, `specs/003-proprietario-login-isolamento/*`,
   `V1__cria_tabela_imoveis.sql`, decisões de banco (2026-10-29), decisões do dono
   (2026-10-30) e o documento do Drive **"Gestor de Aluguéis - Documentação"**
   (`Documentacao_Gestor_Alugueis.md`, gerado em 2026-10-30).
@@ -22,10 +24,10 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 
 | ID | Requisito | Status | Onde |
 |---|---|---|---|
-| RF-01 | Cadastrar proprietário com nome, e-mail válido e senha (guardada como **hash BCrypt**, nunca recuperável) | 🟡 | `Usuario` só no domínio; **decidido (Q25)** |
-| RF-02 | E-mail único entre proprietários | ❌ | `uq_usuarios_email` |
-| RF-03 | Login do proprietário | ❌ | **decidido (Q7 + Q14)**; Spring Security aprovado (Q19) |
-| RF-04 | **Isolamento de dados**: cada proprietário só vê e altera os próprios imóveis, inquilinos, contratos, faturas e pagamentos | ❌ | **decidido (Q14)** |
+| RF-01 | Cadastrar proprietário com nome, e-mail válido e senha (guardada como **hash BCrypt**, nunca recuperável) | ✅ | spec 003; `POST /proprietarios`, `ProprietarioController`, `CadastrarProprietarioUseCase`, `Usuario`; **decidido (Q25)** |
+| RF-02 | E-mail único entre proprietários | ✅ | spec 003; `CadastrarProprietarioUseCase` + `uq_usuarios_email` (V2); duplicidade responde 409 (`EmailJaCadastradoException`) |
+| RF-03 | Login do proprietário | ✅ | spec 003; sessão (`SessaoController`, `/sessao`), `AutenticarProprietarioUseCase`, `ProprietarioAuthenticationProvider`; 401 sem autenticação; **decidido (Q7 + Q14)**; Spring Security aprovado (Q19) |
+| RF-04 | **Isolamento de dados**: cada proprietário só vê e altera os próprios imóveis, inquilinos, contratos, faturas e pagamentos | 🟡 | spec 003 entrega o isolamento **só para imóveis** (`ConsultarImovelUseCase`, `InativarImovelUseCase`; imóvel de outro dono responde 404). Inquilinos, contratos e faturas herdam a regra nos próximos módulos; **decidido (Q14)** |
 
 ### Imóvel `[Drive RF02]`
 
@@ -33,11 +35,11 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 |---|---|---|---|
 | RF-05 | Cadastrar imóvel com endereço (obrigatório, não em branco, ≤ 255 caracteres) e valor sugerido (> 0) | ✅ | `POST /imoveis`, `Imovel`, V1 |
 | RF-06 | Endereço não é único | ✅ | spec FR-005 |
-| RF-07 | Imóvel tem **identificador amigável** (ex.: "Apto 101") além do endereço: obrigatório, não em branco, ≤ 50 caracteres, único por proprietário | ❌ | **decidido (Q15 + Q20)**; migração V2 |
-| RF-08 | Imóvel pertence a um proprietário | ❌ | **decidido (Q14)**; `imoveis.usuario_id` |
+| RF-07 | Imóvel tem **identificador amigável** (ex.: "Apto 101") além do endereço: obrigatório, não em branco, ≤ 50 caracteres, único por proprietário (sem distinguir caixa) | ✅ | spec 003; `Imovel`, `CadastrarImovelUseCase`, `IdentificadorImovelDuplicadoException` (409), `uq_imoveis_usuario_identificador` (V2); **decidido (Q15 + Q20)** |
+| RF-08 | Imóvel pertence a um proprietário | ✅ | spec 003; `imoveis.usuario_id` + `fk_imoveis_usuario` (V2); o dono vem da sessão, não do corpo; **decidido (Q14)** |
 | RF-09 | Editar imóvel (identificador, endereço, valor sugerido) | ❌ | `[Drive RF02]` |
-| RF-10 | Listar e consultar os imóveis do proprietário | ❌ | `[Drive RF02]` |
-| RF-11 | Inativar imóvel (desativação lógica) | 🟡 | só `Imovel.inativar()` |
+| RF-10 | Listar e consultar os imóveis do proprietário | 🟡 | spec 003 entrega a consulta por id (`GET /imoveis/{id}`, `ConsultarImovelUseCase`); a listagem ainda não existe; `[Drive RF02]` |
+| RF-11 | Inativar imóvel (desativação lógica) | ✅ | spec 003; `POST /imoveis/{id}/inativacao`, `InativarImovelUseCase`, `Imovel.inativar()` |
 | RF-12 | Imóvel inativo não recebe novo contrato | ❌ | AGENTS §7; no caso de uso |
 
 ### Inquilino `[Drive RF03]`
@@ -107,11 +109,11 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RNF-08 | Nada é apagado de fato: desativação lógica e FKs `ON DELETE RESTRICT` | 🟡 |
 | RNF-09 | Testes de integração contra PostgreSQL de versão fixa (Testcontainers) `[Drive RNF03]` | ✅ |
 | RNF-10 | Mensagens de erro em português | ✅ domínio |
-| RNF-11 | Erro de validação responde 4xx com mensagem clara | ❌ **defeito D3** |
-| RNF-12 | Senha com hash **BCrypt** (salt embutido, custo ajustável), nunca criptografia reversível; autenticação via **Spring Security** `[Drive RNF04]` | ❌ **decidido (Q19 + Q25)** |
+| RNF-11 | Erro de validação responde 4xx com mensagem clara | ✅ spec 003 (D3 resolvido): `TratamentoErrosHandler` devolve `ProblemDetail` 400/401/403/404/409; erro genérico não previsto (500) segue como lacuna (§4) |
+| RNF-12 | Senha com hash **BCrypt** (salt embutido, custo ajustável), nunca criptografia reversível; autenticação via **Spring Security** `[Drive RNF04]` | ✅ spec 003: `BCryptCodificadorSenhaAdapter`, `CHECK` de formato BCrypt em `usuarios.senha_hash`; **decidido (Q19 + Q25)** |
 | RNF-13 | CPF criptografado no banco (telefone não, por ora); dados pessoais tratados conforme LGPD | ❌ **decidido (Q8)** |
 | RNF-14 | Credenciais só por variável de ambiente | ✅ |
-| RNF-15 | Toda consulta e escrita filtra pelo proprietário autenticado; um proprietário nunca acessa dado de outro, nem por id adivinhado | ❌ (Q14) |
+| RNF-15 | Toda consulta e escrita filtra pelo proprietário autenticado; um proprietário nunca acessa dado de outro, nem por id adivinhado | 🟡 spec 003 cobre **só imóveis** (consulta e inativação filtram pelo dono; id alheio responde 404). Vale para os demais agregados quando eles entrarem (Q14) |
 | RNF-16 | Rotinas automáticas (emissão mensal, atraso diário) são adapters de entrada agendados que chamam casos de uso, e são idempotentes | ❌ |
 | RNF-17 | Pagamentos simultâneos na mesma fatura não podem ultrapassar o saldo: **versão otimista no banco** (`faturas.versao`) | ⏸ **decidido (Q22)**, com o módulo de pagamentos |
 | RNF-18 | Frontend Next.js (App Router) + Tailwind, **mobile-first**, em **repositório separado** `[Drive RNF01]`; o backend expõe API REST consumível por ele | ❌ **decidido (Q23)** |
@@ -136,12 +138,12 @@ erDiagram
         bigint id PK
         varchar nome "NOT NULL"
         varchar email "NOT NULL, UNIQUE"
-        char(60) senha_hash "NOT NULL, BCrypt"
+        varchar(60) senha_hash "NOT NULL, CHECK formato BCrypt"
     }
     IMOVEIS {
         bigint id PK
         bigint usuario_id FK "NOT NULL"
-        varchar(50) identificador "NOT NULL; UNIQUE com usuario_id"
+        varchar(50) identificador "NOT NULL; UNIQUE com usuario_id, sem distinguir caixa"
         varchar(255) endereco "NOT NULL, não em branco"
         numeric(19_4) valor_sugerido "NOT NULL, > 0"
         boolean ativo "NOT NULL"
@@ -188,7 +190,7 @@ erDiagram
 
 | Relação | Cardinalidade | Restrição no banco |
 |---|---|---|
-| Usuário → Imóvel | 1 : 0..N | `fk_imoveis_usuario`; `uq_imoveis_usuario_identificador (usuario_id, identificador)` |
+| Usuário → Imóvel | 1 : 0..N | `fk_imoveis_usuario`; índice único `uq_imoveis_usuario_identificador` sobre `(usuario_id, lower(identificador))`, sem distinguir caixa |
 | Usuário → Inquilino | 1 : 0..N | `fk_inquilinos_usuario`; `uq_inquilinos_usuario_cpf (usuario_id, cpf_hash)` |
 | Imóvel → Contrato | 1 : 0..N, no máximo 1 ativo | `fk_contratos_imovel`; `CREATE UNIQUE INDEX uq_contratos_imovel_ativo ON contratos (imovel_id) WHERE ativo` |
 | Inquilino → Contrato | 1 : 0..N | `fk_contratos_inquilino` |
@@ -197,6 +199,13 @@ erDiagram
 | Imóvel ↔ Inquilino | N : N **via Contrato** | — |
 
 Todas as FKs são `ON DELETE RESTRICT`, porque nada é apagado de fato.
+
+**Notas do DER (spec 003, V2).** `usuarios.senha_hash` é `varchar(60)` com `CHECK` de formato
+BCrypt, e não `char(60)`: `char` vira `bpchar` no PostgreSQL e o `ddl-auto=validate` do Hibernate
+espera `varchar` para `String` (research R9). O `CHECK` garante no banco que nunca se grava senha em
+texto. `imoveis.identificador` é único por dono **sem distinguir maiúsculas de minúsculas**
+(`"Apto 101"` e `"apto 101"` colidem), pelo índice sobre `lower(identificador)`. No modo rápido (H2)
+vale só a restrição exata mais a consulta sem caixa do caso de uso.
 
 ### Decisões de modelagem
 
@@ -233,12 +242,13 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 |---|---|---|
 | D1 | `Contrato` | não valida `valorAluguel > 0` nem `imovelId`/`inquilinoId`/`dataInicio` não nulos |
 | D2 | `Fatura` | construtor não valida nada; `mesReferencia` é `String` livre |
-| D3 | `ImovelController` | erro de domínio responde **500** em vez de 400; sem `@Valid` |
+| D3 | `ImovelController` | erro de domínio responde **500** em vez de 400; sem `@Valid`. ✅ **Resolvido pela spec 003**: `TratamentoErrosHandler` traduz as violações de invariante do domínio (`IllegalArgumentException`) em 400; a validação continua nos construtores do domínio, sem `@Valid` no controller |
 | D4 | AGENTS.md §6 | diz que todas as entidades têm teste para cada invariante, o que não vale para `Contrato` e `Fatura` |
 | D5 | `Fatura.pagar` | proíbe pagamento parcial, o que agora contraria Q16. Os testes `deveRejeitarPagamentoParcial` e `deveRegistrarValorPagoEDataDePagamentoAoPagar` vão mudar **por decisão explícita do dono (2026-10-30)**. A mudança entra pela spec do módulo de pagamentos, não antes. **Com pagamentos fora do escopo (2026-10-30), `Fatura.pagar` e seus testes ficam como estão** |
-| D6 | AGENTS.md §6 e memória do projeto | descrevem `Usuario` como "operador do sistema" de um único cliente, o que agora contraria Q14 |
-| D7 | módulo 1 | `imoveis` não tem `usuario_id` nem `identificador`; precisa de migração V2 (sem dados de produção, sem migração de dados) |
+| D6 | AGENTS.md §6 e memória do projeto | descrevem `Usuario` como "operador do sistema" de um único cliente, o que agora contraria Q14. ✅ **Resolvido pela spec 003** |
+| D7 | módulo 1 | `imoveis` não tem `usuario_id` nem `identificador`; precisa de migração V2 (sem dados de produção, sem migração de dados). ✅ **Resolvido pela spec 003** (`V2__cria_usuarios_e_dono_de_imoveis.sql`) |
 | D8 | módulo 1 | ainda não mergeado na `main` |
+| D9 | adapters/inbound/rest | **tratamento global de exceções genéricas**: erro não previsto (`Exception`) não tem resposta padronizada de 500 (`ProblemDetail` sem vazar detalhe interno). Decidido como **feature à parte** na análise da spec 003 (C1) |
 
 ---
 
@@ -308,12 +318,14 @@ O que corrigir em "Gestor de Aluguéis - Documentação" para ele ficar consiste
 ## 8. Próximos passos sugeridos
 
 1. Mergear o módulo 1 na `main`.
-2. Corrigir D3 (resposta 400) via `/speckit-bug-assess`.
+2. ~~Corrigir D3 (resposta 400)~~ (resolvido pela spec 003).
 3. ~~Responder Q19 e Q20~~ (respondidas): o módulo 2 está desbloqueado.
-4. **Módulo 2 — Proprietário e isolamento** (`/speckit-specify`): cadastro e login do
-   proprietário, `usuario_id` e `identificador` em `imoveis` (V2), filtro por dono. Vem antes
-   de tudo, porque todo agregado depende do dono.
-5. Módulo 3 — Inquilino + Contrato (D1).
-6. Módulo 4 — Faturas e painel: emissão automática, rotina de atraso, marcar como paga e painel mensal (D2).
-7. ⏸ Módulo 5 — Pagamentos parciais (**fora do escopo atual**; D5, Q17, Q21).
-8. Atualizar AGENTS.md §6–§7 (D4, D6) quando o módulo 2 for especificado.
+4. ~~**Módulo 2 — Proprietário e isolamento**~~ (concluído, spec 003): cadastro e login do
+   proprietário, `usuario_id` e `identificador` em `imoveis` (V2), filtro por dono em imóveis.
+   Falta mergear na `main`.
+5. **Feature à parte — tratamento global de exceções genéricas** (D9): resposta 500 padronizada
+   para erro não previsto, via `/speckit-specify`. Decidida na análise da spec 003 (C1).
+6. Módulo 3 — Inquilino + Contrato (D1).
+7. Módulo 4 — Faturas e painel: emissão automática, rotina de atraso, marcar como paga e painel mensal (D2).
+8. ⏸ Módulo 5 — Pagamentos parciais (**fora do escopo atual**; D5, Q17, Q21).
+9. Atualizar AGENTS.md §6–§7 (D4; D6 já resolvido pela spec 003).
