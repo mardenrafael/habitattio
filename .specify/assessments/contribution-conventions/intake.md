@@ -36,38 +36,51 @@ versionamento SemVer.
 
 ## Clarifications (respostas do dono, 2026-10-30)
 
+### Rodada 1
+
 1. **Documentar ou impor?** Impor também: commitlint rodando em um hook local (`commit-msg`).
-2. **Tipos e escopos**: `feat`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`,
-   `chore`. Breaking change indicado por `!` imediatamente antes dos dois-pontos
-   (ex.: `feat(auth)!: …`) ou por rodapé `BREAKING CHANGE:`. **Escopo obrigatório**
-   (ex.: `feat(auth): …`).
+2. **Tipos e escopos**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`,
+   `ci`, `chore` (`fix` incluído na rodada 2; `revert` não foi listado). Breaking change
+   indicado por `!` imediatamente antes dos dois-pontos (ex.: `feat(auth)!: …`) ou por rodapé
+   `BREAKING CHANGE:`. **Escopo obrigatório** (ex.: `feat(auth): …`), com **valor livre**:
+   qualquer escopo é aceito, desde que presente.
 3. **Idioma**: inglês (commits, PRs e issues).
 4. **Estratégia de merge de PR**: merge commit.
-5. **Commits de merge entre worktrees de agentes**: o dono não decidiu e pediu sugestão.
-   *Sugestão do agente (não decidida, a validar em `/speckit-assess-shape`)*: abandonar o
-   prefixo `merge:` e manter a mensagem padrão do git (`Merge branch '…'` /
-   `Merge pull request #…`), que o commitlint ignora por padrão; assim o changelog é alimentado
-   pelos commits Conventional reais trazidos pelo merge, e não por um commit de merge sem tipo.
+5. **Commits de merge (inclusive entre worktrees de agentes)**: seguir a **mensagem padrão do
+   git** (`Merge branch '…'` / `Merge pull request #…`); o prefixo `merge:` é abandonado.
+   O commitlint ignora essas mensagens por padrão, e o changelog futuro é alimentado pelos
+   commits Conventional reais trazidos pelo merge.
 6. **Templates de issue**: *feature request*, tratada via `/speckit-specify`; *bug report*,
    tratado via `/speckit-bug-fix`.
 7. **Automação de release/changelog**: objetivo futuro, fora do escopo agora; a padronização
    deve apenas habilitá-la.
-8. **Versão SemVer**: a fonte é a `<version>` do projeto no `pom.xml` (hoje `0.0.1-SNAPSHOT`),
-   que deve ser mantida sincronizada com o versionamento/releases.
+8. **Versão SemVer**: a fonte é a `<version>` do projeto no `pom.xml` (hoje `0.0.1-SNAPSHOT`).
+   A versão segue SemVer **sem o sufixo `-SNAPSHOT`** (ex.: `0.0.1`). A sincronização da
+   `<version>` é feita pela **CI**.
 9. **Histórico existente**: fica como está, sem reescrita.
 10. **Dependência de ferramenta (commitlint)**: conflita com o limite do AGENTS.md §9, mas o dono
     concorda com a exceção neste caso.
 
+### Rodada 2
+
+11. **Título do PR**: também segue o formato Conventional Commits (`tipo(escopo): descrição`).
+12. **Instalação do hook num projeto Maven**: o dono não decidiu (commitlint é ferramenta Node)
+    e pediu sugestão.
+    *Sugestão do agente (não decidida, a validar em `/speckit-assess-shape`)*: versionar o hook
+    em `.githooks/commit-msg` e ativá-lo com `git config core.hooksPath .githooks`. Como o
+    caminho é relativo e a config do repositório é compartilhada entre worktrees, todo worktree
+    de agente usa o hook automaticamente, sem passo extra. O hook chama
+    `npx --no-install commitlint --edit "$1"` com um `commitlint.config.*` na raiz, sem
+    `package.json` de aplicação. Pontos a pesar no shape: exige Node na máquina de quem commita;
+    o `core.hooksPath` pode ser aplicado automaticamente por um plugin Maven na fase `initialize`
+    (nova dependência de build) ou ficar como passo único documentado; e, se Node não for
+    aceitável, uma alternativa é validar por regex em shell puro, sem commitlint.
+
 ## First-Glance Unknowns
 
-- [NEEDS CLARIFICATION: `fix` não consta na lista de tipos da resposta 2 (nem `revert`). Sem
-  `fix` não há como sinalizar um incremento PATCH no SemVer. Omissão intencional ou deve ser
-  incluído?]
-- [NEEDS CLARIFICATION: Escopos formam uma lista fechada (validada pelo commitlint) ou são
-  livres, desde que presentes?]
-- [NEEDS CLARIFICATION: Como o hook local é instalado/distribuído num projeto Maven (sem
-  `package.json`) e como garantir que agentes em worktrees o executem?]
-- [NEEDS CLARIFICATION: O que significa "manter o pom.xml sincronizado": quem/qual etapa
-  atualiza a `<version>` e quando (a cada release futura, a cada merge)?]
-- [NEEDS CLARIFICATION: Como o título do PR deve se relacionar com o Conventional Commits, dado
-  que o merge é por merge commit (o título também segue o formato?)]
+- [NEEDS CLARIFICATION: A `<version>` sem `-SNAPSHOT` vale também entre releases (o `pom.xml`
+  na `main` sempre com a última versão lançada) ou só nas versões publicadas?]
+- [NEEDS CLARIFICATION: Em que gatilho a CI sincroniza a `<version>` (merge na `main`, criação
+  de tag, release futura) e ela faz commit de volta no repositório?]
+- [NEEDS CLARIFICATION: Com o hook só local, a CI também valida commits e títulos de PR ou o
+  hook é a única barreira?]
