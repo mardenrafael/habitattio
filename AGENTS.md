@@ -42,6 +42,23 @@ Para subir em modo produção com os containers em vez de um PostgreSQL próprio
 `TestHabitattioApplication` (`./mvnw spring-boot:test-run`), que já ativa o profile `prod`
 (`src/test/java/br/com/marden/habitattio/TestHabitattioApplication.java`).
 
+### Imagem de container
+
+```bash
+docker build -t habitattio:local .                       # BuildKit; não roda testes
+docker run --rm -p 8080:8080 habitattio:local            # modo rápido (H2)
+docker run --rm -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:5432/habitattio \
+  -e SPRING_DATASOURCE_USERNAME=... -e SPRING_DATASOURCE_PASSWORD=... \
+  habitattio:local                                       # modo produção
+```
+
+O `ImagemContainerTest` constrói a imagem a partir do `Dockerfile` **dentro do `./mvnw test`**
+(builder clássico do daemon, via Testcontainers) e exige Docker, como os demais testes de
+integração. Por isso o `Dockerfile` só usa instruções comuns ao BuildKit e ao clássico. O
+`.dockerignore` é lista de permissão e é a única peça fora da regra de TDD (decisão do dono;
+verificação manual). Operação, publicação e digest: [`docs/container.md`](docs/container.md).
+
 ---
 
 ## 2. Arquitetura hexagonal — a regra que não se quebra
@@ -199,7 +216,7 @@ Regras de uso:
   requisito — a spec é.
 - Correção de bug trivial, renomeação, ajuste de formatação: direto, sem spec.
 
-> A constitution (`.specify/memory/constitution.md`, v1.0.1) define os princípios
+> A constitution (`.specify/memory/constitution.md`, v1.0.2) define os princípios
 > não-negociáveis e prevalece em caso de conflito; este AGENTS.md documenta como aplicá-los no
 > dia a dia. Toda emenda da constitution sincroniza a seção correspondente daqui na mesma
 > mudança.
@@ -316,8 +333,10 @@ Relate o que foi verificado e o que não foi. Não afirme que algo passa sem ter
 ## 9. Limites
 
 - Não adicione dependência no `pom.xml` sem pedir — o stack atual (Web MVC, Data JPA, Redis,
-  Validation, Security, PostgreSQL/H2, Flyway, Testcontainers) cobre o escopo. Spring Security
-  entrou por acordo na feature 003 (login por sessão e isolamento por proprietário).
+  Validation, Security, PostgreSQL/H2, Flyway, Actuator, Testcontainers) cobre o escopo. O Actuator expõe
+  **só** `/actuator/health`, sem detalhes e sem Redis no cálculo; não exponha outros endpoints
+  sem acordo.
+  Spring Security entrou por acordo na feature 003 (login por sessão e isolamento por proprietário).
 - Não troque H2 por outro banco em `application.properties` nem mude `ddl-auto` sem acordo. O
   acordado é: `update` no modo rápido (`application.properties`) e `validate` no profile
   `prod` (`application-prod.properties`). Estrutura de produção só muda por migração nova.
