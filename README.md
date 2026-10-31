@@ -109,6 +109,19 @@ Para rodar contra containers reais em vez do H2, execute a classe
 
 O Testcontainers sobe PostgreSQL e Redis automaticamente — basta o Docker estar rodando.
 
+### Com a imagem de container
+
+Sem JDK no host, só com Docker:
+
+```bash
+docker build -t habitattio:local .
+docker run --rm -p 8080:8080 habitattio:local      # modo rápido (H2)
+```
+
+O modo produção (`SPRING_PROFILES_ACTIVE=prod` + `SPRING_DATASOURCE_*`), a saúde em
+`/actuator/health`, a publicação no Docker Hub e a conferência do digest na VPS estão em
+[`docs/container.md`](docs/container.md).
+
 ## API
 
 ### `POST /imoveis` — cadastrar imóvel

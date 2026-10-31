@@ -38,8 +38,7 @@ public class ImovelController {
     }
 
     @PostMapping
-    public ResponseEntity<ImovelResponse> cadastrar(@AuthenticationPrincipal ProprietarioAutenticado proprietario,
-            @RequestBody CadastrarImovelRequest request) {
+    public ResponseEntity<ImovelResponse> cadastrar(@AuthenticationPrincipal ProprietarioAutenticado proprietario, @RequestBody CadastrarImovelRequest request) {
         CadastrarImovelCommand command = new CadastrarImovelCommand(
                 proprietario.id(), request.identificador(), request.endereco(), request.valorSugerido());
         Imovel imovelSalvo = cadastrarImovelUseCase.executar(command);
@@ -49,16 +48,14 @@ public class ImovelController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ImovelResponse> consultar(@AuthenticationPrincipal ProprietarioAutenticado proprietario,
-            @PathVariable Long id) {
+    public ResponseEntity<ImovelResponse> consultar(@AuthenticationPrincipal ProprietarioAutenticado proprietario, @PathVariable Long id) {
         Imovel imovel = consultarImovelUseCase.executar(new ConsultarImovelCommand(proprietario.id(), id));
 
         return ResponseEntity.ok(paraResponse(imovel));
     }
 
     @PostMapping("/{id}/inativacao")
-    public ResponseEntity<ImovelResponse> inativar(@AuthenticationPrincipal ProprietarioAutenticado proprietario,
-            @PathVariable Long id) {
+    public ResponseEntity<ImovelResponse> inativar(@AuthenticationPrincipal ProprietarioAutenticado proprietario, @PathVariable Long id) {
         Imovel imovel = inativarImovelUseCase.executar(new InativarImovelCommand(proprietario.id(), id));
 
         return ResponseEntity.ok(paraResponse(imovel));
