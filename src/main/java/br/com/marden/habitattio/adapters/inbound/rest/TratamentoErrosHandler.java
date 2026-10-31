@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -30,5 +32,15 @@ public class TratamentoErrosHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail tratarAcessoNegado(AccessDeniedException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Token CSRF ausente ou inválido.");
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail tratarCredenciaisInvalidas(BadCredentialsException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos.");
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail tratarAutenticacaoNecessaria(AuthenticationException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Autenticação necessária.");
     }
 }
