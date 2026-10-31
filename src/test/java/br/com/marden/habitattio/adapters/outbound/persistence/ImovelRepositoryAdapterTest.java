@@ -45,7 +45,7 @@ class ImovelRepositoryAdapterTest {
 
     @Test
     void deveManterImovelInativoAoSalvar() {
-        Imovel imovel = new Imovel(null, "Rua das Flores, 123", new BigDecimal("1500.00"));
+        Imovel imovel = new Imovel(null, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"));
         imovel.inativar();
 
         Imovel salvo = adapter.salvar(imovel);
@@ -60,7 +60,7 @@ class ImovelRepositoryAdapterTest {
 
     @Test
     void deveManterImovelAtivoAoSalvar() {
-        Imovel imovel = new Imovel(null, "Rua das Flores, 123", new BigDecimal("1500.00"));
+        Imovel imovel = new Imovel(null, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"));
 
         Imovel salvo = adapter.salvar(imovel);
         entityManager.flush();

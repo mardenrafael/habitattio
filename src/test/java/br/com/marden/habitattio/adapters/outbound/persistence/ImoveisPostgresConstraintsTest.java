@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,17 +25,42 @@ import br.com.marden.habitattio.TestcontainersConfiguration;
 @Import(TestcontainersConfiguration.class)
 class ImoveisPostgresConstraintsTest {
 
-	private static final String INSERT = "INSERT INTO imoveis (endereco, valor_sugerido, ativo) VALUES (:e, :v, true)";
+	private static final String INSERT = "INSERT INTO imoveis (endereco, valor_sugerido, ativo, usuario_id, identificador) "
+			+ "VALUES (:e, :v, true, :u, :i)";
+
+	private static final String HASH_BCRYPT = "$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ01234";
 
 	private final JdbcClient jdbc;
+
+	private long donoId;
+
+	private int contadorIdentificador;
 
 	@Autowired
 	ImoveisPostgresConstraintsTest(JdbcClient jdbc) {
 		this.jdbc = jdbc;
 	}
 
+	@BeforeEach
+	void criarDono() {
+		donoId = jdbc.sql("INSERT INTO usuarios (nome, email, senha_hash) VALUES ('Dono', 'dono@exemplo.com', :h) RETURNING id")
+				.param("h", HASH_BCRYPT)
+				.query(Long.class)
+				.single();
+	}
+
+	private String proximoIdentificador() {
+		contadorIdentificador++;
+		return "Imóvel " + contadorIdentificador;
+	}
+
 	private void inserir(String endereco, BigDecimal valor) {
-		jdbc.sql(INSERT).param("e", endereco).param("v", valor).update();
+		jdbc.sql(INSERT)
+				.param("e", endereco)
+				.param("v", valor)
+				.param("u", donoId)
+				.param("i", proximoIdentificador())
+				.update();
 	}
 
 	private long contarPorEndereco(String endereco) {
@@ -59,7 +85,8 @@ class ImoveisPostgresConstraintsTest {
 	// G1
 	@Test
 	void deveRejeitarEnderecoNulo() {
-		var sql = "INSERT INTO imoveis (endereco, valor_sugerido, ativo) VALUES (NULL, 1500.00, true)";
+		var sql = "INSERT INTO imoveis (endereco, valor_sugerido, ativo, usuario_id, identificador) VALUES (NULL, 1500.00, true, "
+				+ donoId + ", 'Imóvel literal 1')";
 
 		var executar = (Executable) () -> jdbc.sql(sql).update();
 
@@ -141,7 +168,8 @@ class ImoveisPostgresConstraintsTest {
 	// G5
 	@Test
 	void deveRejeitarValorSugeridoNulo() {
-		var sql = "INSERT INTO imoveis (endereco, valor_sugerido, ativo) VALUES ('Rua A, 100', NULL, true)";
+		var sql = "INSERT INTO imoveis (endereco, valor_sugerido, ativo, usuario_id, identificador) VALUES ('Rua A, 100', NULL, true, "
+				+ donoId + ", 'Imóvel literal 2')";
 
 		var executar = (Executable) () -> jdbc.sql(sql).update();
 
