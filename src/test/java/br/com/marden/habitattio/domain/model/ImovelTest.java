@@ -123,4 +123,86 @@ class ImovelTest {
 
         assertEquals("O valor sugerido deve ser maior que zero.", excecao.getMessage());
     }
+
+    @Test
+    void deveRejeitarImovelSemProprietario() {
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, null, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00")));
+
+        assertEquals("O imóvel deve pertencer a um proprietário.", excecao.getMessage());
+    }
+
+    @Test
+    void deveRejeitarIdentificadorNulo() {
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, 1L, null, "Rua das Flores, 123", new BigDecimal("1500.00")));
+
+        assertEquals("O identificador do imóvel não pode ser vazio.", excecao.getMessage());
+    }
+
+    @Test
+    void deveRejeitarIdentificadorVazio() {
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, 1L, "", "Rua das Flores, 123", new BigDecimal("1500.00")));
+
+        assertEquals("O identificador do imóvel não pode ser vazio.", excecao.getMessage());
+    }
+
+    @Test
+    void deveRejeitarIdentificadorSoComEspacos() {
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, 1L, "   ", "Rua das Flores, 123", new BigDecimal("1500.00")));
+
+        assertEquals("O identificador do imóvel não pode ser vazio.", excecao.getMessage());
+    }
+
+    @Test
+    void deveRejeitarIdentificadorComMaisDeCinquentaCaracteres() {
+        String identificador = "a".repeat(51);
+
+        IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
+                () -> new Imovel(1L, 1L, identificador, "Rua das Flores, 123", new BigDecimal("1500.00")));
+
+        assertEquals("O identificador do imóvel deve ter no máximo 50 caracteres.", excecao.getMessage());
+    }
+
+    @Test
+    void deveAceitarIdentificadorComCinquentaCaracteresAcentuados() {
+        String identificador = "é".repeat(50);
+
+        Imovel imovel = new Imovel(1L, 1L, identificador, "Rua das Flores, 123", new BigDecimal("1500.00"));
+
+        assertEquals(identificador, imovel.getIdentificador());
+    }
+
+    @Test
+    void deveRemoverEspacosNasPontasDoIdentificador() {
+        Imovel imovel = new Imovel(1L, 1L, " Apto 101 ", "Rua das Flores, 123", new BigDecimal("1500.00"));
+
+        assertEquals("Apto 101", imovel.getIdentificador());
+    }
+
+    @Test
+    void deveConsiderarMesmoIdentificadorIgnorandoCaixaEEspacos() {
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"));
+
+        assertTrue(imovel.mesmoIdentificador("  APTO 101 "));
+    }
+
+    @Test
+    void naoDeveConsiderarMesmoIdentificadorComAcentoDiferente() {
+        Imovel imovel = new Imovel(1L, 1L, "Térreo", "Rua das Flores, 123", new BigDecimal("1500.00"));
+
+        assertFalse(imovel.mesmoIdentificador("Terreo"));
+    }
+
+    @Test
+    void deveManterInativoAoInativarDeNovo() {
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"));
+        imovel.inativar();
+
+        imovel.inativar();
+
+        assertFalse(imovel.isAtivo());
+    }
 }
