@@ -34,23 +34,40 @@ versionamento SemVer.
   - Fluxo SDD (Spec Kit) e worktrees de agentes já existem; tasks podem virar issues via
     `/speckit-taskstoissues`.
 
+## Clarifications (respostas do dono, 2026-10-30)
+
+1. **Documentar ou impor?** Impor também: commitlint rodando em um hook local (`commit-msg`).
+2. **Tipos e escopos**: `feat`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`,
+   `chore`. Breaking change indicado por `!` imediatamente antes dos dois-pontos
+   (ex.: `feat(auth)!: …`) ou por rodapé `BREAKING CHANGE:`. **Escopo obrigatório**
+   (ex.: `feat(auth): …`).
+3. **Idioma**: inglês (commits, PRs e issues).
+4. **Estratégia de merge de PR**: merge commit.
+5. **Commits de merge entre worktrees de agentes**: o dono não decidiu e pediu sugestão.
+   *Sugestão do agente (não decidida, a validar em `/speckit-assess-shape`)*: abandonar o
+   prefixo `merge:` e manter a mensagem padrão do git (`Merge branch '…'` /
+   `Merge pull request #…`), que o commitlint ignora por padrão; assim o changelog é alimentado
+   pelos commits Conventional reais trazidos pelo merge, e não por um commit de merge sem tipo.
+6. **Templates de issue**: *feature request*, tratada via `/speckit-specify`; *bug report*,
+   tratado via `/speckit-bug-fix`.
+7. **Automação de release/changelog**: objetivo futuro, fora do escopo agora; a padronização
+   deve apenas habilitá-la.
+8. **Versão SemVer**: a fonte é a `<version>` do projeto no `pom.xml` (hoje `0.0.1-SNAPSHOT`),
+   que deve ser mantida sincronizada com o versionamento/releases.
+9. **Histórico existente**: fica como está, sem reescrita.
+10. **Dependência de ferramenta (commitlint)**: conflita com o limite do AGENTS.md §9, mas o dono
+    concorda com a exceção neste caso.
+
 ## First-Glance Unknowns
 
-- [NEEDS CLARIFICATION: O padrão deve ser só documentado (AGENTS.md/CONTRIBUTING) ou também
-  imposto automaticamente (hook local, verificação em CI, regra de branch)?]
-- [NEEDS CLARIFICATION: Quais tipos e escopos de commit são aceitos? Os escopos atuais
-  (`requisitos`, `persistencia`, `dominio`, `tasks`, `agents`…) viram lista fechada?]
-- [NEEDS CLARIFICATION: Idioma da descrição do commit/PR/issue: português (como hoje) ou inglês?]
-- [NEEDS CLARIFICATION: Estratégia de merge de PR: merge commit, squash ou rebase? Isso define
-  qual mensagem entra no histórico e alimenta o changelog (título do PR vs. commits individuais).]
-- [NEEDS CLARIFICATION: Como tratar commits de merge entre worktrees de agentes (hoje `merge: …`)?]
-- [NEEDS CLARIFICATION: Quais templates de issue: bug report, feature/spec, task? Devem se ligar
-  ao fluxo SDD (`/speckit-specify`, `/speckit-taskstoissues`) e ao fluxo de bug
-  (`/speckit-bug-assess`)?]
-- [NEEDS CLARIFICATION: Automação de release/changelog entra no escopo agora ou fica só como
-  objetivo futuro habilitado pela padronização?]
-- [NEEDS CLARIFICATION: Qual versão inicial / ponto de partida do SemVer, dado que o projeto não
-  tem tags nem releases?]
-- [NEEDS CLARIFICATION: O histórico existente fica como está (sem reescrita)?]
-- [NEEDS CLARIFICATION: Adicionar ferramenta (ex.: commitlint) conflita com o limite do
-  AGENTS.md §9 de não adicionar dependências sem acordo, ou fica fora do `pom.xml`?]
+- [NEEDS CLARIFICATION: `fix` não consta na lista de tipos da resposta 2 (nem `revert`). Sem
+  `fix` não há como sinalizar um incremento PATCH no SemVer. Omissão intencional ou deve ser
+  incluído?]
+- [NEEDS CLARIFICATION: Escopos formam uma lista fechada (validada pelo commitlint) ou são
+  livres, desde que presentes?]
+- [NEEDS CLARIFICATION: Como o hook local é instalado/distribuído num projeto Maven (sem
+  `package.json`) e como garantir que agentes em worktrees o executem?]
+- [NEEDS CLARIFICATION: O que significa "manter o pom.xml sincronizado": quem/qual etapa
+  atualiza a `<version>` e quando (a cada release futura, a cada merge)?]
+- [NEEDS CLARIFICATION: Como o título do PR deve se relacionar com o Conventional Commits, dado
+  que o merge é por merge commit (o título também segue o formato?)]
