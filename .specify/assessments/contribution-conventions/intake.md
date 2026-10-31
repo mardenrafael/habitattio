@@ -76,11 +76,17 @@ versionamento SemVer.
     (nova dependência de build) ou ficar como passo único documentado; e, se Node não for
     aceitável, uma alternativa é validar por regex em shell puro, sem commitlint.
 
+### Rodada 3
+
+13. **`-SNAPSHOT`**: removido sempre; a `<version>` do `pom.xml` nunca carrega o sufixo, nem
+    entre releases.
+14. **Gatilho da sincronização de versão**: a CI sincroniza a `<version>` a cada **merge na
+    `main`**.
+15. **Validação na CI**: não. O hook local é a única barreira para mensagens de commit e
+    títulos de PR.
+
 ## First-Glance Unknowns
 
-- [NEEDS CLARIFICATION: A `<version>` sem `-SNAPSHOT` vale também entre releases (o `pom.xml`
-  na `main` sempre com a última versão lançada) ou só nas versões publicadas?]
-- [NEEDS CLARIFICATION: Em que gatilho a CI sincroniza a `<version>` (merge na `main`, criação
-  de tag, release futura) e ela faz commit de volta no repositório?]
-- [NEEDS CLARIFICATION: Com o hook só local, a CI também valida commits e títulos de PR ou o
-  hook é a única barreira?]
+- Nenhuma pergunta aberta bloqueante. Ficam para o shape: o mecanismo de instalação do hook
+  (sugestão 12) e como a CI grava a `<version>` sincronizada após o merge na `main` (commit de
+  volta na `main`, com mensagem também em Conventional Commits).
