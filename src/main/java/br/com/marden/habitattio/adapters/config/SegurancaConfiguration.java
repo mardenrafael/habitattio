@@ -27,6 +27,8 @@ public class SegurancaConfiguration {
                 .csrf(csrf -> csrf.spa())
                 .sessionManagement(sessao -> sessao.sessionAuthenticationStrategy(trocaIdDaSessaoAoEntrar()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/proprietarios").permitAll()
                         .requestMatchers(HttpMethod.POST, "/sessao").permitAll()
                         .anyRequest().authenticated())
