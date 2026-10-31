@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -52,6 +53,14 @@ class ProprietarioControllerTest {
 
     @Autowired
     private CadastrarProprietarioUseCase cadastrarProprietarioUseCase;
+
+    @Autowired
+    private UsuarioRepositoryFake usuarioRepositoryFake;
+
+    @BeforeEach
+    void limparRepositorio() {
+        usuarioRepositoryFake.limpar();
+    }
 
     private static String json(String nome, String email, String senha) {
         return "{\"nome\":\"" + nome + "\",\"email\":\"" + email + "\",\"senha\":\"" + senha + "\"}";

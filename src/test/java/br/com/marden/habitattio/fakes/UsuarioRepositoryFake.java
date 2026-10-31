@@ -18,6 +18,12 @@ public class UsuarioRepositoryFake implements UsuarioRepositoryPort {
         this.corridaNoProximoSalvar = true;
     }
 
+    public void limpar() {
+        usuarios.clear();
+        proximoId = 1L;
+        corridaNoProximoSalvar = false;
+    }
+
     public int quantidade() {
         return usuarios.size();
     }

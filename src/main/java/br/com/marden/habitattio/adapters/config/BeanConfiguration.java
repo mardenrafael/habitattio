@@ -1,5 +1,6 @@
 package br.com.marden.habitattio.adapters.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,15 +32,14 @@ public class BeanConfiguration {
         return new CadastrarImovelUseCase(imovelRepositoryPort);
     }
 
-    // Fiação mínima provisória (só a forma do módulo 2): o ProprietarioController exige este bean.
     @Bean
     public UsuarioRepositoryPort usuarioRepositoryPort(SpringDataUsuarioRepository repository) {
         return new UsuarioRepositoryAdapter(repository);
     }
 
     @Bean
-    public CodificadorSenhaPort codificadorSenhaPort() {
-        return new BCryptCodificadorSenhaAdapter(10);
+    public CodificadorSenhaPort codificadorSenhaPort(@Value("${habitattio.seguranca.bcrypt-custo}") int custo) {
+        return new BCryptCodificadorSenhaAdapter(custo);
     }
 
     @Bean
