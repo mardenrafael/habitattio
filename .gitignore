@@ -39,3 +39,4 @@ Thumbs.db
 *.swp
 *.log
 .env*
+.specify/extensions/.cache/*
