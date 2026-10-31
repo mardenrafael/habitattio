@@ -48,3 +48,20 @@
   afetados não incluía `ImoveisPostgresConstraintsTest`.
 - Bloqueio para o plan: a adaptação dos testes existentes de imóvel precisa de decisão
   explícita do dono antes da implementação (AGENTS §3).
+- **Conferência pós-implementação (2026-10-30)**:
+  - T068 (fronteiras): sem `import org.springframework`/`jakarta.*` em `domain/` e `application/`;
+    nenhum `*JpaEntity` fora de `adapters/outbound/persistence`; nenhum `*Request`/`*Response` de
+    DTO fora dos controllers (os únicos achados do grep, `HttpServletRequest/Response` e
+    `anyRequest()` em `adapters/inbound/security` e `SegurancaConfiguration`, são tipos do
+    servlet/Spring Security, não DTOs); `ImovelRepositoryPort` só tem `buscarDoProprietario`
+    (sem busca de imóvel sem dono).
+  - T069: `./mvnw verify` com BUILD SUCCESS — 185 testes, 0 falhas, 0 erros, 0 ignorados; os
+    testes de integração com Testcontainers (PostgreSQL/Docker) rodaram.
+  - T070: roteiro do quickstart seção 2 (passos 1–17) executado com `curl`: todos os status e
+    mensagens conforme o esperado; `segredo123` ausente do log da aplicação (SC-004); nenhuma
+    resposta com `senha` como valor nem `$2`. Seção 3 (`spring-boot:test-run`): Flyway aplicou V1 e
+    V2, subida passou na validação, passos 3, 9, 13 e 14 conforme o esperado, `senha_hash` com 60
+    caracteres iniciados em `$2a$`, `segredo123` ausente do log.
+  - T071: comportamento entregue confere com a spec; pontos avaliados: estratégia de sessão
+    (id sempre trocado no login), mensagem de duplicidade de identificador e RF-10 (fora do
+    escopo, "Out of Scope" da spec). Nenhuma alteração na spec.
