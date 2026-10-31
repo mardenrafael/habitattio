@@ -15,18 +15,28 @@ public class Imovel {
     }
 
     public Imovel(Long id, Long usuarioId, String identificador, String endereco, BigDecimal valorSugerido, boolean ativo) {
+        if (usuarioId == null) {
+            throw new IllegalArgumentException("O imóvel deve pertencer a um proprietário.");
+        }
+        String identificadorNormalizado = identificador == null ? null : identificador.strip();
+        if (identificadorNormalizado == null || identificadorNormalizado.isEmpty()) {
+            throw new IllegalArgumentException("O identificador do imóvel não pode ser vazio.");
+        }
+        if (identificadorNormalizado.codePointCount(0, identificadorNormalizado.length()) > 50) {
+            throw new IllegalArgumentException("O identificador do imóvel deve ter no máximo 50 caracteres.");
+        }
         validar(endereco, valorSugerido);
 
         this.id = id;
         this.usuarioId = usuarioId;
-        this.identificador = identificador;
+        this.identificador = identificadorNormalizado;
         this.endereco = endereco;
         this.valorSugerido = valorSugerido;
         this.ativo = ativo;
     }
 
     public boolean mesmoIdentificador(String outro) {
-        throw new UnsupportedOperationException();
+        return outro != null && identificador.strip().equalsIgnoreCase(outro.strip());
     }
 
     public Long getUsuarioId() {

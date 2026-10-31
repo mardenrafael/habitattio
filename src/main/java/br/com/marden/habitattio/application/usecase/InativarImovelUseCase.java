@@ -1,5 +1,6 @@
 package br.com.marden.habitattio.application.usecase;
 
+import br.com.marden.habitattio.domain.exception.ImovelNaoEncontradoException;
 import br.com.marden.habitattio.domain.model.Imovel;
 import br.com.marden.habitattio.ports.inbound.InativarImovelCommand;
 import br.com.marden.habitattio.ports.outbound.ImovelRepositoryPort;
@@ -12,6 +13,10 @@ public class InativarImovelUseCase {
     }
 
     public Imovel executar(InativarImovelCommand command) {
-        throw new UnsupportedOperationException();
+        Imovel imovel = imovelRepositoryPort.buscarDoProprietario(command.imovelId(), command.usuarioId())
+                .orElseThrow(ImovelNaoEncontradoException::new);
+        imovel.inativar();
+
+        return imovelRepositoryPort.salvar(imovel);
     }
 }

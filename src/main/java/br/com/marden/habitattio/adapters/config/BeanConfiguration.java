@@ -14,6 +14,8 @@ import br.com.marden.habitattio.adapters.outbound.seguranca.BCryptCodificadorSen
 import br.com.marden.habitattio.application.usecase.AutenticarProprietarioUseCase;
 import br.com.marden.habitattio.application.usecase.CadastrarImovelUseCase;
 import br.com.marden.habitattio.application.usecase.CadastrarProprietarioUseCase;
+import br.com.marden.habitattio.application.usecase.ConsultarImovelUseCase;
+import br.com.marden.habitattio.application.usecase.InativarImovelUseCase;
 import br.com.marden.habitattio.ports.outbound.CodificadorSenhaPort;
 import br.com.marden.habitattio.ports.outbound.ImovelRepositoryPort;
 import br.com.marden.habitattio.ports.outbound.UsuarioRepositoryPort;
@@ -33,6 +35,16 @@ public class BeanConfiguration {
     @Bean
     public CadastrarImovelUseCase cadastrarImovelUseCase(ImovelRepositoryPort imovelRepositoryPort) {
         return new CadastrarImovelUseCase(imovelRepositoryPort);
+    }
+
+    @Bean
+    public ConsultarImovelUseCase consultarImovelUseCase(ImovelRepositoryPort imovelRepositoryPort) {
+        return new ConsultarImovelUseCase(imovelRepositoryPort);
+    }
+
+    @Bean
+    public InativarImovelUseCase inativarImovelUseCase(ImovelRepositoryPort imovelRepositoryPort) {
+        return new InativarImovelUseCase(imovelRepositoryPort);
     }
 
     @Bean

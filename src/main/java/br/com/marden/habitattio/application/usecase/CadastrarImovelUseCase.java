@@ -1,5 +1,6 @@
 package br.com.marden.habitattio.application.usecase;
 
+import br.com.marden.habitattio.domain.exception.IdentificadorImovelDuplicadoException;
 import br.com.marden.habitattio.domain.model.Imovel;
 import br.com.marden.habitattio.ports.inbound.CadastrarImovelCommand;
 import br.com.marden.habitattio.ports.outbound.ImovelRepositoryPort;
@@ -13,6 +14,10 @@ public class CadastrarImovelUseCase {
 
     public Imovel executar(CadastrarImovelCommand command) {
         Imovel imovel = new Imovel(null, command.usuarioId(), command.identificador(), command.endereco(), command.valorSugerido());
+
+        if (imovelRepositoryPort.existeIdentificador(command.usuarioId(), imovel.getIdentificador())) {
+            throw new IdentificadorImovelDuplicadoException(imovel.getIdentificador());
+        }
 
         return imovelRepositoryPort.salvar(imovel);
     }

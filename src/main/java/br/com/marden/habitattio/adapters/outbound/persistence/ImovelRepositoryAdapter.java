@@ -1,12 +1,17 @@
 package br.com.marden.habitattio.adapters.outbound.persistence;
 
-import br.com.marden.habitattio.adapters.outbound.persistence.entity.ImovelJpaEntity;
 import java.util.Optional;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
+import br.com.marden.habitattio.adapters.outbound.persistence.entity.ImovelJpaEntity;
+import br.com.marden.habitattio.domain.exception.IdentificadorImovelDuplicadoException;
 import br.com.marden.habitattio.domain.model.Imovel;
 import br.com.marden.habitattio.ports.outbound.ImovelRepositoryPort;
 
-public class ImovelRepositoryAdapter implements ImovelRepositoryPort{
+public class ImovelRepositoryAdapter implements ImovelRepositoryPort {
+
+    private static final String CONSTRAINT_IDENTIFICADOR = "uq_imoveis_usuario_identificador";
 
     private final SpringDataImovelRepository repository;
 
@@ -18,30 +23,42 @@ public class ImovelRepositoryAdapter implements ImovelRepositoryPort{
     public Imovel salvar(Imovel imovel) {
         ImovelJpaEntity entity = new ImovelJpaEntity(
             imovel.getId(),
+            imovel.getUsuarioId(),
+            imovel.getIdentificador(),
             imovel.getEndereco(),
             imovel.getValorSugerido(),
             imovel.isAtivo()
         );
 
-        ImovelJpaEntity salvo = repository.save(entity);
-
-        return new Imovel(
-            salvo.getId(),
-            imovel.getUsuarioId(),
-            imovel.getIdentificador(),
-            salvo.getEndereco(),
-            salvo.getValorSugerido(),
-            salvo.isAtivo()
-        );
+        try {
+            return paraDominio(repository.saveAndFlush(entity));
+        } catch (DataIntegrityViolationException e) {
+            String mensagem = e.getMostSpecificCause().getMessage();
+            if (mensagem != null && mensagem.toLowerCase().contains(CONSTRAINT_IDENTIFICADOR)) {
+                throw new IdentificadorImovelDuplicadoException(imovel.getIdentificador());
+            }
+            throw e;
+        }
     }
 
     @Override
     public boolean existeIdentificador(Long usuarioId, String identificador) {
-        throw new UnsupportedOperationException();
+        return repository.existsByUsuarioIdAndIdentificadorIgnoreCase(usuarioId, identificador);
     }
 
     @Override
     public Optional<Imovel> buscarDoProprietario(Long imovelId, Long usuarioId) {
-        throw new UnsupportedOperationException();
+        return repository.findByIdAndUsuarioId(imovelId, usuarioId).map(this::paraDominio);
+    }
+
+    private Imovel paraDominio(ImovelJpaEntity entity) {
+        return new Imovel(
+            entity.getId(),
+            entity.getUsuarioId(),
+            entity.getIdentificador(),
+            entity.getEndereco(),
+            entity.getValorSugerido(),
+            entity.isAtivo()
+        );
     }
 }

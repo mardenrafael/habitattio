@@ -7,6 +7,6 @@ public class IdentificadorImovelDuplicadoException extends RuntimeException {
     }
 
     public IdentificadorImovelDuplicadoException(String identificador) {
-        super(identificador);
+        super("Você já tem um imóvel com o identificador '" + identificador + "'.");
     }
 }
