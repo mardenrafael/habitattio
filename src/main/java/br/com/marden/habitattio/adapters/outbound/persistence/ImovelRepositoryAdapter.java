@@ -1,6 +1,8 @@
 package br.com.marden.habitattio.adapters.outbound.persistence;
 
 import br.com.marden.habitattio.adapters.outbound.persistence.entity.ImovelJpaEntity;
+import java.util.Optional;
+
 import br.com.marden.habitattio.domain.model.Imovel;
 import br.com.marden.habitattio.ports.outbound.ImovelRepositoryPort;
 
@@ -25,9 +27,21 @@ public class ImovelRepositoryAdapter implements ImovelRepositoryPort{
 
         return new Imovel(
             salvo.getId(),
+            imovel.getUsuarioId(),
+            imovel.getIdentificador(),
             salvo.getEndereco(),
             salvo.getValorSugerido(),
             salvo.isAtivo()
         );
+    }
+
+    @Override
+    public boolean existeIdentificador(Long usuarioId, String identificador) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Optional<Imovel> buscarDoProprietario(Long imovelId, Long usuarioId) {
+        throw new UnsupportedOperationException();
     }
 }

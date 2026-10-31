@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,9 +24,21 @@ class CadastrarImovelUseCaseTest {
 
         @Override
         public Imovel salvar(Imovel imovel) {
-            Imovel salvo = new Imovel(proximoId++, imovel.getEndereco(), imovel.getValorSugerido(), imovel.isAtivo());
+            Imovel salvo = new Imovel(proximoId++, imovel.getUsuarioId(), imovel.getIdentificador(), imovel.getEndereco(), imovel.getValorSugerido(), imovel.isAtivo());
             imoveis.put(salvo.getId(), salvo);
             return salvo;
+        }
+
+        @Override
+        public boolean existeIdentificador(Long usuarioId, String identificador) {
+            return imoveis.values().stream()
+                    .anyMatch(i -> i.getUsuarioId().equals(usuarioId) && i.mesmoIdentificador(identificador));
+        }
+
+        @Override
+        public Optional<Imovel> buscarDoProprietario(Long imovelId, Long usuarioId) {
+            return Optional.ofNullable(imoveis.get(imovelId))
+                    .filter(i -> i.getUsuarioId().equals(usuarioId));
         }
     }
 
@@ -33,7 +46,7 @@ class CadastrarImovelUseCaseTest {
     void deveCadastrarImovelERetornarComIdGerado() {
         ImovelRepositoryFake repositorioFake = new ImovelRepositoryFake();
         CadastrarImovelUseCase useCase = new CadastrarImovelUseCase(repositorioFake);
-        CadastrarImovelCommand command = new CadastrarImovelCommand("Rua das Flores, 123", new BigDecimal("1500.00"));
+        CadastrarImovelCommand command = new CadastrarImovelCommand(1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"));
 
         Imovel imovelCadastrado = useCase.executar(command);
 
@@ -46,7 +59,7 @@ class CadastrarImovelUseCaseTest {
     void deveRejeitarCadastroComValorSugeridoInvalido() {
         ImovelRepositoryFake repositorioFake = new ImovelRepositoryFake();
         CadastrarImovelUseCase useCase = new CadastrarImovelUseCase(repositorioFake);
-        CadastrarImovelCommand command = new CadastrarImovelCommand("Rua das Flores, 123", BigDecimal.ZERO);
+        CadastrarImovelCommand command = new CadastrarImovelCommand(1L, "Apto 101", "Rua das Flores, 123", BigDecimal.ZERO);
 
         assertThrows(IllegalArgumentException.class, () -> useCase.executar(command));
     }

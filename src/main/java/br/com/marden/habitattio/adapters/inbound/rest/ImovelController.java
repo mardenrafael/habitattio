@@ -25,7 +25,7 @@ public class ImovelController {
 
     @PostMapping
     public ResponseEntity<ImovelResponse> cadastrar(@RequestBody CadastrarImovelRequest request) {
-        CadastrarImovelCommand command = new CadastrarImovelCommand(request.endereco(), request.valorSugerido());
+        CadastrarImovelCommand command = new CadastrarImovelCommand(null, null, request.endereco(), request.valorSugerido());
         Imovel imovelSalvo = cadastrarImovelUseCase.executar(command);
 
         ImovelResponse response = new ImovelResponse(imovelSalvo.getId(), imovelSalvo.getEndereco(), imovelSalvo.getValorSugerido());

@@ -13,7 +13,7 @@ class ImovelTest {
 
     @Test
     void deveCriarImovelAtivoComDadosValidos() {
-        Imovel imovel = new Imovel(1L, "Rua das Flores, 123", new BigDecimal("1500.00"));
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"));
 
         assertEquals("Rua das Flores, 123", imovel.getEndereco());
         assertEquals(new BigDecimal("1500.00"), imovel.getValorSugerido());
@@ -23,20 +23,20 @@ class ImovelTest {
     @Test
     void deveRejeitarEnderecoNulo() {
         IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
-                () -> new Imovel(1L, null, new BigDecimal("1500.00")));
+                () -> new Imovel(1L, 1L, "Apto 101", null, new BigDecimal("1500.00")));
 
         assertEquals("O endereço do imóvel não pode ser vazio.", excecao.getMessage());
     }
 
     @Test
     void deveRejeitarEnderecoEmBranco() {
-        assertThrows(IllegalArgumentException.class, () -> new Imovel(1L, "   ", new BigDecimal("1500.00")));
+        assertThrows(IllegalArgumentException.class, () -> new Imovel(1L, 1L, "Apto 101", "   ", new BigDecimal("1500.00")));
     }
 
     @Test
     void deveRejeitarValorSugeridoNulo() {
         IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
-                () -> new Imovel(1L, "Rua das Flores, 123", null));
+                () -> new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", null));
 
         assertEquals("O valor sugerido deve ser maior que zero.", excecao.getMessage());
     }
@@ -44,18 +44,18 @@ class ImovelTest {
     @Test
     void deveRejeitarValorSugeridoZero() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Imovel(1L, "Rua das Flores, 123", BigDecimal.ZERO));
+                () -> new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", BigDecimal.ZERO));
     }
 
     @Test
     void deveRejeitarValorSugeridoNegativo() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Imovel(1L, "Rua das Flores, 123", new BigDecimal("-10.00")));
+                () -> new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("-10.00")));
     }
 
     @Test
     void deveInativarImovelAtivo() {
-        Imovel imovel = new Imovel(1L, "Rua das Flores, 123", new BigDecimal("1500.00"));
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"));
 
         imovel.inativar();
 
@@ -67,7 +67,7 @@ class ImovelTest {
         String endereco = "a".repeat(256);
 
         IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
-                () -> new Imovel(1L, endereco, new BigDecimal("1500.00")));
+                () -> new Imovel(1L, 1L, "Apto 101", endereco, new BigDecimal("1500.00")));
 
         assertEquals("O endereço do imóvel deve ter no máximo 255 caracteres.", excecao.getMessage());
     }
@@ -76,7 +76,7 @@ class ImovelTest {
     void deveAceitarEnderecoCom255Caracteres() {
         String endereco = "a".repeat(255);
 
-        Imovel imovel = new Imovel(1L, endereco, new BigDecimal("1500.00"));
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", endereco, new BigDecimal("1500.00"));
 
         assertEquals(endereco, imovel.getEndereco());
     }
@@ -85,7 +85,7 @@ class ImovelTest {
     void deveContarCaracteresENaoUnidadesUtf16NoLimiteDoEndereco() {
         String endereco = "a".repeat(254) + "🏠";
 
-        Imovel imovel = new Imovel(1L, endereco, new BigDecimal("1500.00"));
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", endereco, new BigDecimal("1500.00"));
 
         assertEquals(256, endereco.length());
         assertEquals(endereco, imovel.getEndereco());
@@ -93,7 +93,7 @@ class ImovelTest {
 
     @Test
     void deveCriarImovelInativoQuandoInformado() {
-        Imovel imovel = new Imovel(1L, "Rua das Flores, 123", new BigDecimal("1500.00"), false);
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"), false);
 
         assertEquals(1L, imovel.getId());
         assertEquals("Rua das Flores, 123", imovel.getEndereco());
@@ -103,7 +103,7 @@ class ImovelTest {
 
     @Test
     void deveCriarImovelAtivoQuandoInformado() {
-        Imovel imovel = new Imovel(1L, "Rua das Flores, 123", new BigDecimal("1500.00"), true);
+        Imovel imovel = new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", new BigDecimal("1500.00"), true);
 
         assertTrue(imovel.isAtivo());
     }
@@ -111,7 +111,7 @@ class ImovelTest {
     @Test
     void deveRejeitarEnderecoVazioNoConstrutorCompleto() {
         IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
-                () -> new Imovel(1L, "   ", new BigDecimal("1500.00"), false));
+                () -> new Imovel(1L, 1L, "Apto 101", "   ", new BigDecimal("1500.00"), false));
 
         assertEquals("O endereço do imóvel não pode ser vazio.", excecao.getMessage());
     }
@@ -119,7 +119,7 @@ class ImovelTest {
     @Test
     void deveRejeitarValorSugeridoInvalidoNoConstrutorCompleto() {
         IllegalArgumentException excecao = assertThrows(IllegalArgumentException.class,
-                () -> new Imovel(1L, "Rua das Flores, 123", BigDecimal.ZERO, false));
+                () -> new Imovel(1L, 1L, "Apto 101", "Rua das Flores, 123", BigDecimal.ZERO, false));
 
         assertEquals("O valor sugerido deve ser maior que zero.", excecao.getMessage());
     }

@@ -12,7 +12,7 @@ public class CadastrarImovelUseCase {
     }
 
     public Imovel executar(CadastrarImovelCommand command) {
-        Imovel imovel = new Imovel(null, command.endereco(), command.valorSugerido());
+        Imovel imovel = new Imovel(null, command.usuarioId(), command.identificador(), command.endereco(), command.valorSugerido());
 
         return imovelRepositoryPort.salvar(imovel);
     }

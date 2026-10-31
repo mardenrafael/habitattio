@@ -4,21 +4,37 @@ import java.math.BigDecimal;
 
 public class Imovel {
     private Long id;
+    private Long usuarioId;
+    private String identificador;
     private String endereco;
     private BigDecimal valorSugerido;
     private boolean ativo;
 
-    public Imovel(Long id, String endereco, BigDecimal valorSugerido) {
-        this(id, endereco, valorSugerido, true);
+    public Imovel(Long id, Long usuarioId, String identificador, String endereco, BigDecimal valorSugerido) {
+        this(id, usuarioId, identificador, endereco, valorSugerido, true);
     }
 
-    public Imovel(Long id, String endereco, BigDecimal valorSugerido, boolean ativo) {
+    public Imovel(Long id, Long usuarioId, String identificador, String endereco, BigDecimal valorSugerido, boolean ativo) {
         validar(endereco, valorSugerido);
 
         this.id = id;
+        this.usuarioId = usuarioId;
+        this.identificador = identificador;
         this.endereco = endereco;
         this.valorSugerido = valorSugerido;
         this.ativo = ativo;
+    }
+
+    public boolean mesmoIdentificador(String outro) {
+        throw new UnsupportedOperationException();
+    }
+
+    public Long getUsuarioId() {
+        return usuarioId;
+    }
+
+    public String getIdentificador() {
+        return identificador;
     }
 
     private void validar(String endereco, BigDecimal valorSugerido) {
