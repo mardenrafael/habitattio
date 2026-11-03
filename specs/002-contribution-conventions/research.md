@@ -229,7 +229,10 @@ falha de forma visível (FR-027), sem versão gravada em outro lugar.
 - `tools/versioning/semver.test.mjs`: todas as regras de R8, uma por teste.
 - `tools/versioning/version-sync.test.mjs`: repositórios git temporários (bootstrap, faixa a
   partir do marcador, sem commits que contam, promoção para `1.0.0`, alteração manual inválida,
-  idempotência, `HEAD` = marcador).
+  idempotência, `HEAD` = marcador, push com remote bare local).
+- `tools/versioning/workflow.test.mjs`: estrutura do `.github/workflows/version-sync.yml` lida
+  como texto (gatilho, permissão, concorrência, checkout completo, testes antes do sync, sem
+  tags/releases). O workflow executa na CI, então também nasce de um teste vermelho (analyze D1).
 - `node --test tools/` roda tudo. O workflow roda os testes de `tools/versioning` antes de
   sincronizar.
 

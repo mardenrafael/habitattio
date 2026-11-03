@@ -169,6 +169,10 @@ um, e que o commit de sincronização não dispara outra sincronização.
 - **Bypass explícito da barreira** (o autor desliga a verificação de propósito): não é impedido
   localmente (a CI não valida, por decisão do dono); a sincronização de versão trata commits
   fora do padrão como sem efeito sobre a versão e não falha por causa deles.
+- **Commits criados no github.com** (editor web, sugestão de revisão aplicada, mensagem de merge
+  editada na interface): não passam pela barreira local. As instruções pedem a mesma convenção
+  na web; o merge de PR usa a mensagem padrão sugerida pelo GitHub. Um commit web fora do
+  padrão não conta para a versão (FR-019), como no bypass.
 - **Merge que não traz nenhum commit que conte** (só merges, reverts, o commit de sincronização
   ou commits fora do padrão): a versão não muda e nenhum commit de sincronização é criado.
 - **Promoção manual com versão menor ou igual à atual**, ou que não seja `1.0.0` a partir de
@@ -291,8 +295,9 @@ um, e que o commit de sincronização não dispara outra sincronização.
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% dos commits não-merge novos na `main`, a partir da entrega da US1, seguem a
-  convenção (baseline: 77/89 ≈ 87%).
+- **SC-001**: 100% dos commits não-merge novos **criados localmente** (onde a barreira roda),
+  a partir da entrega da US1, seguem a convenção (baseline: 77/89 ≈ 87%). Commits criados no
+  github.com são acompanhados pela mesma métrica, sem garantia de 100%.
 - **SC-002**: 0 commits de merge novos com mensagem fora do padrão do git (baseline: 3).
 - **SC-003**: Num teste com ao menos 8 mensagens inválidas distintas (uma por regra) e 5
   válidas, 100% das inválidas são recusadas e 100% das válidas aceitas, em dois worktrees
@@ -332,6 +337,8 @@ um, e que o commit de sincronização não dispara outra sincronização.
   chegaram desde a última sincronização.
 - Como a promoção para `1.0.0` fica num commit dentro de um merge, os demais commits daquele
   merge não somam incremento extra; o ciclo seguinte já parte de `1.0.0`.
+- Edições pelo github.com são raras (o dono e os agentes trabalham localmente); impor a
+  convenção nelas exigiria validação na CI, que está fora de escopo.
 - Commits fora do padrão que entrem por bypass explícito da barreira não afetam a versão.
 - Esta feature não altera a constitution: ela não trata de convenções de contribuição. Se o
   plano decidir registrar algo lá, a emenda sincroniza o AGENTS.md na mesma mudança.

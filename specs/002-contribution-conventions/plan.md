@@ -55,7 +55,8 @@ commit/título na CI (fora de escopo); histórico e issues existentes intocados 
 sem proteção (Assumptions).
 
 **Scale/Scope**: 1 hook, 1 config, 3 templates + 1 config de issue, 1 workflow, 2 módulos Node
-(núcleo + casca), 4 arquivos de teste, 1 skill editada, 1 seção nova e 2 ajustes no AGENTS.md.
+(núcleo + casca), 5 arquivos de teste, 1 skill editada, 1 seção nova e 2 ajustes no AGENTS.md,
+1 emenda PATCH na constitution (Stack).
 
 Nenhum `NEEDS CLARIFICATION` restante: todas as incógnitas foram resolvidas em research.md.
 
@@ -66,13 +67,14 @@ Nenhum `NEEDS CLARIFICATION` restante: todas as incógnitas foram resolvidas em 
 | Princípio | Verificação | Pré-design | Pós-design |
 |---|---|---|---|
 | I. Hexagonal | Nenhum arquivo em `src/` muda. Tooling fica em `tools/`, `.githooks/` e `.github/`, fora das camadas. | ✅ | ✅ |
-| II. TDD | Todo código desta feature (hook, config, núcleo, casca) nasce de um teste `node:test` visto falhar pelo motivo certo (ver "Ordem TDD"). Testes criados são read-only. Nomes de teste em português, AAA (research R10). Nenhum teste Java é alterado. Templates, YAML e texto do AGENTS.md não são código executável e são validados pelo quickstart. | ✅ | ✅ |
+| II. TDD | Todo código desta feature (hook, config, núcleo, casca) nasce de um teste `node:test` visto falhar pelo motivo certo (ver "Ordem TDD"). Testes criados são read-only. Nomes de teste em português, AAA (research R10). Nenhum teste Java é alterado. O workflow `version-sync.yml`, que executa na CI, também nasce de um teste vermelho (`tools/versioning/workflow.test.mjs`, estrutural; analyze D1). Templates de PR/issue e texto do AGENTS.md não são executáveis e são validados pelo quickstart. | ✅ | ✅ (corrigido após `/speckit-analyze` D1) |
 | III. SDD | spec → clarify (3 respostas do dono na spec) → plan. Tasks e analyze vêm a seguir. | ✅ | ✅ |
 | IV. YAGNI / acordo | Dependência nova **fora** do `pom.xml` (commitlint): acordo explícito registrado no assessment (decision.md, Strategic fit). Nada no `pom.xml`. Sem framework de teste (`node:test`). Sem ferramenta de release. O núcleo e a casca existem porque há duas regras reais (cálculo e git), não "para o futuro". | ✅ (com acordo) | ✅ |
 | V. Convenções | Domínio intacto. Commits, PRs e issues em inglês, por decisão do dono. Specs, docs, `tasks.md` e testes descritos em português. | ✅ | ✅ |
-| Stack / Governance | A constitution não fala de convenção de contribuição, então não há emenda. O AGENTS.md é atualizado no mesmo change set (FR-029): §10 nova, §9 registra a exceção do commitlint, §4 aponta o formato das issues de task. | ✅ | ✅ |
+| Stack / Governance | Node, commitlint e GitHub Actions entram como tooling de repositório. **Ação**: emenda PATCH (1.0.1 → 1.0.2) na seção "Stack Tecnológico e Restrições", via `/speckit-constitution` (task de Polish), como no precedente da 001 (Flyway) (analyze F1). O AGENTS.md é atualizado no mesmo change set (FR-029): §10 nova, §9 registra a exceção do commitlint, §4 aponta o formato das issues de task. | ⚠️ follow-up | ⚠️ follow-up, vira task |
 
-**Resultado**: o gate passa sem violação a justificar. Complexity Tracking não se aplica.
+**Resultado**: o gate passa sem violação a justificar. O único item pendente é a emenda
+documental do Stack, que entra como task. Complexity Tracking não se aplica.
 
 ### Ordem TDD
 
@@ -82,22 +84,24 @@ tasks fica no `tasks.md`.
 1. **US1, config**: `tools/conventions/commit-msg.test.mjs` com os casos V1–V6/I1–I8 do
    [contrato](./contracts/commit-message.md) fica vermelho, porque não há
    `commitlint.config.mjs`. Isso justifica a config.
-2. **US1, hook**: `tools/conventions/hook.test.mjs` (repositório temporário com
-   `core.hooksPath` apontando para o `.githooks/` do checkout) fica vermelho, porque o hook não
-   existe. Casos: aceita válida, recusa inválida com exemplo no stderr, recusa sem `npx` no
-   `PATH`. Isso justifica `.githooks/commit-msg`.
+2. **US1, hook**: `tools/conventions/hook.test.mjs` (repositório temporário com cópias do hook
+   e da config, e `core.hooksPath` **relativo** `.githooks`, como na ativação real; analyze C2)
+   fica vermelho contra o stub `exit 0`. Casos: aceita válida, recusa inválida com exemplo no
+   stderr, merge padrão × `merge: …`, falha fechada via `HABITATTIO_NPX`, outro worktree. Isso
+   justifica `.githooks/commit-msg`.
 3. **US2**: templates `.github/`, edição da skill `speckit-taskstoissues` e AGENTS.md §10 (PR e
    issues). São texto, sem teste automatizado, e são validados pelo quickstart §3.
 4. **US3, núcleo**: `tools/versioning/semver.test.mjs` (classificação, `nextVersion`, `decide`,
    leitura e escrita do `<version>` do projeto com `<parent>` presente, mensagem gerada passando
    no commitlint) fica vermelho. Isso justifica `semver.mjs`.
-5. **US3, casca**: `tools/versioning/version-sync.test.mjs` (S1–S15 do
-   [contrato](./contracts/version-sync.md) em repositórios temporários, com `--dry-run` e com
-   commit local, sem remote) fica vermelho. Isso justifica `version-sync.mjs`.
-6. **US3, workflow**: `.github/workflows/version-sync.yml` e AGENTS.md §10 (versão). Validados
-   pelo quickstart §4, no primeiro merge.
-7. **Polish**: `node --test tools/`, `./mvnw test`, quickstart, e confirmar que `domain/` e
-   `application/` não foram tocados.
+5. **US3, casca**: `tools/versioning/version-sync.test.mjs` (S1–S14, S17 e S18 do
+   [contrato](./contracts/version-sync.md) em repositórios temporários, com `--dry-run`,
+   `--no-push` e remote bare local) fica vermelho. Isso justifica `version-sync.mjs`.
+6. **US3, workflow**: `tools/versioning/workflow.test.mjs` fica vermelho (arquivo ausente). Isso
+   justifica `.github/workflows/version-sync.yml`. A execução real é validada no quickstart §4,
+   no primeiro merge. Depois, AGENTS.md §10 (versão).
+7. **Polish**: emenda PATCH da constitution (Stack), `node --test tools/`, `./mvnw test`,
+   quickstart, e confirmar que `domain/` e `application/` não foram tocados.
 
 ## Project Structure
 
@@ -140,7 +144,9 @@ tools/
     ├── semver.mjs                   # NOVO: núcleo puro
     ├── semver.test.mjs              # NOVO
     ├── version-sync.mjs             # NOVO: casca git/CLI
-    └── version-sync.test.mjs        # NOVO
+    ├── version-sync.test.mjs        # NOVO
+    └── workflow.test.mjs            # NOVO: estrutura do version-sync.yml
+.specify/memory/constitution.md      # ALTERADO: PATCH 1.0.2, tooling no Stack
 .claude/skills/speckit-taskstoissues/SKILL.md   # ALTERADO: título [NNN] TXXX, dedupe por feature
 AGENTS.md                            # ALTERADO: §10 nova; §9 exceção commitlint; §4 issues de task
 pom.xml                              # gravado pela automação na main (só <version> do projeto)
