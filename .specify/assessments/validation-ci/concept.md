@@ -97,9 +97,15 @@ exige seria uma mudança de build motivada só pelo CI. A Option C não move nen
 - O tempo total de `./mvnw package` no runner é tolerável para o dono, mesmo sem meta formal.
 - Os limites de taxa de pull de imagens públicas não causam falhas recorrentes no volume de PRs do
   projeto (um único colaborador).
-- O repositório tem minutos de GitHub Actions suficientes para o volume de PRs
-  [NEEDS CLARIFICATION: repositório público ou privado? Afeta a cota gratuita].
+- ~~O repositório tem minutos de GitHub Actions suficientes~~ — **resolvido**: o repositório é
+  público (verificado via `gh repo view` em 2026-11-02); runners hospedados padrão são gratuitos
+  para repositórios públicos.
 - Validar o commit de merge do PR com `main` (e não só a cabeça do branch) é o que "estado exato
   do PR" significa para o dono.
-- Todos os PRs vêm de branches do próprio repositório (sem forks), já que não há outros
-  colaboradores — dispensando cuidados de permissão para PRs de fork.
+- Os PRs do dia a dia vêm de branches do próprio repositório. Por ser público, porém, qualquer
+  pessoa pode abrir PR a partir de fork: a validação não deve depender de segredos nem de
+  permissões de escrita, para funcionar (e ser segura) também nesse caso.
+
+## Decision Log
+
+- 2026-11-02 — Dono confirmou a **Option A**.
