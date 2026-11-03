@@ -11,7 +11,7 @@ Cobre FR-019 a FR-028. Regras detalhadas em [data-model.md](../data-model.md) e 
 | Permissões | `contents: write` |
 | Checkout | `fetch-depth: 0` |
 | Runtime | Node 24 (`actions/setup-node`) |
-| Passos | `node --test tools/versioning` → `node tools/versioning/version-sync.mjs` |
+| Passos | `node --test "tools/versioning/*.test.mjs"` → `node tools/versioning/version-sync.mjs` |
 
 ## CLI — `node tools/versioning/version-sync.mjs [--dry-run] [--no-push] [--repo <path>]`
 

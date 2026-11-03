@@ -37,7 +37,7 @@ linha `<version>` do projeto no `pom.xml` passa a ser gravada pela automação.
 **Storage**: N/A. O estado vive no git: o trailer `Version-Sync:` marca a última sincronização,
 e a versão está no `pom.xml`.
 
-**Testing**: `node --test tools/`, com tabela de mensagens contra a config, hook executado em
+**Testing**: `node --test "tools/**/*.test.mjs"`, com tabela de mensagens contra a config, hook executado em
 repositório git temporário, núcleo SemVer puro e casca contra repositórios temporários.
 `./mvnw test` continua obrigatório no fim (Definition of Done).
 
@@ -100,7 +100,7 @@ tasks fica no `tasks.md`.
 6. **US3, workflow**: `tools/versioning/workflow.test.mjs` fica vermelho (arquivo ausente). Isso
    justifica `.github/workflows/version-sync.yml`. A execução real é validada no quickstart §4,
    no primeiro merge. Depois, AGENTS.md §10 (versão).
-7. **Polish**: emenda PATCH da constitution (Stack), `node --test tools/`, `./mvnw test`,
+7. **Polish**: emenda PATCH da constitution (Stack), `node --test "tools/**/*.test.mjs"`, `./mvnw test`,
    quickstart, e confirmar que `domain/` e `application/` não foram tocados.
 
 ## Project Structure

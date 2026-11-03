@@ -233,7 +233,7 @@ falha de forma visível (FR-027), sem versão gravada em outro lugar.
 - `tools/versioning/workflow.test.mjs`: estrutura do `.github/workflows/version-sync.yml` lida
   como texto (gatilho, permissão, concorrência, checkout completo, testes antes do sync, sem
   tags/releases). O workflow executa na CI, então também nasce de um teste vermelho (analyze D1).
-- `node --test tools/` roda tudo. O workflow roda os testes de `tools/versioning` antes de
+- `node --test "tools/**/*.test.mjs"` roda tudo. O workflow roda os testes de `tools/versioning` antes de
   sincronizar.
 
 Os testes Java (`./mvnw test`) não mudam. A suíte Java ainda é executada no fim (Definition of

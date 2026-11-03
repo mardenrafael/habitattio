@@ -13,8 +13,8 @@ nos [contracts](./contracts/) e no [data-model.md](./data-model.md); aqui ficam 
 ## 1. Testes automatizados (todas as stories)
 
 ```bash
-node --test tools/            # hook, config do commitlint, núcleo e casca da versão
-./mvnw test                   # suíte Java: não pode quebrar (Testcontainers exige Docker)
+node --test "tools/**/*.test.mjs"   # hook, config do commitlint, núcleo e casca da versão
+./mvnw test                         # suíte Java: não pode quebrar (Testcontainers exige Docker)
 ```
 
 Esperado: tudo verde. Sem Docker, rode só os testes de domínio/aplicação por

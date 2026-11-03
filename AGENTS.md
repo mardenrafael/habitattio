@@ -19,6 +19,8 @@ Sempre use o wrapper (`./mvnw`), nunca um `mvn` global.
 ./mvnw test -Dtest=FaturaTest#deveMarcarComoPagaQuandoValorIntegral   # um método
 ./mvnw spring-boot:run               # sobe a app (H2 em memória, porta 8080)
 ./mvnw verify                        # build completo
+git config core.hooksPath .githooks  # ativa a barreira de commit (uma vez por clone, ver §10)
+node --test "tools/**/*.test.mjs"    # testes do tooling de repositório (hook, versão)
 ```
 
 Os testes de integração usam **Testcontainers** (PostgreSQL e Redis) — exigem Docker rodando.
@@ -300,3 +302,51 @@ Relate o que foi verificado e o que não foi. Não afirme que algo passa sem ter
 - Não crie camada de abstração "para o futuro". YAGNI: porta se cria quando há um caso de uso
   que precisa dela.
 - Não altere nada em `.specify/scripts/` ou `.specify/templates/`.
+- Exceção acordada (2026-11-02, feature 002): `@commitlint/cli` **21.2.4**, executado via `npx`
+  pelo hook `commit-msg`, **fora** do `pom.xml`. Atualizar a versão é um commit
+  `build(commitlint): …` que muda `COMMITLINT_VERSION` em `.githooks/commit-msg`.
+
+---
+
+## 10. Contribuição: commits, PRs, issues e versão
+
+Commits, PRs e issues são escritos em **inglês**. Specs, docs, `tasks.md` e o domínio continuam
+em português. Contratos completos em `specs/002-contribution-conventions/contracts/`.
+
+### Commits
+
+Formato (Conventional Commits):
+
+```text
+<type>(<scope>)[!]: <description>
+
+[body]
+
+[footers]
+```
+
+- `type`: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+  (minúsculo).
+- `scope`: **obrigatório**, livre (ex.: `fatura`, `persistence`, `specs`, `agents`).
+- Breaking change: `!` antes dos dois-pontos e/ou rodapé `BREAKING CHANGE: <texto>`.
+- Cabeçalho com no máximo 100 caracteres; descrição não vazia.
+- Merges usam a mensagem padrão do git (`Merge branch '…'`, `Merge pull request #…`). Nunca
+  `merge: …`.
+- **Proibido `--no-verify`.** Uma recusa do hook se corrige reescrevendo a mensagem, nunca
+  contornando a barreira.
+- Commits feitos no github.com (editor web, sugestões de revisão, merge) também seguem a
+  convenção: a barreira não os vê. Ao mesclar um PR na web, mantenha a mensagem padrão do
+  GitHub.
+
+Exemplos: `feat(fatura): add late fee calculation`, `fix(contrato)!: clamp due day to month end`.
+
+### Ativação da barreira
+
+```bash
+git config core.hooksPath .githooks   # uma vez por clone; vale para todos os worktrees
+git config --get core.hooksPath       # verificação: imprime .githooks
+```
+
+O hook `.githooks/commit-msg` roda o commitlint (`commitlint.config.mjs`) via `npx` e exige
+Node ≥ 20. Se o Node faltar ou o commitlint não puder ser obtido (offline na primeira
+execução), o commit é **recusado** (fail closed). Instale o Node; não pule o hook.
