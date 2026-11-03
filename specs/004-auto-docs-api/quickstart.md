@@ -57,8 +57,9 @@ mostra o arquivo (SC-005).
 ./mvnw test -Dtest=DocumentacaoApiProducaoTest   # exige Docker
 ```
 
-**Esperado**: `/v3/api-docs`, `/v3/api-docs.yaml`, `/swagger-ui.html` e `/swagger-ui/index.html`
-respondem 404, anônimo e autenticado.
+**Esperado**: `/v3/api-docs`, `/v3/api-docs.yaml`, `/swagger-ui.html`, `/swagger-ui/index.html`
+e os arquivos estáticos em `/webjars/swagger-ui/**` respondem 404, anônimo e autenticado. Em
+produção a descrição existe só no repositório (`docs/api/openapi.yaml`).
 
 ## Cenário 6 — Nada mais mudou (FR-011)
 

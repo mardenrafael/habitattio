@@ -11,14 +11,15 @@ Estas rotas são da **documentação**, não da API: não aparecem na própria d
 | `GET /v3/api-docs.yaml` | 200, YAML da descrição, sem autenticação | 404, para anônimo e autenticado |
 | `GET /swagger-ui.html` | redireciona para a UI, sem autenticação | 404, para anônimo e autenticado |
 | `GET /swagger-ui/index.html` | 200, página navegável, sem autenticação | 404, para anônimo e autenticado |
+| `GET /webjars/swagger-ui/**` (arquivos estáticos da UI) | servidos conforme o padrão do Spring Boot | 404, para anônimo e autenticado |
 
 - Nenhuma rota de documentação exige CSRF (são todas `GET`).
 - A UI, no modo rápido, envia `X-XSRF-TOKEN` com o valor do cookie `XSRF-TOKEN` nas chamadas
   "Try it out" (R8). É desejável, não obrigatório; a verificação é manual.
 - Nenhuma outra rota muda: `/actuator` continua expondo só `health`; as 8 operações da API
   mantêm método, caminho, status e regras de autenticação.
-- Resíduo aceito em `prod` (research R7): os arquivos estáticos em `/webjars/swagger-ui/**`
-  continuam acessíveis a proprietário autenticado, sem a descrição da API.
+- Em `prod`, nenhum arquivo da Swagger UI fica online (research R7): a descrição existe só no
+  repositório, em `docs/api/openapi.yaml`.
 
 Verificação: `DocumentacaoApiTest` (modo rápido, MockMvc) e `DocumentacaoApiProducaoTest`
 (profile `prod`, Testcontainers — exige Docker).

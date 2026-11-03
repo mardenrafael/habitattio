@@ -62,8 +62,8 @@ nenhuma rota ou regra de segurança da API alterada (FR-011)
 
 **Re-check pós-design**: aprovado. O design não acrescentou porta, caso de uso, entidade nem
 tabela; a regra nova da cadeia de segurança é só `permitAll` de rotas `GET` de documentação, e o
-fechamento em `prod` é por propriedade. O resíduo de `/webjars/**` (research R7) não expõe o
-contrato e está registrado abaixo.
+fechamento em `prod` é por propriedade, incluindo os arquivos estáticos da Swagger UI
+(`/webjars/**`): em `prod` nada da documentação fica online (research R7).
 
 ## Project Structure
 
@@ -103,12 +103,14 @@ src/main/java/br/com/marden/habitattio/
 src/main/resources/
 ├── application.properties                         # + springdoc.* (ordem por chave, pretty print, OpenAPI 3.1,
 │                                                  #   override-with-generic-response=false, swagger-ui.csrf.enabled=true)
-└── application-prod.properties                    # + springdoc.api-docs.enabled=false, springdoc.swagger-ui.enabled=false
+└── application-prod.properties                    # + springdoc.api-docs.enabled=false, springdoc.swagger-ui.enabled=false,
+                                                   #   spring.web.resources.add-mappings=false (sem /webjars/** em prod)
 
 src/test/java/br/com/marden/habitattio/
 ├── DescricaoApiTest.java                          # NOVO: D1–D4 + exportação atômica para docs/api/openapi.yaml (modo rápido)
 ├── DocumentacaoApiTest.java                       # NOVO: UI e /v3/api-docs públicos no modo rápido
-└── DocumentacaoApiProducaoTest.java               # NOVO: 404 em prod, anônimo e autenticado (Testcontainers)
+└── DocumentacaoApiProducaoTest.java               # NOVO: 404 em prod (rotas de documentação e /webjars/swagger-ui/**),
+                                                   #   anônimo e autenticado (Testcontainers)
 
 docs/api/openapi.yaml                              # passa a ser GERADO (substituído na primeira execução)
 specs/003-proprietario-login-isolamento/contracts/api-http.md   # + aviso: histórico; referência é o arquivo gerado
@@ -142,4 +144,3 @@ nenhum pacote novo. Os testes novos ficam no pacote raiz de teste, ao lado de `M
 |---|---|---|
 | Dependência nova (`springdoc-openapi-starter-webmvc-ui`) — Princípio IV / AGENTS.md §9 | Gerar a descrição a partir do código e servir a Swagger UI, ambos pedidos pelo dono; exceção acordada na avaliação | Option A (arquivo manual + teste de rotas) não regenera nem substitui o arquivo e não cobre campos/status; escrever um gerador próprio seria mais código para o mesmo fim |
 | Rotas de documentação públicas no modo rápido (superfície além de `/actuator/health`) | Swagger UI navegável com a app rodando (US3); fechadas em `prod` | Exigir login na UI no modo rápido complicaria o uso local sem ganho, já que o modo rápido não é exposto |
-| Resíduo: `/webjars/swagger-ui/**` acessível a autenticado em `prod` | Comportamento padrão do Spring Boot para webjars; não contém a descrição | Uma regra `denyAll` só para isso é fácil, mas é superfície de código a mais para um risco sem conteúdo sensível; fica disponível se o dono preferir |

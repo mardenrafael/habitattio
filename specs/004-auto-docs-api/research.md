@@ -110,20 +110,26 @@ itens UNVERIFIED) e as escolhas de desenho do plan. Fontes conferidas nesta etap
 - **Decision**:
   - Cadeia de segurança: `permitAll` para `GET /v3/api-docs`, `/v3/api-docs/**`,
     `/swagger-ui.html` e `/swagger-ui/**` em `SegurancaConfiguration`, valendo nos dois modos.
-  - `application-prod.properties`: `springdoc.api-docs.enabled=false` e
-    `springdoc.swagger-ui.enabled=false`. Sem os beans, as rotas não existem e respondem **404**
-    pelo tratamento padrão (`/error` já é público), para anônimo e autenticado.
+  - `application-prod.properties`: `springdoc.api-docs.enabled=false`,
+    `springdoc.swagger-ui.enabled=false` e **`spring.web.resources.add-mappings=false`**. Sem os
+    beans do springdoc, as rotas de documentação não existem; sem o mapeamento de recursos
+    estáticos, `/webjars/**` (onde o Spring Boot serviria os arquivos da Swagger UI do classpath)
+    também não. Tudo responde **404** pelo tratamento padrão (`/error` já é público), para
+    anônimo e autenticado.
 - **Rationale**: uma só regra de segurança, e o "fechado em `prod`" fica num único lugar, o arquivo
   do profile, sem `@Profile` em código. Responder 404 está alinhado com a clarificação ("como
-  inexistentes").
-- **Residual aceito**: o Spring Boot continua servindo `/webjars/**` do classpath; os arquivos
-  estáticos da Swagger UI ficam alcançáveis por proprietário **autenticado** em `prod` (anônimo
-  recebe 401, como em qualquer rota não pública). São arquivos estáticos sem a descrição da API
-  (que está desligada), portanto não expõem o contrato. Registrado em Complexity Tracking; se o
-  dono quiser fechar também isso, a saída é uma regra `denyAll` para `/webjars/swagger-ui/**` no
-  profile `prod`.
-- **Alternatives considered**: liberar só no modo rápido via `@Profile` na configuração de
-  segurança — duas cadeias para manter. Rejeitado.
+  inexistentes"). Desligar o mapeamento estático em `prod` não tem efeito colateral: a aplicação é
+  só API REST e não tem `static/`, `public/` nem `templates/` (conferido em `src/main/resources`).
+  Decisão do dono (2026-11-02): os arquivos da Swagger UI não ficam online em `prod`; a descrição
+  vive só no repositório.
+- **Alternatives considered**:
+  - Liberar só no modo rápido via `@Profile` na configuração de segurança — duas cadeias para
+    manter. Rejeitado.
+  - `denyAll` para `/webjars/swagger-ui/**` só em `prod` — exigiria regra condicional por profile
+    na cadeia de segurança e responderia 403 (revela que existe), não 404. Rejeitado.
+  - Tirar o webjar da Swagger UI do jar empacotado (exclusão no `spring-boot-maven-plugin`) — a
+    mesma imagem roda nos dois modos (`docker run` sem profile é o modo rápido, AGENTS.md §1), e a
+    UI quebraria ali; os bytes no jar não ficam online. Rejeitado.
 
 ## R8 — "Try it out" com CSRF na Swagger UI
 

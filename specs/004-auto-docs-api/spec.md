@@ -34,6 +34,7 @@ concreto, onde fica o texto explicativo e como o teste sobe a aplicação ficam 
 ### Session 2026-11-02
 
 - Q: A página de documentação e a descrição bruta ficam disponíveis no modo produção? → A: Não. Ficam fechadas em `prod` para qualquer pessoa, autenticada ou não; só o modo rápido as expõe (FR-010).
+- Q (do plan, R7): Os arquivos estáticos da Swagger UI podem continuar alcançáveis em `prod` por quem está autenticado (resíduo do comportamento padrão)? → A: Não. Em `prod` nenhum arquivo da Swagger UI fica online, para ninguém; a descrição existe só no repositório (`docs/api/openapi.yaml`) (FR-010).
 - Q: Depois desta feature, qual é a referência do contrato HTTP? → A: A descrição gerada (`docs/api/openapi.yaml`). `specs/003-.../contracts/api-http.md` vira histórico da feature 003 (FR-012).
 
 ## User Scenarios & Testing *(mandatory)*
@@ -197,7 +198,9 @@ o teste falha apontando a operação ausente.
   arquivo MUST descrever o servidor de uso local, não a porta efêmera do teste.
 - **FR-010**: No modo rápido, a página de documentação navegável e a descrição bruta MUST estar
   acessíveis sem autenticação. No modo produção, ambas MUST ficar indisponíveis (respondem como
-  inexistentes), para qualquer pessoa, autenticada ou não.
+  inexistentes), para qualquer pessoa, autenticada ou não — incluindo qualquer arquivo da página
+  de documentação (scripts, estilos, imagens). Em produção a descrição existe só no repositório,
+  em `docs/api/openapi.yaml`.
 - **FR-011**: A feature MUST NOT alterar rotas, comportamento, regras de autenticação nem a
   exposição do Actuator (continua só `health`); a única superfície nova permitida é a de
   documentação descrita em FR-010.
