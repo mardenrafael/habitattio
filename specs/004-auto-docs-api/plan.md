@@ -42,7 +42,9 @@ nenhuma superfície nova em `prod` (FR-010); nada em `domain/`, `application/` o
 nenhuma rota ou regra de segurança da API alterada (FR-011)
 
 **Scale/Scope**: 8 operações, 4 tags, ~8 componentes compartilhados; 3 controllers anotados,
-1 classe de configuração nova, 1 linha de regra nova na cadeia de segurança, 3 testes novos
+1 classe de configuração nova, 1 linha de regra nova na cadeia de segurança, 4 classes de teste
+novas (`DescricaoApiTest`, `ExportadorDescricaoApiTest`, `DocumentacaoApiTest`,
+`DocumentacaoApiProducaoTest`) + 1 classe de apoio de teste (`ExportadorDescricaoApi`)
 
 ## Constitution Check
 
@@ -51,7 +53,7 @@ nenhuma rota ou regra de segurança da API alterada (FR-011)
 | Princípio | Avaliação | Status |
 |---|---|---|
 | **I. Arquitetura Hexagonal** | Anotações do swagger só em `adapters/inbound/rest/`; configuração em `adapters/config/`. `domain/`, `application/`, `ports/` sem nenhum import novo. Nenhum `*JpaEntity`/DTO cruza camada. Controllers continuam instanciáveis por construtor (anotações não exigem contexto). | ✅ |
-| **II. TDD** | Os três testes novos (`DescricaoApiTest`, `DocumentacaoApiTest`, `DocumentacaoApiProducaoTest`) são escritos e vistos falhar antes da dependência/configuração (hoje `/v3/api-docs` responde 401 sem login). Nenhum teste existente é alterado; se algum quebrar (ex.: `@WebMvcTest` com a regra de segurança nova), parar e reportar. | ✅ |
+| **II. TDD** | As quatro classes de teste novas (`DescricaoApiTest`, `ExportadorDescricaoApiTest`, `DocumentacaoApiTest`, `DocumentacaoApiProducaoTest`) são escritas e vistos falhar antes da dependência/configuração (hoje `/v3/api-docs` responde 401 sem login). Nenhum teste existente é alterado; se algum quebrar (ex.: `@WebMvcTest` com a regra de segurança nova), parar e reportar. | ✅ |
 | **III. SDD** | Spec com clarificações resolvidas; este plan; tasks na sequência. | ✅ |
 | **IV. Simplicidade e YAGNI** | Dependência nova — **exceção acordada** (intake, Clarifications; decisão da avaliação). Nenhuma abstração "para o futuro": sem modo "check" separado, sem grupos de API, sem UI customizada. | ⚠️ justificado (Complexity Tracking) |
 | **V. Convenções de nomenclatura** | `DocumentacaoApiConfiguration`, `DescricaoApiTest`, `DocumentacaoApiTest`; textos e nomes de teste em português (`deveConterAsOitoOperacoes`, `deveResponder404NoModoProducao`). | ✅ |

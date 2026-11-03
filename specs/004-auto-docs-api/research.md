@@ -86,15 +86,18 @@ itens UNVERIFIED) e as escolhas de desenho do plan. Fontes conferidas nesta etap
 - **Decision**: `DescricaoApiTest` (pacote raiz de teste, ao lado de `ModoRapidoTest`),
   `@SpringBootTest` + `@AutoConfigureMockMvc` **sem profile** (modo rápido, H2, sem Docker nem
   Redis):
-  1. obtém `GET /v3/api-docs.yaml` sem autenticação;
+  1. obtém `GET /v3/api-docs.yaml` autenticado (`with(user("documentacao"))`), para não depender
+     da regra pública da US3 — o conteúdo é o mesmo que o anônimo recebe no modo rápido;
   2. converte com `io.swagger.v3.core.util.Yaml.mapper()` para `io.swagger.v3.oas.models.OpenAPI`
      (vem do swagger-core, que o springdoc já traz — nenhuma dependência extra);
   3. testes separados verificam o conteúdo mínimo do [contrato da descrição](contracts/descricao-api.md):
      as 8 operações, a marcação `sessao`/`csrf` de cada uma, o guia, as exclusões, o servidor e a
      estabilidade (duas leituras iguais);
-  4. o teste de exportação chama a mesma verificação antes de gravar e grava em
-     `docs/api/openapi.yaml` por arquivo temporário + `Files.move(ATOMIC_MOVE, REPLACE_EXISTING)`.
-     Se a verificação falha, nada é gravado, seja qual for a ordem dos métodos.
+  4. a verificação e a gravação ficam na classe de apoio de teste `ExportadorDescricaoApi`
+     (testável sem Spring em `ExportadorDescricaoApiTest`): o teste de exportação chama
+     `verificar` antes de `exportar`, que grava em `docs/api/openapi.yaml` por arquivo temporário +
+     `Files.move(ATOMIC_MOVE, REPLACE_EXISTING)`. Se a verificação falha, nada é gravado, seja qual
+     for a ordem dos métodos.
 - **Rationale**: a suíte normal (`./mvnw test`) passa a ser o comando de regeneração; o diretório
   de trabalho do Surefire é a raiz do projeto, então o caminho relativo é estável. O modo rápido
   sobe sem Redis acessível — `ModoRapidoTest` já faz isso hoje.
@@ -137,8 +140,12 @@ itens UNVERIFIED) e as escolhas de desenho do plan. Fontes conferidas nesta etap
   cookie `XSRF-TOKEN` e cabeçalho `X-XSRF-TOKEN` (`Constants.CSRF_DEFAULT_*`), os mesmos do
   `csrf.spa()` do projeto. O fluxo pela UI é: executar `GET /sessao` (recebe o cookie), depois
   os `POST`/`DELETE`.
-- **Rationale**: custo de uma propriedade; dentro do apetite. A verificação é **manual**
-  (quickstart, cenário 4); se não funcionar, a UI fica só de leitura, como a spec admite.
+- **Rationale**: custo de uma propriedade; dentro do apetite. A configuração é provada por teste
+  automatizado (`DocumentacaoApiTest#deveEnviarOTokenCsrfNasChamadasDaPagina`): com a propriedade,
+  o springdoc injeta em `/swagger-ui/swagger-initializer.js` um `requestInterceptor` que copia o
+  cookie `XSRF-TOKEN` para o cabeçalho `X-XSRF-TOKEN` (`AbstractSwaggerIndexTransformer.addCSRF`,
+  conferido no código da tag `v3.2.0`). O funcionamento ponta a ponta no navegador continua
+  manual (quickstart, cenário 4); se não funcionar, a UI fica só de leitura, como a spec admite.
 - **Alternatives considered**: interceptor JavaScript próprio na UI — fora do apetite. Rejeitado.
 
 ## R9 — `@AuthenticationPrincipal` nos parâmetros

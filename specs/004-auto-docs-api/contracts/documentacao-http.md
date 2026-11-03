@@ -15,11 +15,16 @@ Estas rotas são da **documentação**, não da API: não aparecem na própria d
 
 - Nenhuma rota de documentação exige CSRF (são todas `GET`).
 - A UI, no modo rápido, envia `X-XSRF-TOKEN` com o valor do cookie `XSRF-TOKEN` nas chamadas
-  "Try it out" (R8). É desejável, não obrigatório; a verificação é manual.
+  "Try it out" (R8): `GET /swagger-ui/swagger-initializer.js` contém o `requestInterceptor` que
+  copia o cookie para o cabeçalho (verificado por teste). O uso ponta a ponta no navegador é
+  desejável, não obrigatório, e verificado à mão.
 - Nenhuma outra rota muda: `/actuator` continua expondo só `health`; as 8 operações da API
   mantêm método, caminho, status e regras de autenticação.
 - Em `prod`, nenhum arquivo da Swagger UI fica online (research R7): a descrição existe só no
   repositório, em `docs/api/openapi.yaml`.
+- Em `prod`, o anônimo recebe 404 nas rotas de documentação (públicas por regra) e 401 nas demais
+  rotas inexistentes, incluindo `/webjars/**`. Os dois significam "não disponível" e nenhum expõe
+  conteúdo; a diferença foi aceita pelo dono (analyze I3, 2026-11-02).
 
 Verificação: `DocumentacaoApiTest` (modo rápido, MockMvc) e `DocumentacaoApiProducaoTest`
 (profile `prod`, Testcontainers — exige Docker).

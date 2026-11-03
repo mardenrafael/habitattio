@@ -200,7 +200,10 @@ o teste falha apontando a operação ausente.
   acessíveis sem autenticação. No modo produção, ambas MUST ficar indisponíveis (respondem como
   inexistentes), para qualquer pessoa, autenticada ou não — incluindo qualquer arquivo da página
   de documentação (scripts, estilos, imagens). Em produção a descrição existe só no repositório,
-  em `docs/api/openapi.yaml`.
+  em `docs/api/openapi.yaml`. "Como inexistentes" significa "como uma rota que a aplicação não
+  tem": quem está autenticado recebe 404; o anônimo recebe 404 nas rotas de documentação
+  (públicas por regra) e 401 nas demais rotas inexistentes. Os dois significam "não disponível", e
+  nenhum expõe conteúdo (decisão do dono, analyze I3).
 - **FR-011**: A feature MUST NOT alterar rotas, comportamento, regras de autenticação nem a
   exposição do Actuator (continua só `health`); a única superfície nova permitida é a de
   documentação descrita em FR-010.
