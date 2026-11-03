@@ -1,0 +1,35 @@
+# Writes the SemVer version derived from Conventional Commits into pom.xml on main.
+# Contract: specs/002-contribution-conventions/contracts/version-sync.md
+# Pushes made with GITHUB_TOKEN do not trigger workflows, so the sync commit never cascades;
+# the script also exits with outcome=noop when HEAD is already a Version-Sync commit.
+name: version-sync
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Test version tooling
+        run: node --test "tools/versioning/*.test.mjs"
+
+      - name: Sync project version
+        run: node tools/versioning/version-sync.mjs

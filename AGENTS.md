@@ -393,3 +393,24 @@ gh issue create --title "fix(<scope>): <summary>" --body-file <arquivo com os bl
   comentário). Se uma atualização do Spec Kit sobrescrever a skill, reaplique a partir daqui.
 
 Issues, PRs e commits já existentes **não** são renomeados nem reescritos.
+
+### Versão
+
+A `<version>` do projeto no `pom.xml` da `main` é **SemVer sem `-SNAPSHOT`** e é gravada só pela
+automação (`.github/workflows/version-sync.yml` → `tools/versioning/version-sync.mjs`). A cada
+push na `main`, ela soma os commits desde o último commit de sincronização
+(`chore(release): set version to X.Y.Z` com o rodapé `Version-Sync: X.Y.Z`) e aplica o de maior
+impacto:
+
+| Commit | Série `0.x` | A partir de `1.0.0` |
+|---|---|---|
+| breaking (`!` ou `BREAKING CHANGE:`) | MINOR | MAJOR |
+| `feat` | MINOR | MINOR |
+| qualquer outro tipo válido | PATCH | PATCH |
+
+Merges, reverts, o próprio commit de sincronização e mensagens fora do padrão não contam.
+
+- **Agentes não editam a `<version>`.** Uma alteração manual faz a sincronização falhar.
+- A única alteração manual aceita é a **promoção para `1.0.0`**, por commit explícito do dono
+  que muda a versão de `0.x` para `1.0.0`.
+- Para ver o que seria gravado, sem efeito: `node tools/versioning/version-sync.mjs --dry-run`.
