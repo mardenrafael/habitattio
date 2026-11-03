@@ -13,7 +13,8 @@ grande parte por agentes de código, não seguem um formato único nem verificá
 para derivar a versão SemVer ou um changelog do histórico sem leitura humana, e cada novo agente
 pode introduzir um formato diferente sem que nada o impeça. Isso pesa agora porque o volume de
 artefatos gerados por agentes cresceu rápido (89 commits não-merge e 125 issues) e o dono quer
-habilitar releases versionadas no futuro.
+habilitar releases versionadas no futuro. O projeto é de prática: o valor está em exercitar o
+processo de versionamento e release, não em atender consumidores externos.
 
 ## Affected Users & Stakeholders
 
@@ -24,14 +25,14 @@ habilitar releases versionadas no futuro.
     `merge:`, commits sem escopo, PR #131 com título `Feat/speckit and extensions` e corpo vazio).
   - *Dono / mantenedor* (Marden Rafael, único revisor hoje): revisa e mescla PRs e precisaria
     ler o histórico à mão para decidir versão e notas de release.
-  - *Quem reporta bug ou pede feature*: hoje não tem formato nem caminho definido. Nenhum bug
-    report ou feature request foi aberto até agora, então não há evidência de quem são essas
-    pessoas. [NEEDS CLARIFICATION: só o dono e agentes, ou também pessoas externas?]
+  - *Quem reporta bug ou pede feature*: só o dono e agentes (sem pessoas externas). Hoje não há
+    formato nem caminho definido; nenhum bug report ou feature request foi aberto até agora.
+    Como o próximo leitor é quase sempre um agente rodando `/speckit-specify` ou
+    `/speckit-bug-fix`, a estrutura importa mais do que a orientação a quem preenche.
 - **Stakeholders**:
   - *Dono do repositório*: decide as convenções, aceitou a exceção à regra de dependências
-    (AGENTS.md §9) e é o beneficiário da futura automação de release.
-  - *Consumidores futuros das releases/changelog*: [NEEDS CLARIFICATION: existem hoje? quem
-    lerá o changelog?]
+    (AGENTS.md §9) e é o único consumidor das releases e do changelog futuros (projeto de
+    prática).
 
 ## Goals
 
@@ -43,6 +44,8 @@ habilitar releases versionadas no futuro.
   changelog futuro.
 - Bug reports e feature requests chegam com estrutura previsível, que alimenta diretamente os
   fluxos existentes (feature → `/speckit-specify`; bug → `/speckit-bug-fix`).
+- Issues de task geradas a partir do `tasks.md` também seguem o padrão: título em formato único
+  e em inglês, independentemente da feature ou da sessão que as gerou.
 - A versão declarada no `pom.xml` é uma versão SemVer válida, sem sufixo `-SNAPSHOT`, e
   corresponde ao estado da `main`.
 
@@ -69,6 +72,8 @@ habilitar releases versionadas no futuro.
 - % de bug reports e feature requests novos na estrutura padrão (baseline: nenhum aberto até
   hoje; meta: 100%). Qualitativo complementar: o fluxo correspondente consegue ser iniciado a
   partir da issue sem pedir informação básica de volta.
+- % de issues de task novas com título no formato padrão, em inglês (baseline: 0/125 em formato
+  único; dois formatos coexistem, `T0xx: …` e `[003] T0xx: …`, ambos em português; meta: 100%).
 - `<version>` do `pom.xml` na `main` em SemVer sem `-SNAPSHOT` (baseline: `0.0.1-SNAPSHOT`;
   meta: sempre sem sufixo, sincronizada a cada merge na `main`).
 
@@ -89,18 +94,19 @@ O custo cresce com o volume de artefatos gerados por agentes.
   rodapé `BREAKING CHANGE:`.
 - Idioma inglês para commits, PRs e issues.
 - PRs mesclados por merge commit; merges mantêm a mensagem padrão do git.
-- Templates de issue: feature request e bug report.
+- Templates de issue: feature request e bug report; issues de task também entram no padrão
+  (resposta do dono, 2026-11-02).
 - CI sincroniza a `<version>` do `pom.xml` a cada merge na `main`.
+- Quem abre issues: só o dono e agentes. Único consumidor de releases/changelog: o dono
+  (projeto de prática). Respostas do dono, 2026-11-02.
 
 ## Open Questions
 
-- [NEEDS CLARIFICATION: As issues de task geradas por `/speckit-taskstoissues` (125 hoje, em dois
-  formatos de título: `T0xx: …` e `[003] T0xx: …`) entram no padrão? Precisam de template
-  próprio ou de título em formato fixo, em inglês?]
-- [NEEDS CLARIFICATION: Quem reporta bugs e pede features: só o dono e agentes, ou também
-  pessoas externas? Isso muda o quanto os templates precisam guiar quem preenche.]
-- [NEEDS CLARIFICATION: Existe hoje algum consumidor de releases/changelog, ou o beneficiário é só
-  o dono?]
+Nenhuma pergunta de problema em aberto. Ficam para o shape:
+
+- (Para o shape) Como padronizar as issues de task: template próprio, formato fixo de título
+  aplicado por `/speckit-taskstoissues`, ou ambos. As 125 issues existentes mantêm os títulos
+  atuais (assumido por analogia com a decisão de não reescrever o histórico; confirmar no shape).
 - (Para o shape) Mecanismo de instalação do hook num projeto Maven sem `package.json` e garantia
   de que agentes em worktrees o executem; sugestão registrada no intake (item 12).
 - (Para o shape) Como a CI grava a `<version>` após o merge na `main` (commit de volta com
