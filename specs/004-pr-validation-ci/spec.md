@@ -14,9 +14,10 @@ problema é interno ao repositório).
 
 ## Contexto
 
-`main` só recebe mudanças por pull request, e a proteção de branch já bloqueia push direto. Mas o
-PR é aceito sem nenhuma evidência independente de que a suíte de testes passa e de que o projeto
-empacota. Hoje isso depende de quem abriu o PR (o dono ou um agente de código): essa pessoa precisa
+Na prática, `main` recebe mudanças por pull request. A regra ativa hoje (ruleset `block-main`) só
+impede exclusão e force-push (research R13): não exige PR nem verificação. Mesmo pelo PR, a
+mudança é aceita sem nenhuma evidência independente de que a suíte de testes passa e de que o
+projeto empacota. Hoje isso depende de quem abriu o PR (o dono ou um agente de código): essa pessoa precisa
 lembrar de rodar a suíte localmente, com Docker disponível, e relatar o resultado com honestidade.
 Sete PRs já entraram em `main` assim. A constitution proíbe declarar a suíte verde sem executá-la,
 mas ninguém de fora confere essa declaração.
@@ -220,7 +221,8 @@ mensagem de falha.
 
 - O dono marca a validação como obrigatória na proteção de branch de `main` depois da entrega.
   Esse passo é manual, feito no GitHub e fora do repositório. A feature só garante um nome estável
-  que torne isso possível.
+  que torne isso possível. Hoje o ruleset não exige nenhuma verificação (research R13). Sem esse
+  passo, a validação informa, mas não bloqueia.
 - O repositório é público (verificado em 2026-11-02). As máquinas hospedadas padrão do GitHub são
   gratuitas nesse caso, e não há preocupação com cota de minutos.
 - As máquinas Linux hospedadas do GitHub já têm runtime de containers e executam os testes de

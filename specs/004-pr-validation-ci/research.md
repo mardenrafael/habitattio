@@ -70,28 +70,49 @@ Fatos verificados em 2026-11-02, salvo onde marcado como suposição:
 
 ## R5 — Comando
 
-- **Decision**: `./mvnw -B package`, sem nenhum filtro de teste.
-- **Rationale**: é a escolha do `decision.md`. Sem failsafe, o `package` passa pela fase `test`
+- **Decision**: `./mvnw -B verify`, sem nenhum filtro de teste.
+- **Rationale**: é o "build completo" do AGENTS.md §1, o que cumpre a FR-004 ("o mesmo comando
+  que o AGENTS.md prescreve") ao pé da letra. Sem failsafe, o `verify` passa pela fase `test`
   (surefire, suíte inteira) e pela de empacotamento, e qualquer falha nas duas reprova (FR-004,
-  FR-006, FR-007). `verify` daria o mesmo resultado hoje, porque não há nada ligado às fases
-  posteriores. `-B` desliga a saída interativa.
-- **Alternatives considered**: `./mvnw test` seguido de `package -DskipTests`, rejeitado porque
-  são dois comandos e abrem caminho para divergir do comando local.
+  FR-006, FR-007). Hoje ele equivale ao `package` do `decision.md`, porque não há nada ligado às
+  fases posteriores. Se um dia houver, o CI acompanha o build completo local sem mudança. `-B`
+  desliga a saída interativa. (Ajuste do `/speckit-analyze`, achado I4.)
+- **Alternatives considered**:
+  - `./mvnw -B package` (o `decision.md`): mesmo efeito hoje, mas não é um comando que o
+    AGENTS.md lista.
+  - `./mvnw test` seguido de `package -DskipTests`: rejeitado porque são dois comandos e abrem
+    caminho para divergir do comando local.
 
 ## R6 — Garantia de que nenhum teste foi pulado
 
-- **Decision**: depois do `package`, um passo verifica nos relatórios do surefire
-  (`target/surefire-reports/TEST-*.xml`) que **nenhum** teste aparece como `skipped`. Se algum
-  aparecer, o passo falha e reprova a validação.
+- **Decision**: depois do `verify`, um passo executa o programa Java de arquivo único
+  `.github/scripts/VerificarTestesPulados.java` (`java <arquivo> target/surefire-reports`). Ele
+  verifica nos relatórios do surefire (`TEST-*.xml`, atributo `skipped` do `<testsuite>`, lido com
+  o parser XML do JDK) que **nenhum** teste aparece como pulado. Se algum aparecer, ou se não
+  houver relatório, o programa sai com 1 e reprova a validação (contrato W17). O comportamento é
+  coberto por `VerificarTestesPuladosTest`, um JUnit puro que executa o programa como caixa-preta
+  via `ProcessBuilder` com a JVM corrente e `@TempDir`. O precedente é o
+  `docker/VerificarSaude.java`: só JDK, sem dependência nova.
 - **Rationale**: a FR-005 e o SC-003 pedem que nenhum teste de integração seja pulado. Hoje isso
   já vale de forma implícita (sem Docker, eles falham), mas um futuro `assume`/`@Disabled`
   passaria despercebido. A constitution já proíbe `@Disabled` para fazer o build passar, então a
   verificação só torna essa regra objetiva. O critério cobre todos os testes, não só os de
   integração, porque o surefire não distingue categorias e a regra da constitution vale para
   todos.
-- **Alternatives considered**: confiar no comportamento atual, que não protege contra regressão
-  do próprio controle. Uma flag nativa do surefire para "falhar se houver skip" não existe.
-- **Ponto para o dono**: esse passo é a única coisa que o CI exige além do comando local. Um
+- **Alternatives considered**:
+  - Confiar no comportamento atual, que não protege contra regressão do próprio controle. Uma
+    flag nativa do surefire para "falhar se houver skip" não existe.
+  - Script bash inline no workflow, que era a versão anterior desta decisão. Foi rejeitado no
+    `/speckit-analyze` (achado D1) porque seria código que decide o veredito sem teste
+    automatizado (Princípio II), o que criaria uma segunda exceção ao TDD sem acordo do dono.
+  - Script `.sh` testado via `ProcessBuilder`, viável, mas o Java segue o precedente do
+    `VerificarSaude` e não depende do shell.
+- **Armadilha de TDD**: com o `.java` ausente, `java <arquivo>` já sai com 1. Por isso os testes
+  de reprovação verificam também a **mensagem** esperada, e não só o código de saída. Sem isso,
+  passariam de primeira pelo motivo errado.
+- **Ponto para o dono**: esse passo é a única coisa que o CI exige além do comando local. Ele
+  pode ser rodado localmente com o mesmo `java .github/scripts/VerificarTestesPulados.java
+  target/surefire-reports`. Um
   teste `@Disabled` passa localmente, mas reprova aqui. Isso é intencional e coerente com a
   constitution, e o dono pode vetar no `/speckit-analyze`.
 
