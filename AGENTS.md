@@ -190,7 +190,7 @@ Regras de uso:
   requisito — a spec é.
 - Correção de bug trivial, renomeação, ajuste de formatação: direto, sem spec.
 
-> A constitution (`.specify/memory/constitution.md`, v1.0.1) define os princípios
+> A constitution (`.specify/memory/constitution.md`, v1.0.2) define os princípios
 > não-negociáveis e prevalece em caso de conflito; este AGENTS.md documenta como aplicá-los no
 > dia a dia. Toda emenda da constitution sincroniza a seção correspondente daqui na mesma
 > mudança.

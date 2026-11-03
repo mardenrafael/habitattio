@@ -148,7 +148,7 @@ dois worktrees, falha fechada com `HABITATTIO_NPX`).
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T027 Rodar `/speckit-constitution` para uma emenda PATCH (1.0.1 → 1.0.2) em "Stack Tecnológico e Restrições" de `.specify/memory/constitution.md`, acrescentando: "Tooling de repositório (fora do build Maven): Node ≥ 20 para o hook `commit-msg` (`@commitlint/cli` versão fixa via `npx`, acordo do dono em 2026-11-02) e para `tools/`; GitHub Actions para a sincronização de versão na `main`." Sem mudar princípio nem regra MUST. Atualizar o Sync Impact Report e confirmar que o `AGENTS.md` §1/§9/§10 já reflete isso (Governance).
+- [X] T027 Rodar `/speckit-constitution` para uma emenda PATCH (1.0.1 → 1.0.2) em "Stack Tecnológico e Restrições" de `.specify/memory/constitution.md`, acrescentando: "Tooling de repositório (fora do build Maven): Node ≥ 20 para o hook `commit-msg` (`@commitlint/cli` versão fixa via `npx`, acordo do dono em 2026-11-02) e para `tools/`; GitHub Actions para a sincronização de versão na `main`." Sem mudar princípio nem regra MUST. Atualizar o Sync Impact Report e confirmar que o `AGENTS.md` §1/§9/§10 já reflete isso (Governance).
 - [ ] T028 Rodar `node --test "tools/**/*.test.mjs"` (todas as suítes) e registrar a contagem; tudo verde.
 - [ ] T029 Rodar `./mvnw test` e registrar: verde, igual à linha de base de T002. Sem Docker, seguir AGENTS.md §1 e dizer que a integração não rodou.
 - [ ] T030 Conferir fronteiras: `git diff --stat main -- src/ .specify/templates/ .specify/scripts/` vazio; `git diff main -- pom.xml` vazio (a versão só muda na `main`, pela automação); nenhuma dependência nova no `pom.xml`.
