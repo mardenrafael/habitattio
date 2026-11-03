@@ -20,8 +20,8 @@ tem verificação objetiva.
   - Agentes de código que abrem PRs — o AGENTS.md (§1, §8) exige rodar `./mvnw test` e declarar o
     que não rodou (ex.: integração sem Docker); hoje essa declaração não é conferida por terceiro.
 - **Stakeholders**:
-  - Dono do projeto — decide o escopo, quem pode mergear e se a validação bloqueia o merge.
-  - [NEEDS CLARIFICATION: há outros colaboradores humanos ou revisores além do dono?]
+  - Dono do projeto — único stakeholder humano (não há outros colaboradores); decide o escopo e
+    quem pode mergear.
 
 ## Goals
 
@@ -31,12 +31,16 @@ tem verificação objetiva.
   (Testcontainers: PostgreSQL, Redis, e a construção de imagem do `ImagemContainerTest`) — não uma
   versão reduzida.
 - O resultado da validação é reproduzível: o mesmo PR, validado de novo, dá o mesmo veredito.
+- O veredito é **único** (testes + empacotamento) e **bloqueia o merge** quando falha.
+- Em caso de falha, o resultado traz os detalhes (relatórios de teste), não só passou/falhou.
 
 ## Non-Goals
 
 - Construir, publicar ou versionar a imagem da aplicação para o ambiente de produção.
 - Deploy, release ou qualquer etapa pós-merge.
-- Validar pushes diretos em `main` (não são permitidos pelo fluxo do projeto).
+- Validar pushes diretos em `main` — já bloqueados por proteção de branch no GitHub; impor essa
+  proteção não faz parte deste problema.
+- Limite de tempo para o veredito (sem meta por ora).
 - Validar PRs com alvo diferente de `main`.
 - Análise estática, cobertura mínima, scan de segurança ou outras verificações além de testes e
   empacotamento [NEEDS CLARIFICATION: confirmar que ficam para depois].
@@ -49,8 +53,8 @@ tem verificação objetiva.
 - Testes de integração efetivamente executados na validação (não pulados por falta de Docker) —
   meta: todos os da suíte (baseline: depende da máquina de quem rodou; 34 classes de teste no
   repositório hoje).
-- Tempo até o veredito de um PR — [NEEDS CLARIFICATION: há limite aceitável?] (baseline:
-  desconhecido).
+- Tempo até o veredito de um PR — apenas observado, sem meta por ora (baseline: desconhecido).
+- PRs com falha cujo resultado traz os relatórios de teste — meta 100% (baseline: 0%).
 
 ## Cost of Inaction
 
@@ -60,14 +64,16 @@ depois, no próximo desenvolvimento ou na subida em produção. Com agentes de c
 garantia de "suíte verde" do Definition of Done fica sem conferência independente, e o custo de
 descobrir regressões tarde cresce com o número de features.
 
+## Clarifications (2026-11-02, dono do projeto)
+
+- Push direto em `main`: **já imposto** por proteção de branch no GitHub.
+- A validação **bloqueia** o merge (verificação obrigatória).
+- Testes e empacotamento: **um só** veredito.
+- Limite de tempo até o veredito: **nenhum, por ora**.
+- Detalhes de falha (relatórios de teste): **sim**, o resultado deve trazê-los.
+- Outros colaboradores além do dono: **não**.
+
 ## Open Questions
 
-- [NEEDS CLARIFICATION: "push direto em `main` não é permitido" já é imposto por branch
-  protection no GitHub, ou isso faz parte do problema a resolver?]
-- [NEEDS CLARIFICATION: a validação deve **bloquear** o merge (verificação obrigatória) ou apenas
-  informar?]
-- [NEEDS CLARIFICATION: testes e empacotamento são um só veredito ou vereditos separados?]
-- [NEEDS CLARIFICATION: há limite aceitável de tempo até o veredito?]
-- [NEEDS CLARIFICATION: o resultado precisa trazer detalhes de falha (relatórios de teste) além
-  de passou/falhou?]
-- [NEEDS CLARIFICATION: há outros colaboradores além do dono?]
+- [NEEDS CLARIFICATION: confirmar que análise estática, cobertura mínima e scan de segurança
+  ficam fora desta primeira validação (ver Non-Goals).]
