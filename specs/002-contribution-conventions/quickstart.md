@@ -31,9 +31,10 @@ git commit --allow-empty -m "merge: x"                        # recusado no outr
 ```
 
 Desfaça os commits de teste (`git reset --hard HEAD~1`) e remova o worktree
-(`git worktree remove ../wt-smoke`). Para ver a falha fechada: `PATH=/usr/bin:/bin git commit
---allow-empty -m "feat(x): y"` (sem `npx` no `PATH`), que deve ser recusado com a instrução de
-instalação.
+(`git worktree remove ../wt-smoke`). Para ver a falha fechada, simule a ausência do `npx` com
+`HABITATTIO_NPX=habitattio-no-such-npx git commit --allow-empty -m "feat(x): y"`. O commit deve
+ser recusado com a instrução de instalação. Limpar o `PATH` não serve no Arch, porque o `node`
+fica em `/usr/bin`.
 
 ## 3. US2 — PRs e issues (SC-005 a SC-007)
 

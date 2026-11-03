@@ -13,7 +13,7 @@ Cobre FR-019 a FR-028. Regras detalhadas em [data-model.md](../data-model.md) e 
 | Runtime | Node 24 (`actions/setup-node`) |
 | Passos | `node --test tools/versioning` → `node tools/versioning/version-sync.mjs` |
 
-## CLI — `node tools/versioning/version-sync.mjs [--dry-run] [--repo <path>]`
+## CLI — `node tools/versioning/version-sync.mjs [--dry-run] [--no-push] [--repo <path>]`
 
 | Saída | Código | stdout (1 linha, chave=valor) | Efeito |
 |---|---|---|---|
@@ -23,6 +23,7 @@ Cobre FR-019 a FR-028. Regras detalhadas em [data-model.md](../data-model.md) e 
 | fail | 1 | `outcome=fail reason=<invalid-version\|manual-version-change\|push-rejected>` + detalhe no stderr | nenhum |
 
 `--dry-run`: calcula e imprime, sem commitar nem fazer push (usado nos testes e no quickstart).
+`--no-push`: commita localmente, sem push (testes). `--repo`: diretório do repositório (padrão: cwd).
 
 Push: `git push origin HEAD:main`. Em non-fast-forward: `fetch` + recálculo completo, até 3
 tentativas; esgotou → `fail reason=push-rejected`.
@@ -46,7 +47,9 @@ tentativas; esgotou → `fail reason=push-rejected`.
 | S13 | dois merges após o marcador | `fix` no 1º, `feat` no 2º | `write → 0.5.0` (contados uma vez) |
 | S14 | rodar S2 duas vezes sobre o mesmo `HEAD` após o push | — | 2ª: `noop already-synced` |
 | S15 | pom com `<parent><version>4.1.2</version>` | `fix(x)` | só o `<version>` do projeto muda |
-| S16 | — | — | a mensagem gerada passa no `commitlint.config.mjs` |
+| S16 | — | — | a mensagem gerada é exatamente a V6 de [commit-message.md](./commit-message.md) |
+| S17 | remote bare avançou depois do checkout | `fix(x)` local, `feat(y)` no remote | fetch + recálculo + push: `write → 0.5.0` |
+| S18 | remote bare recusa o push (hook `pre-receive` com `exit 1`) | `fix(x)` | `fail push-rejected`, código 1 |
 
 ## Garantias
 

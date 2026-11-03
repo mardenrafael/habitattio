@@ -47,8 +47,13 @@ Cobre FR-001 a FR-009. Fonte de verdade das regras: `commitlint.config.mjs` (res
 |---|---|---|
 | mensagem válida ou ignorada | 0 | nada |
 | mensagem inválida | 1 | erros do commitlint + bloco fixo: formato, exemplo `feat(fatura): add late fee calculation`, ponteiro `AGENTS.md §10` |
-| `npx` ausente | 1 | `commit-msg: Node.js (npx) not found. Install Node >= 20 …` + como verificar |
+| `npx` ausente (ou `HABITATTIO_NPX` aponta para comando inexistente) | 1 | `commit-msg: Node.js (npx) not found. Install Node >= 20 …` + como verificar |
 | `npx` não conseguiu obter o commitlint | 1 | `commit-msg: could not run commitlint@21.2.4 (offline on first run?) …` |
+
+Variáveis: `HABITATTIO_NPX` (padrão `npx`) troca o executável do npx. Existe para os testes
+simularem ferramenta ausente (`HABITATTIO_NPX=habitattio-no-such-npx`) ou falha do npx
+(`HABITATTIO_NPX=false`). A config é resolvida a partir do próprio hook
+(`<dir do hook>/../commitlint.config.mjs`), não do diretório corrente.
 
 ## Ativação
 
