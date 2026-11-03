@@ -124,14 +124,14 @@ troca/recuperação de senha e exclusão a pedido do titular (Q36).
       domínio.
 - [ ] Lock das rotinas no Redis, para uma execução só mesmo com mais de uma instância (RNF-19,
       Q33). O mecanismo sai do plan, sem dependência nova sem acordo (AGENTS §9).
-- [ ] Execução manual das rotinas, para recuperar um dia em que a app ficou fora (RF-37, Q32):
-      dispara o mesmo caso de uso idempotente.
+- [ ] Execução manual das rotinas, para recuperar um dia em que a app ficou fora (RF-37, Q32 +
+      Q37): endpoint autenticado por trás de um botão "rodar rotinas" do frontend; roda emissão e
+      atraso **só sobre os contratos do proprietário autenticado**, pelo mesmo caso de uso
+      idempotente.
+- [ ] O cancelamento por encerramento vale para `PENDENTE` e `ATRASADA`; só `PAGA` fica de fora
+      (Q38).
 - [ ] Consultar e listar faturas do proprietário (por contrato, por competência), com isolamento.
 - [ ] Migração `V5`.
-- ❓ **Q37**: quem dispara a execução manual (o proprietário, para os próprios contratos, ou um
-      papel de suporte que ainda não existe) e por onde?
-- ❓ **Q38**: o cancelamento vale também para fatura `ATRASADA` de competência posterior a um
-      encerramento retroativo? (sugestão: sim; o critério é a competência, desde que não `PAGA`)
 
 ### Módulo 010 — Marcar fatura como paga (RF-34)
 

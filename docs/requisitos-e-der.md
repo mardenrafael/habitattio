@@ -72,9 +72,9 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RF-26 | Fatura pendente vira `ATRASADA` a partir do **dia seguinte** ao vencimento, gravado por **rotina diária** | 🟡 | **decidido (Q5 + Q12)**; `verificarAtraso` já usa `referencia.isAfter(dataVencimento)`, falta a rotina |
 | RF-27 | Sem multa nem juros por atraso | ✅ | **decidido (Q6)** |
 | RF-28 | `PAGA` é terminal | ✅ | `FaturaTest` |
-| RF-35 | Ao encerrar o contrato, as faturas não pagas de competências posteriores ao encerramento viram `CANCELADA` (status novo, terminal) | ❌ | **decidido (Q30)**; abrangência em Q38 |
+| RF-35 | Ao encerrar o contrato, as faturas não pagas de competências posteriores ao encerramento viram `CANCELADA` (status novo, terminal) | ❌ | **decidido (Q30 + Q38)**: vale para `PENDENTE` e `ATRASADA` |
 | RF-36 | Contrato com início no passado não gera faturas retroativas | ❌ | **decidido (Q29)** |
-| RF-37 | As rotinas de emissão e atraso podem ser executadas manualmente, para recuperar um dia em que a app ficou fora do ar | ❌ | **decidido (Q32)**; quem dispara em Q37 |
+| RF-37 | As rotinas de emissão e atraso podem ser executadas manualmente, para recuperar um dia em que a app ficou fora do ar | ❌ | **decidido (Q32 + Q37)**: botão "rodar rotinas" do proprietário, sobre os próprios contratos |
 | RF-34 | O proprietário **marca a fatura como paga** com uma ação simples (baixa integral, informando a data); substitui o registro de pagamentos enquanto ele estiver fora do escopo | 🟡 | **decidido (Q28)**; `Fatura.pagar` já existe e só aceita o valor integral, falta caso de uso e API |
 
 ### Pagamento `[Drive RF06]` — ⏸ fora do escopo atual
@@ -294,13 +294,13 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | Q34 | 2026-11-02 | Anexo do contrato (RF-20) no MVP? | **Não, por enquanto** |
 | Q35 | 2026-11-02 | Desfazer a baixa de uma fatura marcada como paga por engano? | **Não no MVP.** Se precisar, o suporte corrige; `PAGA` continua terminal |
 | Q36 | 2026-11-02 | CPF mascarado na resposta, troca/recuperação de senha e exclusão a pedido do titular (LGPD) no MVP? | **Fora do MVP** (interpretação da resposta "correto"; confirmar se divergir) |
+| Q37 | 2026-11-02 | Quem dispara a execução manual da rotina (Q32) e por onde? | **Um botão "rodar rotinas"** no frontend, que chama um endpoint autenticado. Interpretação: o proprietário dispara para **os próprios contratos** (RNF-15); confirmar se divergir |
+| Q38 | 2026-11-02 | O cancelamento de Q30 vale também para fatura `ATRASADA` de competência posterior ao encerramento (encerramento retroativo)? | **Sim.** O critério é a competência, não o status; só `PAGA` fica de fora |
 
 ## 6. Perguntas em aberto
 
-| # | Pergunta | Sugestão |
-|---|---|---|
-| Q37 | Execução manual da rotina (Q32): quem dispara (o próprio proprietário, para os próprios contratos, ou um papel de suporte que ainda não existe) e por onde (endpoint, comando)? | Endpoint autenticado que chama o mesmo caso de uso idempotente, restrito ao proprietário |
-| Q38 | O cancelamento de Q30 vale também para fatura `ATRASADA` de competência posterior ao encerramento (encerramento retroativo)? | Sim: o critério é a competência, não o status, desde que não esteja `PAGA` |
+Nenhuma que bloqueie o MVP. As perguntas de detalhe de cada módulo estão em
+[`mvp-todo.md`](mvp-todo.md) e se resolvem no `/speckit-clarify` do módulo.
 
 ### Adiadas (voltam com o módulo de pagamentos)
 
