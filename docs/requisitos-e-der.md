@@ -1,6 +1,6 @@
 # Requisitos (RF / RNF) e DER — habitattio
 
-- **Atualizado**: 2026-10-30
+- **Atualizado**: 2026-11-02
 - **Base**: `main` (`f076494`) + módulo 1 `001-better-db-schema` (branch
   `worktree-spec-better-db-schema`, ainda **não mergeada** na `main`) + módulo 2
   `003-proprietario-login-isolamento` (branch `worktree-spec-proprietario-isolamento`, ainda
@@ -58,7 +58,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 |---|---|---|---|
 | RF-18 | Criar contrato ligando imóvel e inquilino **do mesmo proprietário**, com valor do aluguel (> 0), dia de vencimento (1–31) e data de início | 🟡 | domínio valida **só** o dia (D1) |
 | RF-19 | No máximo um contrato ativo por imóvel | ❌ | **decidido (Q1)**; caso de uso + índice único parcial |
-| RF-20 | Anexar o documento do contrato (PDF ou imagem), guardado em disco local em dev, atrás de uma porta de armazenamento | ❌ | **decidido (Q18)**; tamanho máximo fica para o plan |
+| RF-20 | Anexar o documento do contrato (PDF ou imagem), guardado em disco local em dev, atrás de uma porta de armazenamento | ⏸ | **decidido (Q18)**; fora do MVP (Q34) |
 | RF-21 | Encerrar contrato (desativação lógica), guardando a **data de encerramento** | 🟡 | **decidido (Q2)**; `encerrar()` ainda não guarda a data |
 | RF-22 | Contrato encerrado não gera novas faturas | ❌ | AGENTS §7 |
 
@@ -72,6 +72,9 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RF-26 | Fatura pendente vira `ATRASADA` a partir do **dia seguinte** ao vencimento, gravado por **rotina diária** | 🟡 | **decidido (Q5 + Q12)**; `verificarAtraso` já usa `referencia.isAfter(dataVencimento)`, falta a rotina |
 | RF-27 | Sem multa nem juros por atraso | ✅ | **decidido (Q6)** |
 | RF-28 | `PAGA` é terminal | ✅ | `FaturaTest` |
+| RF-35 | Ao encerrar o contrato, as faturas não pagas de competências posteriores ao encerramento viram `CANCELADA` (status novo, terminal) | ❌ | **decidido (Q30 + Q38)**: vale para `PENDENTE` e `ATRASADA` |
+| RF-36 | Contrato com início no passado não gera faturas retroativas | ❌ | **decidido (Q29)** |
+| RF-37 | As rotinas de emissão e atraso podem ser executadas manualmente, para recuperar um dia em que a app ficou fora do ar | ❌ | **decidido (Q32 + Q37)**: botão "rodar rotinas" do proprietário, sobre os próprios contratos |
 | RF-34 | O proprietário **marca a fatura como paga** com uma ação simples (baixa integral, informando a data); substitui o registro de pagamentos enquanto ele estiver fora do escopo | 🟡 | **decidido (Q28)**; `Fatura.pagar` já existe e só aceita o valor integral, falta caso de uso e API |
 
 ### Pagamento `[Drive RF06]` — ⏸ fora do escopo atual
@@ -117,7 +120,7 @@ Legenda de status: ✅ implementado e testado · 🟡 parcial · ❌ não implem
 | RNF-16 | Rotinas automáticas (emissão mensal, atraso diário) são adapters de entrada agendados que chamam casos de uso, e são idempotentes | ❌ |
 | RNF-17 | Pagamentos simultâneos na mesma fatura não podem ultrapassar o saldo: **versão otimista no banco** (`faturas.versao`) | ⏸ **decidido (Q22)**, com o módulo de pagamentos |
 | RNF-18 | Frontend Next.js (App Router) + Tailwind, **mobile-first**, em **repositório separado** `[Drive RNF01]`; o backend expõe API REST consumível por ele | ❌ **decidido (Q23)** |
-| RNF-19 | Redis para cache e locks `[Drive §3]` | ❓ ver Q22 |
+| RNF-19 | Redis para cache e locks `[Drive §3]` | ❌ **decidido (Q33)**: entra no MVP; uso concreto (lock das rotinas) no plan |
 | RNF-20 | Docker Compose para subir o ambiente; CI no GitHub Actions `[Drive §3]` | ❌ |
 | RNF-21 | Volume baixo: desempenho não pesa nas decisões | ✅ decisão registrada |
 
@@ -173,7 +176,7 @@ erDiagram
         char(7) mes_referencia "NOT NULL, AAAA-MM"
         numeric(19_4) valor "NOT NULL, > 0"
         date data_vencimento "NOT NULL"
-        varchar status "PENDENTE, PAGA ou ATRASADA"
+        varchar status "PENDENTE, PAGA, ATRASADA ou CANCELADA (Q30)"
         date data_pagamento "NULL; preenchida ao marcar como paga (RF-34)"
         bigint versao "controle otimista (futuro, Q22)"
     }
@@ -224,7 +227,7 @@ vale só a restrição exata mais a consulta sem caixa do caso de uso.
 4. **`mes_referencia`**: `YearMonth` no domínio, `char(7)` com
    `CHECK (mes_referencia ~ '^\d{4}-(0[1-9]|1[0-2])$')` no banco. Hoje é `String` livre (D2).
 5. **`status`** é gravado pela rotina diária (Q5), com
-   `CHECK (status IN ('PENDENTE','PAGA','ATRASADA'))`. Uma fatura parcialmente paga continua
+   `CHECK (status IN ('PENDENTE','PAGA','ATRASADA','CANCELADA'))` (`CANCELADA` por Q30). Uma fatura parcialmente paga continua
    `PENDENTE` ou `ATRASADA` até quitar, sem status próprio (Q24). Isso vale quando pagamentos
    voltarem ao escopo; até lá, `pagamentos` e a coluna `versao` não são criadas.
 6. **CPF**: `cpf_cifrado` (criptografia com IV aleatório) + `cpf_hash` (HMAC com chave),
@@ -283,10 +286,21 @@ Pelo AGENTS §6, cada item se corrige em TDD, não de passagem.
 | — | 2026-10-30 | Pagamentos entram no escopo? | **Não, por enquanto.** Q17 (formas de pagamento) e Q21 (pagamento acima do saldo) ficam adiadas |
 | Q28 | 2026-10-30 | Sem pagamentos, como a fatura vira `PAGA`? | **O próprio proprietário marca como paga**, com uma ação simples (RF-34) |
 | Q25 | 2026-10-30 | Senha com hash ou criptografia? | **Hash BCrypt**. Criptografia foi considerada e descartada: é reversível, e se a chave vazar todas as senhas aparecem |
+| Q29 | 2026-11-02 | Contrato com data de início no passado gera faturas retroativas? | **Não.** Nenhuma fatura de competência anterior à criação do contrato é emitida |
+| Q30 | 2026-11-02 | Ao encerrar o contrato, o que acontece com as faturas pendentes de competências posteriores ao encerramento? | **São canceladas.** Como nada é apagado de fato, isso cria o status `CANCELADA` em `Fatura.StatusFatura` (novo, terminal) |
+| Q31 | 2026-11-02 | Fuso horário das rotinas e do "hoje"? | **`America/Porto_Velho`** |
+| Q32 | 2026-11-02 | App fora do ar no dia da rotina? | **Deve haver uma forma de rodar a rotina manualmente.** Quem dispara e como ainda não foi pensado (ver §6) |
+| Q33 | 2026-11-02 | Redis no MVP? | **Sim** (RNF-19); o uso concreto (lock das rotinas) fica para o plan |
+| Q34 | 2026-11-02 | Anexo do contrato (RF-20) no MVP? | **Não, por enquanto** |
+| Q35 | 2026-11-02 | Desfazer a baixa de uma fatura marcada como paga por engano? | **Não no MVP.** Se precisar, o suporte corrige; `PAGA` continua terminal |
+| Q36 | 2026-11-02 | CPF mascarado na resposta, troca/recuperação de senha e exclusão a pedido do titular (LGPD) no MVP? | **Fora do MVP** (interpretação da resposta "correto"; confirmar se divergir) |
+| Q37 | 2026-11-02 | Quem dispara a execução manual da rotina (Q32) e por onde? | **Um botão "rodar rotinas"** no frontend, que chama um endpoint autenticado. Interpretação: o proprietário dispara para **os próprios contratos** (RNF-15); confirmar se divergir |
+| Q38 | 2026-11-02 | O cancelamento de Q30 vale também para fatura `ATRASADA` de competência posterior ao encerramento (encerramento retroativo)? | **Sim.** O critério é a competência, não o status; só `PAGA` fica de fora |
 
 ## 6. Perguntas em aberto
 
-Nenhuma no escopo atual.
+Nenhuma que bloqueie o MVP. As perguntas de detalhe de cada módulo estão em
+[`mvp-todo.md`](mvp-todo.md) e se resolvem no `/speckit-clarify` do módulo.
 
 ### Adiadas (voltam com o módulo de pagamentos)
 
