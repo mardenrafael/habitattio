@@ -25,12 +25,23 @@ construir a imagem Docker.
   (PostgreSQL, Redis) e o `ImagemContainerTest` constrói a imagem a partir do `Dockerfile`
   dentro do `./mvnw test` (AGENTS.md §1).
 
+## Clarifications (2026-11-02, dono do projeto)
+
+Respostas do dono às primeiras dúvidas, registradas como esclarecimento (não avaliação):
+
+- **Docker**: o runner **deve ter Docker disponível**. "No docker build" significa não
+  construir/publicar a imagem da aplicação para o ambiente de produção nesta fase de validação —
+  não significa excluir testes que usam Docker. (Original: "provide docker, i mean, no build for
+  applications image for production environment in validation phase".)
+- **Gatilho**: push direto em `main` não é permitido; a pipeline é só para PRs com alvo `main`.
+  (Original: "no direct push to main is allowed".)
+- **Build**: o passo de build é `package`. (Original: "package".)
+- **Plataforma**: GitHub Actions. (Original: "yes, github actions".)
+
 ## First-Glance Unknowns
 
-- [NEEDS CLARIFICATION: "we need to merges to main" — significa só "PRs que serão mergeados em `main`", ou também rodar a pipeline em pushes/merges diretos para `main`? O texto final diz "just a validation for PR with main as target".]
-- [NEEDS CLARIFICATION: "no docker build" exclui só um passo explícito de `docker build`, ou também o `ImagemContainerTest`, que constrói a imagem dentro de `./mvnw test`? E os demais testes de integração com Testcontainers (exigem Docker no runner) devem rodar no CI?]
-- [NEEDS CLARIFICATION: "run build to check" — qual comando conta como build: `./mvnw verify`, `./mvnw package`, ou só compilação? Test e build são passos separados ou um só?]
-- [NEEDS CLARIFICATION: plataforma de CI — GitHub Actions é presumível pelo remoto no GitHub, mas não foi dito.]
-- [NEEDS CLARIFICATION: o check deve ser obrigatório para merge (branch protection / required status check) ou apenas informativo?]
+- [NEEDS CLARIFICATION: "no direct push to main is allowed" — isso já é aplicado hoje por branch protection no GitHub, ou faz parte desta ideia configurar a proteção?]
+- [NEEDS CLARIFICATION: test e `package` são passos separados ou um só (`package` já roda os testes)?]
+- [NEEDS CLARIFICATION: o check deve ser obrigatório para merge (required status check) ou apenas informativo?]
 - [NEEDS CLARIFICATION: há expectativa de tempo máximo de execução, cache de dependências Maven ou publicação de relatórios de teste?]
 - [NEEDS CLARIFICATION: o que fica explicitamente para pipelines futuras (ex.: build/publicação de imagem, deploy)?]
