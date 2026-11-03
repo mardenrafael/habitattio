@@ -107,7 +107,9 @@ src/main/resources/
                                                    #   spring.web.resources.add-mappings=false (sem /webjars/** em prod)
 
 src/test/java/br/com/marden/habitattio/
-├── DescricaoApiTest.java                          # NOVO: D1–D4 + exportação atômica para docs/api/openapi.yaml (modo rápido)
+├── DescricaoApiTest.java                          # NOVO: D1–D4 + exportação para docs/api/openapi.yaml (modo rápido)
+├── ExportadorDescricaoApi.java                    # NOVO (apoio de teste): verifica o conteúdo mínimo e grava de forma atômica
+├── ExportadorDescricaoApiTest.java                # NOVO: JUnit puro — falta de operação/guia falha e não grava (FR-008)
 ├── DocumentacaoApiTest.java                       # NOVO: UI e /v3/api-docs públicos no modo rápido
 └── DocumentacaoApiProducaoTest.java               # NOVO: 404 em prod (rotas de documentação e /webjars/swagger-ui/**),
                                                    #   anônimo e autenticado (Testcontainers)

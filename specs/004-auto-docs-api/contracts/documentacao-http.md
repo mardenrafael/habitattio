@@ -11,7 +11,7 @@ Estas rotas são da **documentação**, não da API: não aparecem na própria d
 | `GET /v3/api-docs.yaml` | 200, YAML da descrição, sem autenticação | 404, para anônimo e autenticado |
 | `GET /swagger-ui.html` | redireciona para a UI, sem autenticação | 404, para anônimo e autenticado |
 | `GET /swagger-ui/index.html` | 200, página navegável, sem autenticação | 404, para anônimo e autenticado |
-| `GET /webjars/swagger-ui/**` (arquivos estáticos da UI) | servidos conforme o padrão do Spring Boot | 404, para anônimo e autenticado |
+| `GET /webjars/swagger-ui/**` (arquivos estáticos da UI) | servidos conforme o padrão do Spring Boot | igual a uma rota inexistente: 401 para anônimo (como qualquer rota não pública), 404 para autenticado |
 
 - Nenhuma rota de documentação exige CSRF (são todas `GET`).
 - A UI, no modo rápido, envia `X-XSRF-TOKEN` com o valor do cookie `XSRF-TOKEN` nas chamadas

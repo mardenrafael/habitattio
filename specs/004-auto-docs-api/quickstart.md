@@ -58,7 +58,8 @@ mostra o arquivo (SC-005).
 ```
 
 **Esperado**: `/v3/api-docs`, `/v3/api-docs.yaml`, `/swagger-ui.html`, `/swagger-ui/index.html`
-e os arquivos estáticos em `/webjars/swagger-ui/**` respondem 404, anônimo e autenticado. Em
+respondem 404, anônimo e autenticado; os arquivos estáticos em `/webjars/swagger-ui/**` respondem
+como uma rota inexistente (401 anônimo, 404 autenticado). Em
 produção a descrição existe só no repositório (`docs/api/openapi.yaml`).
 
 ## Cenário 6 — Nada mais mudou (FR-011)
