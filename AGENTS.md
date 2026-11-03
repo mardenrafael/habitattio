@@ -177,6 +177,9 @@ Fluxo para uma feature nova:
 5. `/speckit.analyze` — checa consistência entre spec, plan e tasks antes de codar.
 6. `/speckit.implement` — executa as tasks, em TDD.
 
+Para publicar as tasks como issues, `/speckit-taskstoissues` gera títulos `[NNN] TXXX: …` em
+inglês (ver §10).
+
 Regras de uso:
 
 - **Não implemente feature sem spec.** Se o pedido chega direto como código e é maior que um
@@ -350,3 +353,43 @@ git config --get core.hooksPath       # verificação: imprime .githooks
 O hook `.githooks/commit-msg` roda o commitlint (`commitlint.config.mjs`) via `npx` e exige
 Node ≥ 20. Se o Node faltar ou o commitlint não puder ser obtido (offline na primeira
 execução), o commit é **recusado** (fail closed). Instale o Node; não pule o hook.
+
+### Pull requests
+
+- **Título** no formato do commit, descrevendo a mudança inteira:
+  `feat(conventions): enforce commit format and sync version`.
+- **Corpo** com as cinco seções do `.github/pull_request_template.md`, nesta ordem e sem faltar
+  nenhuma: `## Summary`, `## Notable changes`, `## Breaking changes` (`None` se não houver),
+  `## Related` (spec/issue ou `None`), `## Verification` (o que rodou e o que não rodou).
+- Por CLI/MCP o GitHub **não** aplica o template: monte o corpo você mesmo.
+
+```bash
+gh pr create --title "feat(<scope>): <description>" --body-file <arquivo com as 5 seções>
+```
+
+### Issues
+
+O formulário web só oferece **Feature request** e **Bug report** (`.github/ISSUE_TEMPLATE/`).
+Ao criar por CLI/MCP, produza o mesmo título e o mesmo corpo que o formulário geraria: um bloco
+`### <label>` por campo, na ordem abaixo, e `_No response_` em campo opcional vazio.
+
+| Tipo | Título | Campos (`### <label>`) | Próximo fluxo |
+|---|---|---|---|
+| Feature request | `feat(<scope>): <short summary>` | Problem / motivation · Desired behavior · Who benefits · Out of scope (opcional) · Suggested acceptance criteria | `/speckit-specify` |
+| Bug report | `fix(<scope>): <short summary>` | Description · Steps to reproduce · Expected result · Actual result · Run mode (`fast (H2, no profile)` / `prod (PostgreSQL, profile prod)` / `tests`) · Evidence (logs, stack trace) (opcional) | `/speckit-bug-assess` → `/speckit-bug-fix` |
+
+```bash
+gh issue create --title "fix(<scope>): <summary>" --body-file <arquivo com os blocos ###>
+```
+
+**Issues de task** (geradas por `/speckit-taskstoissues` a partir do `tasks.md`):
+
+- Título `[NNN] TXXX: <description in English>`: `NNN` é o prefixo de 3 dígitos da feature em
+  `specs/`, e a descrição é traduzida mantendo identificadores, caminhos e termos de domínio. Ex.:
+  `[002] T004: Add commit message table test`.
+- Corpo: `Task (tasks.md): <linha original em português, sem checkbox>` e
+  `Source: specs/NNN-<name>/tasks.md`.
+- A regra mora em `.claude/skills/speckit-taskstoissues/SKILL.md` (alteração local, marcada com
+  comentário). Se uma atualização do Spec Kit sobrescrever a skill, reaplique a partir daqui.
+
+Issues, PRs e commits já existentes **não** são renomeados nem reescritos.
