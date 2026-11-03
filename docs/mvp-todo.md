@@ -18,7 +18,8 @@ O proprietário se cadastra, faz login e, só com os próprios dados:
 6. vê o **painel mensal** com as faturas da competência.
 
 **Fora do MVP** (⏸): pagamentos parciais e histórico (RF-29–RF-32, RNF-17), reajuste anual (Q11),
-multa e juros (Q6).
+multa e juros (Q6), anexo do contrato (RF-20, Q34), desfazer baixa de fatura (Q35), CPF mascarado,
+troca/recuperação de senha e exclusão a pedido do titular (Q36).
 
 ## Como usar esta lista
 
@@ -74,7 +75,6 @@ multa e juros (Q6).
 - [ ] Cadastrar, editar e listar; consultar por id com isolamento (404 para inquilino alheio).
 - [ ] Migração `V3` seguindo [`persistencia.md`](persistencia.md), com os três testes
       obrigatórios.
-- ❓ Como o CPF aparece na resposta da API: completo ou mascarado (`***.456.789-**`)? (LGPD)
 - ❓ Inquilino pode ser inativado? (nada é apagado de fato; hoje não há regra)
 - ❓ O CPF pode ser editado depois do cadastro?
 - ❓ Algoritmo e gestão da chave de cifragem: decisão do `plan.md`, mas a **troca de chave** com
@@ -88,24 +88,15 @@ multa e juros (Q6).
 - [ ] Imóvel inativo não recebe contrato (RF-12).
 - [ ] No máximo um contrato ativo por imóvel (Q1): caso de uso + `uq_contratos_imovel_ativo`
       (índice único parcial `WHERE ativo`).
-- [ ] Encerrar contrato guardando `dataEncerramento` (Q2).
+- [ ] Encerrar contrato guardando `dataEncerramento` (Q2). O cancelamento das faturas posteriores
+      (Q30) entra no módulo 009, quando faturas existirem.
 - [ ] Listar e consultar contratos do proprietário (por imóvel e por inquilino), com isolamento.
-- [ ] Migração `V4`.
-- ❓ `dataInicio` no passado é permitida? Se sim, o sistema emite as faturas retroativas? (afeta o
-      módulo 009)
+- [ ] Migração `V4` (sem `anexo_chave`: anexo fora do MVP, Q34).
 - ❓ A data de encerramento pode ser futura ou retroativa? Um contrato com início futuro pode ser
       encerrado?
-- ❓ Ao encerrar, o que acontece com faturas `PENDENTE` já emitidas de competências posteriores à
-      data de encerramento?
 - ❓ Inquilino com contrato ativo pode ser inativado (se o módulo 006 criar essa ação)?
 
-### Módulo 008 — Anexo do contrato (RF-20) — ❓ entra no MVP?
-
-- [ ] Porta `ArmazenamentoArquivoPort` com adapter de disco local em dev (Q18).
-- [ ] Upload e download de PDF ou imagem, com tamanho máximo definido no plan.
-- [ ] `contratos.anexo_chave` guarda só a chave; a URL é gerada na leitura.
-- ❓ Onde fica o arquivo em produção (volume do container, objeto em nuvem)? Sem isso o anexo some
-      a cada deploy.
+### ~~Módulo 008 — Anexo do contrato (RF-20)~~ — ⏸ fora do MVP (Q34)
 
 ## Fase 3 — Cobrança
 
@@ -118,30 +109,39 @@ multa e juros (Q6).
       copiado do contrato (Q13), primeira fatura pela regra de Q26/Q27.
 - [ ] Fatura criada junto com o contrato quando o primeiro vencimento cai no mês do início (Q27):
       liga o módulo 007 ao 009.
+- [ ] Sem faturas retroativas: contrato com início no passado não emite competências anteriores à
+      sua criação (RF-36, Q29).
 - [ ] Contrato encerrado não gera fatura (RF-22).
+- [ ] Encerrar contrato cancela as faturas não pagas de competências posteriores ao encerramento:
+      novo status `CANCELADA`, terminal como `PAGA` (RF-35, Q30). Muda `Fatura.StatusFatura` e o
+      AGENTS §6–§7.
 - [ ] Unicidade `uq_faturas_contrato_mes` no banco (RF-24) e emissão idempotente.
 - [ ] Caso de uso de atraso: `PENDENTE` vira `ATRASADA` a partir do dia seguinte ao vencimento;
-      `PAGA` não muda (RF-26, RF-28).
+      `PAGA` e `CANCELADA` não mudam (RF-26, RF-28).
+- [ ] "Hoje" e as rotinas no fuso `America/Porto_Velho` (Q31), via `Clock` injetado.
 - [ ] Rotinas agendadas (dia 1 para emissão, diária para atraso) como **adapters de entrada** que
       só chamam os casos de uso (RNF-16). `@EnableScheduling` fica na configuração, nunca no
       domínio.
+- [ ] Lock das rotinas no Redis, para uma execução só mesmo com mais de uma instância (RNF-19,
+      Q33). O mecanismo sai do plan, sem dependência nova sem acordo (AGENTS §9).
+- [ ] Execução manual das rotinas, para recuperar um dia em que a app ficou fora (RF-37, Q32):
+      dispara o mesmo caso de uso idempotente.
 - [ ] Consultar e listar faturas do proprietário (por contrato, por competência), com isolamento.
 - [ ] Migração `V5`.
-- ❓ Fuso horário das rotinas e do "hoje" (sugestão: `America/Sao_Paulo`, via `Clock` injetado).
-- ❓ Se a app ficar fora do ar no dia 1, a emissão roda depois para recuperar o mês perdido?
-      (sugestão: sim, emissão idempotente roda todo dia e emite o que faltar)
-- ❓ Com mais de uma instância da app, quem garante uma execução só? Liga a RNF-19 (Redis para
-      locks) — ou o MVP roda com uma instância só e a unicidade no banco basta.
+- ❓ **Q37**: quem dispara a execução manual (o proprietário, para os próprios contratos, ou um
+      papel de suporte que ainda não existe) e por onde?
+- ❓ **Q38**: o cancelamento vale também para fatura `ATRASADA` de competência posterior a um
+      encerramento retroativo? (sugestão: sim; o critério é a competência, desde que não `PAGA`)
 
 ### Módulo 010 — Marcar fatura como paga (RF-34)
 
 - [ ] Caso de uso + endpoint: o proprietário marca a fatura como paga, informando a data; valor
       sempre integral (Q28). `Fatura.pagar` e seus testes ficam como estão (D5).
 - [ ] Fatura já paga responde erro de estado (409); fatura alheia responde 404.
-- [ ] Marcar como paga funciona em `PENDENTE` e em `ATRASADA`.
+- [ ] Marcar como paga funciona em `PENDENTE` e em `ATRASADA`; fatura `CANCELADA` não pode ser
+      paga.
+- [ ] Sem desfazer baixa: `PAGA` continua terminal; correção é pelo suporte (Q35).
 - ❓ A data de pagamento pode ser futura? Pode ser anterior à emissão?
-- ❓ Desfazer uma baixa feita por engano é necessário no MVP? (hoje `PAGA` é terminal — desfazer
-      contraria AGENTS §7 e exigiria decisão explícita)
 
 ### Módulo 011 — Painel mensal (RF-33)
 
@@ -164,21 +164,18 @@ multa e juros (Q6).
 
 ### Módulo 013 — Ambiente e CI (RNF-20)
 
-- [ ] Docker Compose com app + PostgreSQL (+ Redis, se RNF-19 entrar) para subir o ambiente.
+- [ ] Docker Compose com app + PostgreSQL + Redis para subir o ambiente.
 - [ ] GitHub Actions: `./mvnw verify` com Docker em todo PR (inclui Testcontainers e
       `ImagemContainerTest`).
 - [ ] Publicação da imagem (ver [`container.md`](container.md)).
 - ❓ Onde o MVP vai rodar (provedor, banco gerenciado ou não, backup)?
 
-### Decisões transversais pendentes
+### Decisões transversais
 
-- ❓ **RNF-19 — Redis**: usar no MVP (lock das rotinas, sessão compartilhada) ou adiar? Hoje está
-      na stack e não é usado; sessão em Redis exigiria dependência nova (`spring-session`), que
-      precisa de acordo (AGENTS §9).
-- ❓ **LGPD**: além do CPF cifrado, o MVP precisa de exclusão/anonimização a pedido do titular?
-      Conflita com "nada é apagado de fato".
-- ❓ **Senha**: o MVP precisa de troca e de recuperação de senha ("esqueci minha senha")? Não está
-      em nenhum RF.
+- **Redis entra no MVP** (Q33), começando pelo lock das rotinas (módulo 009). Sessão em Redis
+  exigiria dependência nova (`spring-session`), que precisa de acordo (AGENTS §9).
+- **Fora do MVP** (Q36): CPF mascarado na resposta, troca/recuperação de senha e exclusão a pedido
+  do titular (LGPD).
 
 ## Fase 5 — Fechamento do MVP
 
@@ -201,8 +198,8 @@ multa e juros (Q6).
 | 005 | Imóvel completo | — | RF-09, RF-10 |
 | 006 | Inquilino | — | RF-13–17, RNF-13 |
 | 007 | Contrato | 005, 006 | RF-12, RF-18, RF-19, RF-21, D1 |
-| 008 | Anexo ❓ | 007 | RF-20 |
-| 009 | Faturas | 007 | RF-22–26, RNF-16, D2 |
+| ~~008~~ | ~~Anexo~~ ⏸ | — | RF-20 (Q34) |
+| 009 | Faturas | 007 | RF-22–26, RF-35–37, RNF-16, RNF-19, D2 |
 | 010 | Marcar como paga | 009 | RF-34 |
 | 011 | Painel | 009, 010 | RF-33 |
 | 012 | API para o frontend | — (antes do frontend integrar) | RNF-18 |
