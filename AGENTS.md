@@ -44,6 +44,23 @@ Para subir em modo produção com os containers em vez de um PostgreSQL próprio
 `TestHabitattioApplication` (`./mvnw spring-boot:test-run`), que já ativa o profile `prod`
 (`src/test/java/br/com/marden/habitattio/TestHabitattioApplication.java`).
 
+### Imagem de container
+
+```bash
+docker build -t habitattio:local .                       # BuildKit; não roda testes
+docker run --rm -p 8080:8080 habitattio:local            # modo rápido (H2)
+docker run --rm -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:5432/habitattio \
+  -e SPRING_DATASOURCE_USERNAME=... -e SPRING_DATASOURCE_PASSWORD=... \
+  habitattio:local                                       # modo produção
+```
+
+O `ImagemContainerTest` constrói a imagem a partir do `Dockerfile` **dentro do `./mvnw test`**
+(builder clássico do daemon, via Testcontainers) e exige Docker, como os demais testes de
+integração. Por isso o `Dockerfile` só usa instruções comuns ao BuildKit e ao clássico. O
+`.dockerignore` é lista de permissão e é a única peça fora da regra de TDD (decisão do dono;
+verificação manual). Operação, publicação e digest: [`docs/container.md`](docs/container.md).
+
 ---
 
 ## 2. Arquitetura hexagonal — a regra que não se quebra
@@ -53,15 +70,29 @@ domínio e as portas; os adapters conhecem as portas. Nunca o contrário.
 
 ```
 src/main/java/br/com/marden/habitattio/
-├── domain/model/                     # entidades e regras de negócio — Java puro
+├── domain/
+│   ├── model/                        # entidades, objetos de valor e regras de negócio — Java puro
+│   └── exception/                    # exceções de negócio (ex.: ImovelNaoEncontradoException)
 ├── ports/
 │   ├── inbound/                      # commands/queries: o que o mundo pede à aplicação
 │   └── outbound/                     # interfaces que a aplicação exige do mundo
 ├── application/usecase/              # orquestração: um caso de uso por classe
 └── adapters/
-    ├── inbound/rest/                 # controllers, requests/responses HTTP
-    └── outbound/persistence/         # adapter + repositório Spring Data + entity JPA
+    ├── config/
+    │   ├── BeanConfiguration.java        # beans de domínio/aplicação/persistência
+    │   └── SegurancaConfiguration.java   # Spring Security: filtros, sessão, 401, BCrypt
+    ├── inbound/
+    │   ├── rest/                     # controllers, requests/responses HTTP
+    │   └── security/                 # proprietário autenticado, AuthenticationProvider, respostas 401/403
+    └── outbound/
+        ├── persistence/              # adapter + repositório Spring Data + entity JPA
+        └── seguranca/                # adapter da porta de codificação de senha (BCrypt)
 ```
+
+A segurança (Spring Security) tem configuração própria, `SegurancaConfiguration`, ao lado de
+`BeanConfiguration`: ela monta a cadeia de filtros, a sessão e o `AuthenticationProvider`, que
+só delega aos casos de uso. A regra de fiação continua valendo — o domínio e a aplicação não
+importam `org.springframework.security`.
 
 Regras concretas, verificáveis em revisão:
 
@@ -190,7 +221,7 @@ Regras de uso:
   requisito — a spec é.
 - Correção de bug trivial, renomeação, ajuste de formatação: direto, sem spec.
 
-> A constitution (`.specify/memory/constitution.md`, v1.0.2) define os princípios
+> A constitution (`.specify/memory/constitution.md`, v1.0.3) define os princípios
 > não-negociáveis e prevalece em caso de conflito; este AGENTS.md documenta como aplicá-los no
 > dia a dia. Toda emenda da constitution sincroniza a seção correspondente daqui na mesma
 > mudança.
@@ -223,11 +254,15 @@ Regras de uso:
 
 | Classe | Estado | Papel |
 |---|---|---|
-| `Imovel` | id, endereco, valorSugerido, ativo | unidade locável; `inativar()` |
+| `Imovel` | id, usuarioId, identificador, endereco, valorSugerido, ativo | unidade locável de um proprietário; `identificador` único por proprietário; `inativar()` |
 | `Inquilino` | id, nome, cpf, telefone | locatário |
 | `Contrato` | imovelId, inquilinoId, valorAluguel, diaVencimento, dataInicio, ativo | vínculo inquilino↔imóvel; `encerrar()` |
 | `Fatura` | contratoId, mesReferencia, valor, dataVencimento, status, valorPago, dataPagamento | cobrança mensal; `pagar(valorPago, dataPagamento)`, `verificarAtraso(referencia)` |
-| `Usuario` | id, nome, email, senhaHash | operador do sistema |
+| `Usuario` | id, nome, email, senhaHash | **proprietário** do(s) imóvel(is) — quem se cadastra, faz login e é dono dos dados |
+| `Senha` | valor | objeto de valor: senha em texto puro, só em trânsito (nunca persistida nem logada); a persistência guarda apenas o hash BCrypt em `senhaHash` |
+
+**"Proprietário" (termo de negócio), `Usuario` (classe) e `usuarios` (tabela) são o mesmo
+conceito.** Não crie uma entidade `Proprietario` separada.
 
 `Fatura.StatusFatura`: `PENDENTE`, `PAGA`, `ATRASADA`. `PAGA` é terminal — `verificarAtraso` não
 o sobrescreve.
@@ -250,8 +285,8 @@ redecida essas questões dentro da feature.
 
 ### Dívida restante
 
-- Fora de `Imovel`, nenhum agregado (`Inquilino`, `Contrato`, `Fatura`, `Usuario`) tem porta,
-  caso de uso ou adapter — eles existem só como modelo de domínio, sem forma de entrar ou sair
+- Fora de `Imovel` e `Usuario` (que já têm porta, casos de uso e adapter), nenhum agregado
+  (`Inquilino`, `Contrato`, `Fatura`) tem porta, caso de uso ou adapter — eles existem só como modelo de domínio, sem forma de entrar ou sair
   do sistema. Construir isso é feature nova: passa pelo fluxo SDD (§4) e pela ordem estrita de
   TDD (§3), não por correção pontual.
 
@@ -270,6 +305,13 @@ Não "conserte" isso de passagem. Escreva o teste que expõe o defeito, veja fal
 - Imóvel inativo não recebe novo contrato.
 - Fatura `PAGA` é terminal: não volta para `PENDENTE` nem para `ATRASADA`.
 - Nada é apagado de fato: `Imovel.inativar()` e `Contrato.encerrar()` são desativação lógica.
+- Um imóvel pertence a um proprietário; o `identificador` é único por proprietário, sem
+  distinguir maiúsculas de minúsculas.
+- Toda consulta e escrita filtra pelo proprietário autenticado; o imóvel de outro proprietário
+  responde como inexistente (404), nunca como proibido.
+- Erros conhecidos (negócio, validação, autenticação) são tratados explicitamente na origem. A
+  captura global de exceções genéricas (resposta 500 padronizada) é uma feature à parte,
+  ainda não construída — não improvise um handler genérico de passagem.
 
 Se uma regra necessária não estiver aqui nem na spec, **pergunte** em vez de inventar — regra
 de cobrança errada vira dinheiro errado.
@@ -296,7 +338,10 @@ Relate o que foi verificado e o que não foi. Não afirme que algo passa sem ter
 ## 9. Limites
 
 - Não adicione dependência no `pom.xml` sem pedir — o stack atual (Web MVC, Data JPA, Redis,
-  Validation, PostgreSQL/H2, Flyway, Testcontainers) cobre o escopo.
+  Validation, Security, PostgreSQL/H2, Flyway, Actuator, Testcontainers) cobre o escopo. O Actuator expõe
+  **só** `/actuator/health`, sem detalhes e sem Redis no cálculo; não exponha outros endpoints
+  sem acordo.
+  Spring Security entrou por acordo na feature 003 (login por sessão e isolamento por proprietário).
 - Não troque H2 por outro banco em `application.properties` nem mude `ddl-auto` sem acordo. O
   acordado é: `update` no modo rápido (`application.properties`) e `validate` no profile
   `prod` (`application-prod.properties`). Estrutura de produção só muda por migração nova.

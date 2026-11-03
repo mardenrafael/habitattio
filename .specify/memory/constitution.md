@@ -1,21 +1,49 @@
 <!--
 Sync Impact Report
-Version change: 1.0.1 → 1.0.2 (PATCH)
-Rationale: amendment from feature 002-contribution-conventions (task T027, analyze F1). The
+Version change: 1.0.2 → 1.0.3 (PATCH)
+Rationale: amendment from feature 005-contribution-conventions (task T027, analyze F1). The
 repository gained tooling outside the Maven build: Node >= 20 running @commitlint/cli (pinned,
 via npx) in the commit-msg hook and the tools/ scripts, and a GitHub Actions workflow that syncs
 the project version on main. The owner agreed to the commitlint exception on 2026-11-02. The
 "Stack Tecnológico e Restrições" list now describes it; no principle, MUST rule or governance
-procedure changes, so PATCH (same treatment as Flyway in 1.0.1).
+procedure changes, so PATCH (same treatment as Flyway, Actuator and Spring Security).
 Modified principles: none
 Modified sections: Stack Tecnológico e Restrições (repository tooling bullet added)
 Added sections: none
 Removed sections: none
 Templates requiring follow-up: none (.specify/templates/* do not reference the stack list)
 Related sync: AGENTS.md §1 (activation and tooling tests), §9 (commitlint exception) and §10
-(contribution conventions) updated in T008/T016/T025; §4 version reference bumped to v1.0.2 in
+(contribution conventions) updated in T008/T016/T025; §4 version reference bumped to v1.0.3 in
 the same change set.
 Deferred items: none
+
+Previous report — 1.0.1 → 1.0.2 (PATCH, two concurrent amendments merged on main):
+Version change: 1.0.1 → 1.0.2 (PATCH)
+Rationale: amendment from feature 003-proprietario-login-isolamento (task T066). Spring Security
+was added to the stack with explicit owner agreement (Q19 of the feature 003 clarifications).
+The "Stack Tecnológico e Restrições" section and the Principle IV list of the stack that covers
+the current scope are updated to include it; no principle, MUST rule or governance procedure
+changes, so PATCH.
+Modified principles: none (only the stack list inside IV. Simplicidade e YAGNI is updated)
+Modified sections: Stack Tecnológico e Restrições (Spring Security added); IV (stack list)
+Version change: 1.0.1 → 1.0.2 (PATCH)
+Rationale: amendment from feature 002-dockerize-app (task T029). Spring Boot Actuator was added
+to the stack with explicit owner agreement (assessment dockerize-app, decision.md), exposing only
+the health endpoint. The "Stack Tecnológico e Restrições" list is updated to describe it; no
+principle, MUST rule or governance procedure changes, so PATCH.
+Modified principles: none
+Modified sections: Stack Tecnológico e Restrições (Actuator added; only `health` exposed)
+Added sections: none
+Removed sections: none
+Templates requiring follow-up: none (.specify/templates/* do not reference the stack list)
+Related sync: AGENTS.md §9 (stack) updated in this same change set (T065); AGENTS.md §2/§6/§7
+also updated for the feature 003 model and rules.
+Related sync: AGENTS.md §1 (container image commands) and §9 (Actuator in the stack) updated in
+T028; AGENTS.md §4 version reference bumped to v1.0.2 in the same change set.
+Deferred items: none
+
+Previous report — 1.0.0 → 1.0.1 (PATCH): feature 001-better-db-schema (T019) added Flyway to
+the stack with explicit owner agreement (spec FR-014); Testcontainers versions fixed.
 -->
 
 # Habitattio Constitution
@@ -85,8 +113,8 @@ caso de uso real que a exige.
 
 - Dependência nova no `pom.xml`, troca de banco ou de `ddl-auto`, ou introdução de Lombok,
   MapStruct ou framework de mocking MUST ter acordo explícito do usuário antes de ser
-  adicionada — o stack atual (Web MVC, Data JPA, Redis, Validation, PostgreSQL/H2,
-  Testcontainers) cobre o escopo vigente.
+  adicionada — o stack atual (Web MVC, Data JPA, Redis, Validation, Security,
+  PostgreSQL/H2, Flyway, Testcontainers) cobre o escopo vigente.
 - Mapeamento entre camadas (`*JpaEntity ↔` entidade de domínio, `*Request/*Response ↔` domínio)
   é manual e explícito, não automático, para manter a fronteira de arquitetura visível em
   revisão.
@@ -118,9 +146,11 @@ negócio do sistema) e mantém o domínio legível para quem conhece o vocabulá
 ## Stack Tecnológico e Restrições
 
 Java 25, Spring Boot 4.1.2, Spring Web MVC, Spring Data JPA, Spring Data Redis, Bean Validation,
+Spring Security (login por sessão e isolamento por proprietário, acordado na feature 003),
 PostgreSQL (runtime), H2 (dev/test em memória), Flyway (migrações versionadas, só no PostgreSQL:
 profile `prod` com `ddl-auto=validate`; o modo rápido com H2 usa `ddl-auto=update`, sem
-migrações), Testcontainers (PostgreSQL + Redis, versões fixas) para testes de integração.
+migrações), Spring Boot Actuator (só o endpoint `health`, sem detalhes e sem o Redis no cálculo),
+Testcontainers (PostgreSQL + Redis, versões fixas) para testes de integração.
 
 - Sempre use o wrapper `./mvnw`, nunca um `mvn` global.
 - Testes de integração exigem Docker rodando. Na ausência de Docker, execute apenas os testes de
@@ -178,4 +208,4 @@ consistência.
   não-negociáveis; `AGENTS.md` documenta como aplicá-los no dia a dia — os dois MUST permanecer
   consistentes.
 
-**Version**: 1.0.2 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-02
+**Version**: 1.0.3 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-02
