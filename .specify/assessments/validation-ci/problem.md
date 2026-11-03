@@ -43,7 +43,7 @@ tem verificação objetiva.
 - Limite de tempo para o veredito (sem meta por ora).
 - Validar PRs com alvo diferente de `main`.
 - Análise estática, cobertura mínima, scan de segurança ou outras verificações além de testes e
-  empacotamento [NEEDS CLARIFICATION: confirmar que ficam para depois].
+  empacotamento (confirmado pelo dono: ficam para pipelines futuras).
 
 ## Success Metrics
 
@@ -73,7 +73,8 @@ descobrir regressões tarde cresce com o número de features.
 - Detalhes de falha (relatórios de teste): **sim**, o resultado deve trazê-los.
 - Outros colaboradores além do dono: **não**.
 
+- Análise estática, cobertura mínima e scan de segurança: **fora** desta primeira validação.
+
 ## Open Questions
 
-- [NEEDS CLARIFICATION: confirmar que análise estática, cobertura mínima e scan de segurança
-  ficam fora desta primeira validação (ver Non-Goals).]
+Nenhuma.
