@@ -1,0 +1,527 @@
+openapi: 3.1.0
+info:
+  title: Habitattio API
+  version: 0.0.1
+  description: |
+    Gestão de pagamentos de aluguéis. Contrato de referência:
+    `specs/003-proprietario-login-isolamento/contracts/api-http.md` e
+    `specs/002-dockerize-app/contracts/saude-http.md` — em caso de divergência, a spec prevalece.
+
+    ## Como testar num API client
+
+    1. **Obter o token CSRF**: `GET /sessao` (responde 401 sem sessão, mas já devolve o cookie
+       `XSRF-TOKEN`).
+    2. Em todo `POST`/`DELETE`, envie o cabeçalho `X-XSRF-TOKEN` com o valor do cookie
+       `XSRF-TOKEN` (e o próprio cookie). Sem ele: **403**.
+    3. `POST /proprietarios` cadastra; `POST /sessao` (formulário) entra e devolve um novo
+       `JSESSIONID` **e um novo `XSRF-TOKEN`** — atualize o cabeçalho depois do login.
+    4. As rotas protegidas usam o cookie `JSESSIONID`. A sessão expira após 30 min de inatividade.
+
+    O client precisa guardar e reenviar cookies (cookie jar ligado). Em `prod` o cookie de sessão
+    é `Secure`: só trafega por HTTPS.
+
+    Erros são `application/problem+json` (RFC 9457) com `detail` em português. Imóvel de outro
+    proprietário responde como inexistente (404).
+servers:
+  - url: http://localhost:8080
+    description: Local (modo rápido, H2)
+
+tags:
+  - name: Proprietários
+    description: Cadastro de quem é dono dos imóveis (públicas).
+  - name: Sessão
+    description: Login, logout e obtenção do token CSRF.
+  - name: Imóveis
+    description: Imóveis do proprietário autenticado.
+  - name: Saúde
+    description: Endpoint operacional do Actuator.
+
+security:
+  - sessao: []
+    csrf: []
+
+paths:
+  /proprietarios:
+    post:
+      tags: [Proprietários]
+      operationId: cadastrarProprietario
+      summary: Cadastrar proprietário
+      description: |
+        Pública, mas exige CSRF. O e-mail é normalizado (minúsculas, sem espaços nas pontas).
+        O cadastro **não** autentica: entre em seguida por `POST /sessao`.
+      security:
+        - csrf: []
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CadastrarProprietarioRequest'
+            example:
+              nome: Ana Souza
+              email: ana@exemplo.com
+              senha: segredo123
+      responses:
+        '201':
+          description: Proprietário criado (sem `Location`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProprietarioResponse'
+              example:
+                id: 1
+                nome: Ana Souza
+                email: ana@exemplo.com
+        '400':
+          description: Nome, e-mail ou senha inválidos, ou corpo malformado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                title: Bad Request
+                status: 400
+                detail: A senha deve ter no mínimo 8 caracteres.
+                instance: /proprietarios
+        '403':
+          $ref: '#/components/responses/CsrfInvalido'
+        '409':
+          description: E-mail já cadastrado (comparado normalizado).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                title: Conflict
+                status: 409
+                detail: Já existe um proprietário com este e-mail.
+                instance: /proprietarios
+
+  /sessao:
+    get:
+      tags: [Sessão]
+      operationId: consultarSessao
+      summary: Quem está autenticado
+      description: |
+        Também é a forma de obter o cookie `XSRF-TOKEN` antes do cadastro e do login: mesmo
+        respondendo 401, a resposta já traz o cookie.
+      security:
+        - sessao: []
+      responses:
+        '200':
+          description: Sessão válida.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookieXsrf'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessaoResponse'
+              example:
+                id: 1
+                nome: Ana Souza
+                email: ana@exemplo.com
+        '401':
+          description: Sem sessão. Traz o cookie `XSRF-TOKEN`.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookieXsrf'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                title: Unauthorized
+                status: 401
+                detail: Autenticação necessária.
+                instance: /sessao
+    post:
+      tags: [Sessão]
+      operationId: entrar
+      summary: Entrar (login)
+      description: |
+        Formulário, não JSON. O e-mail aceita qualquer caixa e espaços nas pontas. Em caso de
+        sucesso, o id da sessão é trocado e um novo `XSRF-TOKEN` é emitido.
+      security:
+        - csrf: []
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EntrarForm'
+            example:
+              email: ana@exemplo.com
+              senha: segredo123
+      responses:
+        '204':
+          description: Autenticado. Novos cookies `JSESSIONID` e `XSRF-TOKEN`.
+          headers:
+            Set-Cookie:
+              description: '`JSESSIONID=...; Path=/; HttpOnly; SameSite=Lax` e `XSRF-TOKEN=...; Path=/`.'
+              schema:
+                type: string
+        '401':
+          description: E-mail inexistente ou senha errada (indistinguíveis).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                title: Unauthorized
+                status: 401
+                detail: E-mail ou senha inválidos.
+                instance: /sessao
+        '403':
+          $ref: '#/components/responses/CsrfInvalido'
+    delete:
+      tags: [Sessão]
+      operationId: sair
+      summary: Sair (logout)
+      description: Invalida a sessão; requisições seguintes com o mesmo cookie recebem 401.
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      responses:
+        '204':
+          description: Sessão invalidada.
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+        '403':
+          $ref: '#/components/responses/CsrfInvalido'
+
+  /imoveis:
+    post:
+      tags: [Imóveis]
+      operationId: cadastrarImovel
+      summary: Cadastrar imóvel
+      description: |
+        O imóvel pertence ao proprietário da sessão; qualquer campo informando o dono é ignorado.
+        O `identificador` é único por proprietário, sem distinguir maiúsculas de minúsculas.
+      parameters:
+        - $ref: '#/components/parameters/XsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CadastrarImovelRequest'
+            example:
+              identificador: Apto 101
+              endereco: Rua A, 10
+              valorSugerido: 1500.00
+      responses:
+        '201':
+          description: Imóvel criado.
+          headers:
+            Location:
+              description: '`/imoveis/{id}` do imóvel criado.'
+              schema:
+                type: string
+                example: /imoveis/7
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImovelResponse'
+              example:
+                id: 7
+                identificador: Apto 101
+                endereco: Rua A, 10
+                valorSugerido: 1500.00
+                ativo: true
+        '400':
+          description: Identificador, endereço ou valor inválidos, ou corpo malformado.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                title: Bad Request
+                status: 400
+                detail: O valor sugerido deve ser maior que zero.
+                instance: /imoveis
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+        '403':
+          $ref: '#/components/responses/CsrfInvalido'
+        '409':
+          description: O proprietário já tem um imóvel com esse identificador (a mensagem repete o valor enviado).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                title: Conflict
+                status: 409
+                detail: Você já tem um imóvel com o identificador 'Apto 101'.
+                instance: /imoveis
+
+  /imoveis/{id}:
+    get:
+      tags: [Imóveis]
+      operationId: consultarImovel
+      summary: Consultar imóvel
+      security:
+        - sessao: []
+      parameters:
+        - $ref: '#/components/parameters/ImovelId'
+      responses:
+        '200':
+          description: O imóvel é do proprietário da sessão.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImovelResponse'
+        '400':
+          $ref: '#/components/responses/IdInvalido'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+        '404':
+          $ref: '#/components/responses/ImovelNaoEncontrado'
+
+  /imoveis/{id}/inativacao:
+    post:
+      tags: [Imóveis]
+      operationId: inativarImovel
+      summary: Inativar imóvel
+      description: Sem corpo. Idempotente — inativar um imóvel já inativo responde 200.
+      parameters:
+        - $ref: '#/components/parameters/ImovelId'
+        - $ref: '#/components/parameters/XsrfToken'
+      responses:
+        '200':
+          description: Imóvel inativado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImovelResponse'
+              example:
+                id: 7
+                identificador: Apto 101
+                endereco: Rua A, 10
+                valorSugerido: 1500.0000
+                ativo: false
+        '400':
+          $ref: '#/components/responses/IdInvalido'
+        '401':
+          $ref: '#/components/responses/NaoAutenticado'
+        '403':
+          $ref: '#/components/responses/CsrfInvalido'
+        '404':
+          $ref: '#/components/responses/ImovelNaoEncontrado'
+
+  /actuator/health:
+    get:
+      tags: [Saúde]
+      operationId: verificarSaude
+      summary: Saúde da aplicação
+      description: Pública. Só o estado geral; o Redis não entra no cálculo.
+      security: []
+      responses:
+        '200':
+          description: Aplicação e banco OK.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Saude'
+              example:
+                status: UP
+        '503':
+          description: Banco inacessível ou fora de serviço.
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                $ref: '#/components/schemas/Saude'
+              example:
+                status: DOWN
+
+components:
+  securitySchemes:
+    sessao:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Cookie de sessão emitido por `POST /sessao`.
+    csrf:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
+      description: Valor do cookie `XSRF-TOKEN` (obtido em `GET /sessao`). Exigido em `POST`/`DELETE`.
+
+  parameters:
+    XsrfToken:
+      name: X-XSRF-TOKEN
+      in: header
+      required: true
+      description: Valor do cookie `XSRF-TOKEN`.
+      schema:
+        type: string
+    ImovelId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        example: 7
+
+  headers:
+    SetCookieXsrf:
+      description: '`XSRF-TOKEN=...; Path=/` (legível pelo cliente, sem `HttpOnly`).'
+      schema:
+        type: string
+
+  responses:
+    NaoAutenticado:
+      description: Sem sessão, sessão expirada ou encerrada.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            title: Unauthorized
+            status: 401
+            detail: Autenticação necessária.
+    CsrfInvalido:
+      description: Token CSRF ausente ou inválido.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            title: Forbidden
+            status: 403
+            detail: Token CSRF ausente ou inválido.
+    ImovelNaoEncontrado:
+      description: O imóvel não existe ou é de outro proprietário (indistinguíveis).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            title: Not Found
+            status: 404
+            detail: Imóvel não encontrado.
+    IdInvalido:
+      description: '`{id}` não numérico.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            title: Bad Request
+            status: 400
+            detail: Identificador de imóvel inválido.
+
+  schemas:
+    CadastrarProprietarioRequest:
+      type: object
+      required: [nome, email, senha]
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Normalizado para minúsculas e sem espaços nas pontas.
+        senha:
+          type: string
+          format: password
+          minLength: 8
+          description: No mínimo 8 caracteres e no máximo 72 bytes em UTF-8.
+    ProprietarioResponse:
+      type: object
+      required: [id, nome, email]
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+          format: email
+    EntrarForm:
+      type: object
+      required: [email, senha]
+      properties:
+        email:
+          type: string
+          format: email
+        senha:
+          type: string
+          format: password
+    SessaoResponse:
+      type: object
+      required: [id, nome, email]
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+          format: email
+    CadastrarImovelRequest:
+      type: object
+      required: [identificador, endereco, valorSugerido]
+      properties:
+        identificador:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Único por proprietário, sem distinguir maiúsculas de minúsculas.
+        endereco:
+          type: string
+          minLength: 1
+          maxLength: 255
+        valorSugerido:
+          type: number
+          exclusiveMinimum: 0
+          description: Valor monetário, estritamente positivo.
+    ImovelResponse:
+      type: object
+      required: [id, identificador, endereco, valorSugerido, ativo]
+      properties:
+        id:
+          type: integer
+          format: int64
+        identificador:
+          type: string
+        endereco:
+          type: string
+        valorSugerido:
+          type: number
+          description: |
+            No cadastro (201) volta com a escala enviada; na consulta e na inativação, com 4 casas
+            decimais (por exemplo 1500.0000).
+        ativo:
+          type: boolean
+    ProblemDetail:
+      type: object
+      description: RFC 9457. O campo `type` é omitido (equivale a `about:blank`).
+      required: [status, title, detail]
+      properties:
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+          description: Mensagem em português.
+        instance:
+          type: string
+    Saude:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, OUT_OF_SERVICE]

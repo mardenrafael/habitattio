@@ -124,22 +124,30 @@ O modo produção (`SPRING_PROFILES_ACTIVE=prod` + `SPRING_DATASOURCE_*`), a sa�
 
 ## API
 
-### `POST /imoveis` — cadastrar imóvel
+A especificação OpenAPI 3.1 está em [`docs/api/openapi.yaml`](docs/api/openapi.yaml): importe-a
+no Bruno, Insomnia, Postman ou Swagger UI para testar. O contrato de referência continua sendo o
+da spec ([`api-http.md`](specs/003-proprietario-login-isolamento/contracts/api-http.md)).
+
+| Método e rota | O quê | Autenticação |
+|---|---|---|
+| `POST /proprietarios` | cadastrar proprietário | pública (exige CSRF) |
+| `GET /sessao` | quem está autenticado; emite o cookie `XSRF-TOKEN` | sessão |
+| `POST /sessao` | entrar (formulário `email`, `senha`) | pública (exige CSRF) |
+| `DELETE /sessao` | sair | sessão + CSRF |
+| `POST /imoveis` | cadastrar imóvel | sessão + CSRF |
+| `GET /imoveis/{id}` | consultar imóvel | sessão |
+| `POST /imoveis/{id}/inativacao` | inativar imóvel | sessão + CSRF |
+| `GET /actuator/health` | saúde | pública |
+
+A sessão é o cookie `JSESSIONID`. Todo `POST`/`DELETE` exige o cabeçalho `X-XSRF-TOKEN` com o
+valor do cookie `XSRF-TOKEN` (obtido em `GET /sessao`, e renovado após o login). No client,
+mantenha os cookies ligados.
 
 ```bash
-curl -X POST http://localhost:8080/imoveis \
-  -H 'Content-Type: application/json' \
-  -d '{"endereco": "Rua das Flores, 123 - apto 42", "valorSugerido": 1800.00}'
-```
-
-Resposta `201 Created`:
-
-```json
-{
-  "id": 1,
-  "endereco": "Rua das Flores, 123 - apto 42",
-  "valorSugerido": 1800.00
-}
+curl -c jar -b jar http://localhost:8080/sessao                     # 401, mas emite XSRF-TOKEN
+TOKEN=$(awk '$6=="XSRF-TOKEN"{print $7}' jar)
+curl -c jar -b jar -X POST http://localhost:8080/sessao -H "X-XSRF-TOKEN: $TOKEN" \
+  -d 'email=ana@exemplo.com&senha=segredo123'                       # 204
 ```
 
 Os demais agregados ainda não têm endpoints — veja o [roadmap](#roadmap).
