@@ -61,6 +61,14 @@ integração. Por isso o `Dockerfile` só usa instruções comuns ao BuildKit e 
 `.dockerignore` é lista de permissão e é a única peça fora da regra de TDD (decisão do dono;
 verificação manual). Operação, publicação e digest: [`docs/container.md`](docs/container.md).
 
+### Validação de PR (CI)
+
+Todo PR com alvo `main` roda o check `validar`: `./mvnw -B verify` sobre o merge com `main`, com
+Docker, no GitHub Actions. Um teste pulado reprova o PR; rode o mesmo verificador localmente com
+`java .github/scripts/VerificarTestesPulados.java target/surefire-reports`. Na falha, os relatórios
+ficam no artefato do run. `ValidacaoPullRequestWorkflowTest` e `VerificarTestesPuladosTest` protegem
+o contrato. Operação: [`docs/validacao-pr.md`](docs/validacao-pr.md).
+
 ---
 
 ## 2. Arquitetura hexagonal — a regra que não se quebra
