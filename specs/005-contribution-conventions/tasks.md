@@ -211,3 +211,10 @@ Task: "T020 version-sync.test.mjs: S1–S14, S17, S18 em repositórios temporár
   passam com o stub).
 - Commits desta feature: Conventional, escopos sugeridos `conventions`, `versioning`, `github`,
   `agents`, `specs`.
+
+---
+
+## Phase 7: Convergence
+
+- [ ] T034 Criar `tools/conventions/hook-table.test.mjs` que passa as 14 mensagens V1–V6 e I1–I8 de `contracts/commit-message.md` pelo hook `.githooks/commit-msg` (via `git commit --allow-empty -m …`, V4 e V5 pelos fluxos de merge e revert do git) em **dois worktrees** do mesmo repositório temporário (setup igual ao de `hook.test.mjs`, `core.hooksPath` relativo), esperando aceite de V1–V6 e recusa de I1–I8 em ambos, per SC-003 (partial)
+- [ ] T035 Documentar `outcome=fail reason=error` (código 1, detalhe no stderr; argumento desconhecido ou falha inesperada do git) na tabela CLI de `contracts/version-sync.md` e cobrir com um teste em `tools/versioning/version-sync.test.mjs` para argumento desconhecido (`--bogus`), per contracts/version-sync.md CLI (unrequested)
