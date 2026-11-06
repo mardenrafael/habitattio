@@ -1,6 +1,6 @@
 # Research: Convenções de contribuição verificáveis
 
-**Feature**: `002-contribution-conventions` | **Date**: 2026-11-02 | **Spec**: [spec.md](./spec.md)
+**Feature**: `005-contribution-conventions` | **Date**: 2026-11-02 | **Spec**: [spec.md](./spec.md)
 
 Cada item resolve uma incógnita do Technical Context do [plan.md](./plan.md). Formato:
 decisão, por quê, alternativas descartadas.
@@ -119,7 +119,7 @@ repositório, fora de `.specify/templates/` e `.specify/scripts/`, então FR-017
    termos de domínio como estão (Edge Cases).
 2. **Corpo**: a linha original da task em português (FR-016) e o caminho do `tasks.md`.
 3. **Deduplicação**: casar `^\[NNN\] TXXX:` desta feature, em vez de `\bT\d{3,}\b` solto. O
-   padrão atual marcaria o `T001` da feature 002 como já existente por causa do `T001` de outra
+   padrão atual marcaria o `T001` da feature 005 como já existente por causa do `T001` de outra
    feature, um bug latente que o novo título torna corrigível. Títulos legados `TXXX: …` sem
    prefixo **não** são considerados da feature atual.
 

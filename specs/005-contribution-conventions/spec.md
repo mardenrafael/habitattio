@@ -1,6 +1,6 @@
 # Feature Specification: Convenções de contribuição verificáveis (commits, PRs, issues e versão)
 
-**Feature Branch**: `002-contribution-conventions`
+**Feature Branch**: `005-contribution-conventions`
 
 **Created**: 2026-11-02
 
@@ -37,7 +37,7 @@ pela CI. Como cada uma é implementada fica para o `plan.md`.
 
 ### Session 2026-11-02
 
-- Q: Qual o formato do título de issue de task? → A: `[NNN] TXXX: <description>` — número da feature entre colchetes, id da task, descrição em inglês (ex.: `[002] T001: Add commit-msg hook`).
+- Q: Qual o formato do título de issue de task? → A: `[NNN] TXXX: <description>` — número da feature entre colchetes, id da task, descrição em inglês (ex.: `[005] T001: Add commit-msg hook`).
 - Q: Commits só de tipos que não são `feat`/`fix` alteram a versão? → A: Sim, geram PATCH. Todo conjunto com ao menos um commit válido altera a versão.
 - Q: Breaking change enquanto a versão é `0.x` vai para `1.0.0`? → A: Não. Em `0.x`, breaking change incrementa MINOR; a passagem para `1.0.0` é decisão explícita do dono.
 
@@ -231,7 +231,7 @@ um, e que o commit de sincronização não dispara outra sincronização.
 - **FR-015**: Issues de task geradas a partir de um `tasks.md` MUST ter título num formato
   único, em inglês: `[NNN] TXXX: <description>`, onde `NNN` é o número de três dígitos da
   feature (o prefixo do diretório em `specs/`), `TXXX` é o id da task no `tasks.md` e
-  `<description>` é a descrição da task em inglês (ex.: `[002] T001: Add commit-msg hook`).
+  `<description>` é a descrição da task em inglês (ex.: `[005] T001: Add commit-msg hook`).
 - **FR-016**: O corpo de uma issue de task MUST preservar a descrição original da task do
   `tasks.md`, em português, além do título em inglês. `tasks.md`, specs e docs continuam em
   português.

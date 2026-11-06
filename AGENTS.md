@@ -350,7 +350,7 @@ Relate o que foi verificado e o que não foi. Não afirme que algo passa sem ter
 - Não crie camada de abstração "para o futuro". YAGNI: porta se cria quando há um caso de uso
   que precisa dela.
 - Não altere nada em `.specify/scripts/` ou `.specify/templates/`.
-- Exceção acordada (2026-11-02, feature 002): `@commitlint/cli` **21.2.4**, executado via `npx`
+- Exceção acordada (2026-11-02, feature 005): `@commitlint/cli` **21.2.4**, executado via `npx`
   pelo hook `commit-msg`, **fora** do `pom.xml`. Atualizar a versão é um commit
   `build(commitlint): …` que muda `COMMITLINT_VERSION` em `.githooks/commit-msg`.
 
@@ -359,7 +359,7 @@ Relate o que foi verificado e o que não foi. Não afirme que algo passa sem ter
 ## 10. Contribuição: commits, PRs, issues e versão
 
 Commits, PRs e issues são escritos em **inglês**. Specs, docs, `tasks.md` e o domínio continuam
-em português. Contratos completos em `specs/002-contribution-conventions/contracts/`.
+em português. Contratos completos em `specs/005-contribution-conventions/contracts/`.
 
 ### Commits
 
@@ -431,7 +431,7 @@ gh issue create --title "fix(<scope>): <summary>" --body-file <arquivo com os bl
 
 - Título `[NNN] TXXX: <description in English>`: `NNN` é o prefixo de 3 dígitos da feature em
   `specs/`, e a descrição é traduzida mantendo identificadores, caminhos e termos de domínio. Ex.:
-  `[002] T004: Add commit message table test`.
+  `[005] T004: Add commit message table test`.
 - Corpo: `Task (tasks.md): <linha original em português, sem checkbox>` e
   `Source: specs/NNN-<name>/tasks.md`.
 - A regra mora em `.claude/skills/speckit-taskstoissues/SKILL.md` (alteração local, marcada com

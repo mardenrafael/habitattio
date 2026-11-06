@@ -1,8 +1,8 @@
 # Implementation Plan: Convenções de contribuição verificáveis (commits, PRs, issues e versão)
 
-**Branch**: `002-contribution-conventions` | **Date**: 2026-11-02 | **Spec**: [spec.md](./spec.md)
+**Branch**: `005-contribution-conventions` | **Date**: 2026-11-02 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `specs/002-contribution-conventions/spec.md`
+**Input**: Feature specification from `specs/005-contribution-conventions/spec.md`
 
 ## Summary
 
@@ -108,7 +108,7 @@ tasks fica no `tasks.md`.
 ### Documentation (this feature)
 
 ```text
-specs/002-contribution-conventions/
+specs/005-contribution-conventions/
 ├── spec.md
 ├── plan.md              # este arquivo
 ├── research.md          # R1–R10

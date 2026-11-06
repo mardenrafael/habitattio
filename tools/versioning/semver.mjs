@@ -1,4 +1,4 @@
-// Pure core of the version sync (specs/002-contribution-conventions/data-model.md).
+// Pure core of the version sync (specs/005-contribution-conventions/data-model.md).
 // No I/O and no dependencies: every rule here is covered by semver.test.mjs.
 
 // Same header grammar and types as commitlint.config.mjs (research R2).

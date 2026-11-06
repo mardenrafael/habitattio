@@ -79,7 +79,7 @@ gh issue create --title "fix(<scope>): <summary>" --body-file <file with ### sec
 
 | Item | Regra |
 |---|---|
-| Título | `[NNN] TXXX: <description in English>`; ex.: `[002] T004: Add commit-msg hook that runs commitlint` |
+| Título | `[NNN] TXXX: <description in English>`; ex.: `[005] T004: Add commit-msg hook that runs commitlint` |
 | `NNN` | prefixo de 3 dígitos do diretório da feature em `specs/` |
 | Descrição | tradução da task; identificadores, caminhos e termos de domínio (`Fatura`, `diaVencimento`) mantidos |
 | Corpo | `Task (tasks.md): <linha original em português, sem o checkbox>` + `Source: specs/NNN-<name>/tasks.md` |

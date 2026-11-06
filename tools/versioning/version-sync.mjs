@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Version sync CLI (specs/002-contribution-conventions/contracts/version-sync.md, research R7).
+// Version sync CLI (specs/005-contribution-conventions/contracts/version-sync.md, research R7).
 // Usage: node tools/versioning/version-sync.mjs [--dry-run] [--no-push] [--repo <path>]
 //
 // Derives the range from state, not from the push event: commits since the last commit on

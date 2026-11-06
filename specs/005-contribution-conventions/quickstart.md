@@ -1,6 +1,6 @@
 # Quickstart: validar as convenções de contribuição
 
-**Feature**: `002-contribution-conventions`. Guia de validação ponta a ponta. As regras estão
+**Feature**: `005-contribution-conventions`. Guia de validação ponta a ponta. As regras estão
 nos [contracts](./contracts/) e no [data-model.md](./data-model.md); aqui ficam só os passos.
 
 ## Pré-requisitos
@@ -44,7 +44,7 @@ fica em `/usr/bin`.
    `fix(<scope>): …` e os blocos `###` do [contrato](./contracts/pull-requests-and-issues.md).
    Feche a issue de teste.
 3. Task issues: rodar `/speckit-taskstoissues` nesta feature e conferir títulos
-   `[002] TXXX: <English>`, corpo com a linha original e nenhuma duplicata ao rodar de novo.
+   `[005] TXXX: <English>`, corpo com a linha original e nenhuma duplicata ao rodar de novo.
 
 ## 4. US3 — versão (SC-008, SC-009)
 

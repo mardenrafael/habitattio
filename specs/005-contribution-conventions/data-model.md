@@ -1,6 +1,6 @@
 # Data Model: Convenções de contribuição verificáveis
 
-**Feature**: `002-contribution-conventions` | **Date**: 2026-11-02
+**Feature**: `005-contribution-conventions` | **Date**: 2026-11-02
 
 Não há persistência nem mudança no domínio Java. As "entidades" abaixo são as estruturas que o
 hook e a sincronização de versão leem e produzem. Os nomes de campo são os usados no núcleo

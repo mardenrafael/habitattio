@@ -1,4 +1,4 @@
-// Commit message convention (AGENTS.md §10, specs/002-contribution-conventions).
+// Commit message convention (AGENTS.md §10, specs/005-contribution-conventions).
 // Self-contained on purpose: no `extends`, so commitlint can run through `npx -p`
 // without a package.json or node_modules (research R2).
 export default {

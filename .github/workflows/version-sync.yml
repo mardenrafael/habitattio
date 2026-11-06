@@ -1,5 +1,5 @@
 # Writes the SemVer version derived from Conventional Commits into pom.xml on main.
-# Contract: specs/002-contribution-conventions/contracts/version-sync.md
+# Contract: specs/005-contribution-conventions/contracts/version-sync.md
 # Pushes made with GITHUB_TOKEN do not trigger workflows, so the sync commit never cascades;
 # the script also exits with outcome=noop when HEAD is already a Version-Sync commit.
 name: version-sync
