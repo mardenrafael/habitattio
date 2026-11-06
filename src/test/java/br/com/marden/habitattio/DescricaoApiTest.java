@@ -26,6 +26,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -181,6 +182,66 @@ class DescricaoApiTest {
         ExportadorDescricaoApi.exportar(yaml, ExportadorDescricaoApi.DESTINO);
 
         assertEquals(yaml, Files.readString(ExportadorDescricaoApi.DESTINO, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void deveDescreverEntrarESairComoNoContrato() throws Exception {
+        OpenAPI descricao = obterDescricao();
+
+        Operation entrar = operacao(descricao, "POST /sessao");
+        Operation sair = operacao(descricao, "DELETE /sessao");
+
+        assertEquals(Set.of("csrf"), seguranca(descricao, entrar));
+        assertEquals(Set.of("204", "401", "403"), entrar.getResponses().keySet());
+        assertEquals(CSRF_INVALIDO, entrar.getResponses().get("403").get$ref());
+        MediaType formulario = entrar.getRequestBody().getContent().get("application/x-www-form-urlencoded");
+        assertNotNull(formulario, "POST /sessao não recebe formulário");
+        assertTrue(temExemplo(Map.of("formulario", formulario)), "POST /sessao sem exemplo no formulário");
+        assertEquals("#/components/schemas/EntrarForm", formulario.getSchema().get$ref());
+        assertEquals(List.of("email", "senha"),
+                descricao.getComponents().getSchemas().get("EntrarForm").getRequired());
+        MediaType recusa = entrar.getResponses().get("401").getContent().get(PROBLEM_JSON);
+        assertNotNull(recusa, "401 de POST /sessao não usa " + PROBLEM_JSON);
+        assertTrue(recusa.getExample().toString().contains("E-mail ou senha inválidos."), "401 de POST /sessao");
+        assertEquals(Set.of("sessao", "csrf"), seguranca(descricao, sair));
+        assertEquals(Set.of("204", "401", "403"), sair.getResponses().keySet());
+        assertEquals(NAO_AUTENTICADO, sair.getResponses().get("401").get$ref());
+        assertEquals(CSRF_INVALIDO, sair.getResponses().get("403").get$ref());
+        assertEquals(List.of("Sessão"), entrar.getTags());
+        assertEquals(List.of("Sessão"), sair.getTags());
+    }
+
+    @Test
+    void deveDescreverSaudePublica() throws Exception {
+        OpenAPI descricao = obterDescricao();
+
+        Operation saude = operacao(descricao, "GET /actuator/health");
+
+        assertEquals(Set.of(), seguranca(descricao, saude));
+        assertEquals(List.of("Saúde"), saude.getTags());
+        assertEquals(Set.of("200", "503"), saude.getResponses().keySet());
+        saude.getResponses().forEach((codigo, resposta) -> {
+            MediaType midia = resposta.getContent().get("application/vnd.spring-boot.actuator.v3+json");
+            assertNotNull(midia, "saúde " + codigo + " sem o tipo do Actuator");
+            assertEquals("#/components/schemas/Saude", midia.getSchema().get$ref());
+            assertTrue(temExemplo(resposta.getContent()), "saúde " + codigo + " sem exemplo");
+        });
+        Schema<?> status = (Schema<?>) descricao.getComponents().getSchemas().get("Saude").getProperties().get("status");
+        assertEquals(List.of("UP", "DOWN", "OUT_OF_SERVICE"), status.getEnum());
+    }
+
+    @Test
+    void deveTrazerOGuiaDeSessaoECsrf() throws Exception {
+        OpenAPI descricao = obterDescricao();
+
+        String guia = descricao.getInfo().getDescription();
+
+        assertNotNull(guia, "a descrição não traz o guia");
+        for (String marcador : List.of("GET /sessao", "XSRF-TOKEN", "X-XSRF-TOKEN", "30 min",
+                "application/problem+json", "404", "./mvnw test", "gerado", "referência")) {
+            assertTrue(guia.contains(marcador), "guia sem: " + marcador);
+        }
+        assertTrue(guia.matches("(?s).*novo `?XSRF-TOKEN.*"), "guia sem o aviso do novo token após o login");
     }
 
     private String obterYaml() throws Exception {
