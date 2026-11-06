@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -32,8 +32,8 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
-- **Pendente**: 2 marcadores [NEEDS CLARIFICATION] aguardam o dono: FR-011 (cópia da credencial
-  depois de sair) e autorização para adaptar testes existentes (AGENTS §3).
+- **Resolvidos em 2026-11-06** pelo dono: os 2 marcadores [NEEDS CLARIFICATION] (FR-011 e
+  autorização dos testes), além da remoção de `/sessao` e da emenda da constitution.
 - **Detalhes técnicos citados de propósito**: JWT e os atributos do cookie (`Secure`, `HttpOnly`,
   `SameSite`) são decisão explícita do dono, citados como a feature 003 citou BCrypt e Spring
   Security. Biblioteca, algoritmo e nomes de configuração ficam para o `plan.md`. Os nomes de

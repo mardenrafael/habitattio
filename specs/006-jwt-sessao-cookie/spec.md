@@ -22,13 +22,24 @@ com o rumo do projeto, nativo em Docker:
 - **Não dá para ter uma segunda instância** sem amarrar cada cliente a um container específico.
 - **O container deixa de ser descartável**: ele guarda algo que não pode ser perdido.
 
-O problema está no estado guardado no servidor, não no nome da rota `/sessao`. Por isso esta
-feature troca o mecanismo e mantém o contrato HTTP (ver Assumptions).
+Se não existe sessão, também não existe um recurso "sessão" para a API expor: a rota `/sessao`
+sai junto com o mecanismo. Continuam existindo as três capacidades que ela concentrava, porque
+elas não dependem de sessão: **entrar**, **sair** e **saber quem está autenticado**.
 
 Algumas restrições já foram decididas pelo dono e são citadas pelo nome porque não são escolha
-desta spec: a autenticação passa a ser **JWT**, transportado em **cookie** `Secure`, `HttpOnly`
-e com os demais atributos de proteção. Biblioteca, algoritmo de assinatura e nomes de
-configuração ficam para o `plan.md`.
+desta spec: a aplicação é **100% stateless**, a autenticação passa a ser **JWT**, transportado em
+**cookie** `Secure`, `HttpOnly` e com os demais atributos de proteção, e o recurso `/sessao` deixa
+de existir. Biblioteca, algoritmo de assinatura, nomes de configuração e formato das rotas novas
+ficam para o `plan.md`.
+
+## Clarifications
+
+### Session 2026-11-06
+
+- Q: Uma cópia da credencial feita antes de sair deve ser recusada de imediato? → A: Não. Sair descarta o cookie do navegador; a cópia vale até vencer. O servidor fica 100% sem estado, sem registro de credenciais revogadas.
+- Q: O dono autoriza adaptar os testes existentes que dependem da sessão de servidor? → A: Sim: trocar o transporte para o cookie da credencial sem mudar asserções nem cenários, e substituir os testes que só provam a sessão de servidor por equivalentes do novo mecanismo.
+- Q: A rota `/sessao` é mantida? → A: Não. Como não há sessão armazenada, o dono não vê necessidade do endpoint. Ele sai por inteiro.
+- Q: A constitution muda? → A: Sim, ela deixa de falar em login por sessão e passa a exigir aplicação stateless (emenda 1.1.0, nesta feature).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -118,8 +129,8 @@ minutos, e uso contínuo até o limite absoluto.
 Ao terminar, a Ana sai do sistema, inclusive em um computador compartilhado, e o navegador deixa
 de estar autenticado.
 
-**Why this priority**: o login já é útil sem isso, mas sair é uma garantia que a feature 003 deu
-(FR-011) e que muda de natureza sem estado no servidor.
+**Why this priority**: o login já é útil sem isso. Sair muda de natureza sem estado no servidor:
+encerra o acesso do navegador, não invalida cópias da credencial (ver Clarifications).
 
 **Independent Test**: entrar, sair e repetir uma operação protegida pelo mesmo navegador e, à
 parte, com uma cópia da credencial feita antes de sair.
@@ -131,7 +142,9 @@ parte, com uma cópia da credencial feita antes de sair.
 2. **Given** um cliente sem credencial válida, **When** ele tenta sair, **Then** recebe "não
    autenticado", e uma credencial vencida que ele tenha é descartada do navegador.
 3. **Given** uma cópia da credencial feita antes de a Ana sair, **When** ela é usada depois da
-   saída, **Then** o resultado segue FR-011.
+   saída e antes de vencer, **Then** a operação é aceita: o servidor não guarda quem saiu.
+4. **Given** essa mesma cópia, **When** ela vence, **Then** a operação é recusada como não
+   autenticada, e o limite absoluto vale mesmo que a cópia tenha sido renovada.
 
 ---
 
@@ -225,10 +238,10 @@ um adequado; subir em modo rápido sem configurar nada.
 **Saída**
 
 - **FR-011**: Ao sair, o sistema MUST responder com sucesso e instruir o navegador a descartar a
-  credencial. Uma cópia dessa credencial feita antes da saída [NEEDS CLARIFICATION: deve ser
-  recusada de imediato, o que exige um registro compartilhado de credenciais revogadas, ou pode
-  continuar válida até vencer (no máximo 30 minutos sem renovação, ou até o limite de FR-010 se
-  continuar sendo renovada), mantendo o servidor 100% sem estado?]
+  credencial; só o servidor consegue fazer isso, porque o cookie é inacessível a scripts. O sistema
+  MUST NOT manter registro de credenciais revogadas: uma cópia feita antes da saída continua
+  válida até vencer (30 minutos sem renovação, ou até o limite de FR-010 se continuar sendo
+  renovada). Esse risco é aceito pelo dono.
 - **FR-012**: Sair sem credencial válida MUST continuar respondendo "não autenticado" e MUST
   instruir o navegador a descartar o cookie, se houver.
 
@@ -255,16 +268,18 @@ um adequado; subir em modo rápido sem configurar nada.
 
 **Contrato e substituição**
 
-- **FR-018**: Rotas, métodos, formatos de requisição, status e corpos das respostas MUST
-  permanecer os da feature 003, salvo o nome do cookie e o que FR-011 decidir. O frontend não
-  precisa mudar nada, porque não lê a credencial.
+- **FR-018**: O recurso `/sessao` MUST deixar de existir, em todos os métodos, sem rota de
+  compatibilidade. Entrar, sair e consultar o proprietário autenticado MUST continuar disponíveis
+  em rotas que não modelam sessão, com os mesmos formatos de requisição, status e corpos da feature
+  003; a consulta fica junto do recurso de proprietários. As rotas exatas ficam para o `plan.md`.
+  As demais rotas MUST permanecer inalteradas.
 - **FR-019**: O mecanismo de sessão no servidor MUST ser removido por inteiro, sem convivência
   entre os dois. Sessões existentes não são migradas: cada proprietário entra de novo uma vez,
   depois do primeiro deploy.
 - **FR-020**: A documentação que descreve a autenticação MUST ser atualizada nesta feature:
-  contrato HTTP, operação do container (nova variável de ambiente), `docs/requisitos-e-der.md`,
-  `AGENTS.md` e a constitution (o stack cita "login por sessão"), que passa por
-  `/speckit.constitution`.
+  contrato HTTP, operação do container (nova variável de ambiente) e
+  `docs/requisitos-e-der.md`. A constitution (1.1.0) e o `AGENTS.md` já foram emendados nesta
+  feature e MUST chegar à `main` junto com a implementação, nunca antes.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -293,14 +308,17 @@ um adequado; subir em modo rápido sem configurar nada.
 - **SC-007**: A aplicação em modo produção sem segredo adequado nunca chega a aceitar requisições.
 - **SC-008**: 0 acessos entre proprietários, percorrendo todos os identificadores de imóveis
   existentes, como na feature 003.
-- **SC-009**: Nenhuma alteração é necessária no frontend.
+- **SC-009**: 0 rotas da API modelam sessão: nenhum método de `/sessao` responde, e entrar, sair e
+  consultar o proprietário autenticado continuam funcionando nas rotas novas.
 
 ## Assumptions
 
-- **A rota `/sessao` é mantida** (`POST`, `GET`, `DELETE`). O que quebra a ausência de estado é a
-  memória do servidor, não o nome da rota, e o frontend (repositório separado, Q23) continua
-  funcionando. Renomear seria mudança de contrato sem ganho funcional; se o dono preferir, entra
-  como decisão na `/speckit-clarify`.
+- **Entrar, sair e consultar o proprietário autenticado continuam necessários** mesmo sem o recurso
+  `/sessao`: alguém precisa emitir a credencial; o cookie é inacessível a scripts, então só o
+  servidor o descarta; e o cliente, sem ler o cookie, precisa saber quem entrou e receber o token
+  de proteção contra requisição forjada.
+- **Não há consumidor a migrar**: o frontend (repositório separado, Q23, RNF-18) ainda não foi
+  construído, então remover `/sessao` sem rota de compatibilidade não quebra ninguém.
 - **30 minutos de inatividade** vêm da feature 003. O **limite absoluto de 8 horas** é um padrão
   razoável, proposto aqui (a feature 003 previa "minutos a poucas horas, não dias"); ajustável na
   `/speckit-clarify`.
@@ -324,8 +342,9 @@ Esta feature substitui, de propósito, decisões da feature 003:
   o peso dessa troca. A proteção contra fixação de sessão (`SegurancaConfiguration`) perde objeto;
   FR-004 cobre o risco equivalente.
 - **FR-010 e FR-011 da feature 003** (acesso até sair ou expirar; depois de sair, o mesmo acesso é
-  recusado): FR-010 é preservado aqui em FR-009; FR-011 depende da decisão em aberto nesta spec.
-- **`contracts/api-http.md`**: cookie `JSESSIONID` deixa de existir.
+  recusado): FR-010 é preservado aqui em FR-009. FR-011 é enfraquecido por decisão do dono: depois
+  de sair, o navegador perde o acesso, mas uma cópia da credencial vale até vencer.
+- **`contracts/api-http.md`**: o cookie `JSESSIONID` e as rotas `/sessao` deixam de existir.
 
 Testes existentes que **vão deixar de compilar ou de passar** (conferido contra `origin/main` em
 `673b7ab`):
@@ -337,21 +356,25 @@ Testes existentes que **vão deixar de compilar ou de passar** (conferido contra
 - `SessaoIntegracaoTest#deveConfigurarExpiracaoDaSessaoEmTrintaMinutos`: lê a propriedade de
   expiração da sessão de servidor.
 - `SessaoIntegracaoTest#deveRecusarOperacaoProtegidaDepoisDeSair`: reutiliza a sessão depois de
-  sair; o que ela prova depende de FR-011.
+  sair; passa a provar que o navegador perde o acesso (FR-011), não que a credencial é revogada.
 - `IsolamentoProprietariosIntegracaoTest`: usa `MockHttpSession` para carregar a autenticação; o
   cenário provado não muda, só o transporte.
+- `SessaoControllerTest` e os demais testes que chamam `/sessao`: a rota deixa de existir; o
+  cenário provado não muda, só o endereço.
 
 Pela regra do AGENTS §3 (teste existente é read-only), alterar esses testes exige **decisão
-explícita do dono**. [NEEDS CLARIFICATION: o dono autoriza (a) trocar o transporte de
-`MockHttpSession` para o cookie da credencial, sem mudar asserções nem cenários, e (b) substituir
-os testes que só provam a sessão de servidor por equivalentes do novo mecanismo?]
+explícita do dono**, **dada em 2026-11-06** (ver Clarifications), com este limite: trocar o
+transporte para o cookie da credencial e o endereço para as rotas novas, sem mudar asserções nem
+cenários, e substituir por equivalentes do novo mecanismo só os testes que provam a sessão de
+servidor. A troca de endereço é consequência direta da remoção de `/sessao`, decidida depois da
+autorização. Qualquer outra alteração nesses testes exige nova decisão do dono.
 
 ### Pontos a confirmar na `/speckit-clarify`
 
-1. Decisão sobre cópia da credencial depois de sair (FR-011).
-2. Autorização para adaptar os testes existentes (seção acima).
-3. **Assumidos sem decisão do dono** (ajustáveis): manter a rota `/sessao`; limite absoluto de 8
-   horas; `SameSite=Lax`.
+1. ~~Cópia da credencial depois de sair~~ — decidido (ver Clarifications e FR-011).
+2. ~~Adaptação dos testes existentes~~ — decidido (seção acima).
+3. ~~Manter a rota `/sessao`~~ — decidido: sai (FR-018).
+4. **Assumidos sem decisão do dono** (ajustáveis): limite absoluto de 8 horas; `SameSite=Lax`.
 
 ## Out of Scope
 
@@ -361,4 +384,4 @@ os testes que só provam a sessão de servidor por equivalentes do novo mecanism
 - Bloqueio de tentativas de login e recuperação de senha.
 - Compose de produção, orquestração e balanceamento de várias instâncias: esta feature só deixa
   a aplicação pronta para isso.
-- Mudanças no frontend.
+- Construção do frontend: quando ele for feito, já consome as rotas novas.
