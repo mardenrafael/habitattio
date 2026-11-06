@@ -27,8 +27,9 @@ FROM ${BASE_RUNTIME}
 WORKDIR /app
 COPY --from=build /build/extracted/dependencies/ ./
 COPY --from=build /build/extracted/spring-boot-loader/ ./
-COPY --from=build /build/extracted/snapshot-dependencies/ ./
-COPY --from=build /build/extracted/application/ ./
+# Num só passo: sem dependência SNAPSHOT o diretório é vazio, e um COPY vazio seguido de outro COPY
+# quebra o builder clássico no overlay2 ("layer does not exist").
+COPY --from=build /build/extracted/snapshot-dependencies/ /build/extracted/application/ ./
 COPY --from=build /build/verificacao/ /app/verificacao/
 EXPOSE 8080
 
