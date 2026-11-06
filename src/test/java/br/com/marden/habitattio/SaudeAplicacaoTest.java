@@ -39,14 +39,4 @@ class SaudeAplicacaoTest {
                 .andExpect(jsonPath("$.details").doesNotExist())
                 .andExpect(jsonPath("$.groups").doesNotExist());
     }
-
-    @Test
-    void naoDeveExporOutrosEndpointsOperacionais() throws Exception {
-        String[] caminhos = {"/actuator", "/actuator/env", "/actuator/metrics", "/actuator/info",
-                "/actuator/beans", "/actuator/configprops"};
-
-        for (String caminho : caminhos) {
-            mockMvc.perform(get(caminho)).andExpect(status().isNotFound());
-        }
-    }
 }

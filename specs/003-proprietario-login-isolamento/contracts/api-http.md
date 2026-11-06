@@ -1,5 +1,9 @@
 # Contrato HTTP — módulo 2
 
+> **Histórico da feature 003.** A referência do contrato HTTP passou a ser
+> [`docs/api/openapi.yaml`](../../../docs/api/openapi.yaml), gerado pela suíte (`./mvnw test`) a
+> partir da feature 004. Este arquivo não é mais atualizado; se divergirem, vale o arquivo gerado.
+
 **Feature**: [../spec.md](../spec.md) · **Decisões**: [../research.md](../research.md) (R1, R2, R5, R6, R10)
 
 Convenções:

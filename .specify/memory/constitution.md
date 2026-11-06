@@ -1,5 +1,20 @@
 <!--
 Sync Impact Report
+Version change: 1.0.2 → 1.0.3 (PATCH)
+Rationale: amendment from feature 004-auto-docs-api (task T044). springdoc-openapi was added to
+the stack with explicit owner agreement (assessment auto-docs-api, decision.md); the API
+description and Swagger UI exist only in fast mode and are off in `prod`. The "Stack Tecnológico
+e Restrições" section and the Principle IV stack list are updated; no principle, MUST rule or
+governance procedure changes, so PATCH.
+Modified principles: none (only the stack list inside IV. Simplicidade e YAGNI is updated)
+Modified sections: Stack Tecnológico e Restrições (springdoc-openapi added); IV (stack list)
+Added sections: none
+Removed sections: none
+Templates requiring follow-up: none (.specify/templates/* do not reference the stack list)
+Related sync: AGENTS.md §1 and §9 updated in T043; AGENTS.md §4 version reference bumped to
+v1.0.3 in the same change set.
+Deferred items: none
+
 Version change: 1.0.1 → 1.0.2 (PATCH)
 Rationale: amendment from feature 003-proprietario-login-isolamento (task T066). Spring Security
 was added to the stack with explicit owner agreement (Q19 of the feature 003 clarifications).
@@ -96,7 +111,7 @@ caso de uso real que a exige.
 - Dependência nova no `pom.xml`, troca de banco ou de `ddl-auto`, ou introdução de Lombok,
   MapStruct ou framework de mocking MUST ter acordo explícito do usuário antes de ser
   adicionada — o stack atual (Web MVC, Data JPA, Redis, Validation, Security,
-  PostgreSQL/H2, Flyway, Testcontainers) cobre o escopo vigente.
+  springdoc-openapi, PostgreSQL/H2, Flyway, Testcontainers) cobre o escopo vigente.
 - Mapeamento entre camadas (`*JpaEntity ↔` entidade de domínio, `*Request/*Response ↔` domínio)
   é manual e explícito, não automático, para manter a fronteira de arquitetura visível em
   revisão.
@@ -129,6 +144,8 @@ negócio do sistema) e mantém o domínio legível para quem conhece o vocabulá
 
 Java 25, Spring Boot 4.1.2, Spring Web MVC, Spring Data JPA, Spring Data Redis, Bean Validation,
 Spring Security (login por sessão e isolamento por proprietário, acordado na feature 003),
+springdoc-openapi (descrição da API e Swagger UI só no modo rápido; desligado em `prod`, acordado
+na feature 004),
 PostgreSQL (runtime), H2 (dev/test em memória), Flyway (migrações versionadas, só no PostgreSQL:
 profile `prod` com `ddl-auto=validate`; o modo rápido com H2 usa `ddl-auto=update`, sem
 migrações), Spring Boot Actuator (só o endpoint `health`, sem detalhes e sem o Redis no cálculo),
@@ -186,4 +203,4 @@ consistência.
   não-negociáveis; `AGENTS.md` documenta como aplicá-los no dia a dia — os dois MUST permanecer
   consistentes.
 
-**Version**: 1.0.2 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-10-30
+**Version**: 1.0.3 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-05
