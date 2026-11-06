@@ -1,0 +1,45 @@
+# Validação obrigatória de PRs com alvo main: suíte completa, empacotamento e nenhum teste pulado.
+# Operação em docs/validacao-pr.md; requisitos e contrato em specs/004-pr-validation-ci/.
+name: Validação de PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validacao-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    name: validar
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build completo (suíte e empacotamento)
+        run: ./mvnw -B verify
+
+      - name: Nenhum teste pulado
+        run: java .github/scripts/VerificarTestesPulados.java target/surefire-reports
+
+      - name: Relatórios de teste
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorios-de-teste
+          path: target/surefire-reports/
+          retention-days: 14
+          if-no-files-found: ignore

@@ -75,8 +75,8 @@ como única exceção.
 
 **Purpose**: confirmar o ponto de partida antes de qualquer mudança.
 
-- [ ] T001 Confirmar que o branch atual é `004-pr-validation-ci` (`git branch --show-current`). Rodar `./mvnw test` com Docker no ar e registrar no relatório que a suíte atual está verde **antes** de qualquer alteração (número de testes e duração). Se o Docker não estiver disponível, **pare e reporte**: esta feature exige a suíte completa (FR-004/FR-005) e não pode ser validada só com os testes de domínio.
-- [ ] T002 [P] Conferir que os SHAs fixados na research continuam apontando para as tags e registrar no relatório: `gh api repos/actions/checkout/commits/v7.0.1 --jq .sha` → `3d3c42e5aac5ba805825da76410c181273ba90b1`; `gh api repos/actions/setup-java/commits/v6.1.0 --jq .sha` → `b843ebf9b913146b38da2eaa7aeddf76074ae1ad`; `gh api repos/actions/upload-artifact/commits/v7.0.2 --jq .sha` → `cf430e030ddbb5b0abf93d22962f4752f3646cd9`. Se algum divergir, pare e reporte, sem trocar SHA por conta própria. Registrar também as regras atuais do ruleset: `gh api repos/mardenrafael/habitattio/rulesets/26249037 --jq '.rules[].type'` (esperado hoje: `deletion`, `non_fast_forward`).
+- [X] T001 Confirmar que o branch atual é `004-pr-validation-ci` (`git branch --show-current`). Rodar `./mvnw test` com Docker no ar e registrar no relatório que a suíte atual está verde **antes** de qualquer alteração (número de testes e duração). Se o Docker não estiver disponível, **pare e reporte**: esta feature exige a suíte completa (FR-004/FR-005) e não pode ser validada só com os testes de domínio.
+- [X] T002 [P] Conferir que os SHAs fixados na research continuam apontando para as tags e registrar no relatório: `gh api repos/actions/checkout/commits/v7.0.1 --jq .sha` → `3d3c42e5aac5ba805825da76410c181273ba90b1`; `gh api repos/actions/setup-java/commits/v6.1.0 --jq .sha` → `b843ebf9b913146b38da2eaa7aeddf76074ae1ad`; `gh api repos/actions/upload-artifact/commits/v7.0.2 --jq .sha` → `cf430e030ddbb5b0abf93d22962f4752f3646cd9`. Se algum divergir, pare e reporte, sem trocar SHA por conta própria. Registrar também as regras atuais do ruleset: `gh api repos/mardenrafael/habitattio/rulesets/26249037 --jq '.rules[].type'` (esperado hoje: `deletion`, `non_fast_forward`).
 
 ---
 
@@ -86,7 +86,7 @@ como única exceção.
 
 **⚠️ CRITICAL**: nenhum método de teste antes desta fase.
 
-- [ ] T003 Criar `src/test/java/br/com/marden/habitattio/ValidacaoPullRequestWorkflowTest.java` **sem métodos de teste**, só a infraestrutura: JUnit 5 puro, sem contexto Spring, sem Docker, imports explícitos e Javadoc curto em português citando `specs/004-pr-validation-ci/contracts/workflow-validacao-pr.md`. Helpers estáticos:
+- [X] T003 Criar `src/test/java/br/com/marden/habitattio/ValidacaoPullRequestWorkflowTest.java` **sem métodos de teste**, só a infraestrutura: JUnit 5 puro, sem contexto Spring, sem Docker, imports explícitos e Javadoc curto em português citando `specs/004-pr-validation-ci/contracts/workflow-validacao-pr.md`. Helpers estáticos:
   - (a) `CAMINHO = Path.of(".github/workflows/validacao-pr.yml")`, relativo à raiz do projeto, como o `ImagemContainerTest` faz com o `Dockerfile`.
   - (b) `texto()`: `Files.readString(CAMINHO)`, deixando a `NoSuchFileException` propagar (é o motivo esperado do vermelho).
   - (c) `workflow()`: `Map<String, Object>` de `new org.yaml.snakeyaml.Yaml().load(texto())`.
@@ -118,27 +118,27 @@ T004–T007 ficam no mesmo arquivo, `src/test/java/br/com/marden/habitattio/Vali
 Por isso nenhum deles é [P]. Um comportamento por método, estrutura AAA e mensagens de asserção em
 português.
 
-- [ ] T004 [US1] Testes de gatilho:
+- [X] T004 [US1] Testes de gatilho:
   - `deveDispararSomenteEmPullRequest` (W1): o conjunto de chaves de `gatilhos()` é exatamente `{"pull_request"}`. Isso exclui `push`, `pull_request_target`, `workflow_dispatch` e `schedule`.
   - `deveValidarSomentePullRequestComAlvoMain` (W2): `gatilhos().pull_request.branches` é exatamente `List.of("main")`.
   - `deveRevalidarANovosCommitsEReabertura` (W3): `pull_request.types` está ausente ou contém `opened`, `synchronize` e `reopened`.
-- [ ] T005 [US1] Testes de segurança:
+- [X] T005 [US1] Testes de segurança:
   - `deveTerPermissaoSomenteDeLeitura` (W4): `workflow().permissions` é exatamente `Map.of("contents", "read")`.
   - `deveNaoUsarSegredos` (W5): `texto()` não contém `secrets.`.
   - `deveFixarAcoesPorSha` (W15): todo `uses` dos passos casa com `^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}$`, e há ao menos um.
   - `deveNaoPersistirCredenciais` (W10, 2ª parte): `passoQueUsa("actions/checkout").with.persist-credentials` é `Boolean.FALSE`.
-- [ ] T006 [US1] Testes da forma do job:
+- [X] T006 [US1] Testes da forma do job:
   - `deveTerUmUnicoJobComNomeEstavel` (W6, que também atende à US2): as chaves de `jobs` são exatamente `{"validar"}`, `job().name` é `"validar"` e não existe `strategy`.
   - `deveRodarEmMaquinaLinuxDeVersaoFixa` (W7): `runs-on` é `"ubuntu-24.04"`.
   - `deveTerTetoDeDuracao` (W8): `timeout-minutes` é `Integer` entre 1 e 60, inclusive.
   - `deveCancelarValidacaoAnteriorDoMesmoPr` (W9): `concurrency.group` (String) contém `github.event.pull_request.number`, e `concurrency.cancel-in-progress` é `Boolean.TRUE`. A `concurrency` pode estar no topo ou no job; o teste aceita as duas posições.
   - `deveReprovarAoPrimeiroPassoQueFalhar` (W16): nem o job nem nenhum passo tem `continue-on-error` igual a `true`.
-- [ ] T007 [US1] Testes do build:
+- [X] T007 [US1] Testes do build:
   - `deveValidarOEstadoCombinadoComMain` (W10, 1ª parte): o passo de `actions/checkout` não tem `with.ref`.
   - `deveUsarJava25` (W11): `passoQueUsa("actions/setup-java").with` tem `distribution` igual a `"temurin"` e `String.valueOf(java-version)` igual a `"25"`.
   - `deveRodarSuiteCompletaEEmpacotarPeloWrapper` (W12): existe passo com `run` contendo `./mvnw` e a palavra `verify`. Nenhum `run` contém `-DskipTests`, `-Dmaven.test.skip`, `-Dtest=`, `-Dgroups`, `-DexcludedGroups`, ` -fae`, ` -fn`, `--fail-at-end` nem `--fail-never`.
   - `deveReprovarQuandoAlgumTesteForPulado` (W13): `indiceDoPassoQueRoda("VerificarTestesPulados")` é maior que `indiceDoPassoQueRoda("./mvnw")`, ambos ≥ 0.
-- [ ] T008 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/VerificarTestesPuladosTest.java` (contrato W17): JUnit 5 puro, sem Spring, imports explícitos, Javadoc curto citando o contrato. A infraestrutura são helpers:
+- [X] T008 [P] [US1] Criar `src/test/java/br/com/marden/habitattio/VerificarTestesPuladosTest.java` (contrato W17): JUnit 5 puro, sem Spring, imports explícitos, Javadoc curto citando o contrato. A infraestrutura são helpers:
   - `executar(Path diretorio)`: roda `new ProcessBuilder(<JVM corrente>, Path.of(".github/scripts/VerificarTestesPulados.java").toAbsolutePath().toString(), diretorio.toString())`. A JVM corrente é `ProcessHandle.current().info().command().orElseThrow()`. O `ProcessBuilder` usa `redirectErrorStream(true)`. O helper espera até 60 s e devolve o `record Resultado(int saida, String texto)`.
   - `relatorio(Path dir, String nome, int pulados)`: escreve `<testsuite name="x" tests="1" failures="0" errors="0" skipped="N"/>` em `dir/nome`.
 
@@ -149,7 +149,7 @@ português.
   - `deveReprovarQuandoDiretorioNaoExiste`: `tempDir.resolve("inexistente")` → `saida == 1` e o `texto` contém `Nenhum relatório de teste encontrado`.
 
   **Toda reprovação verifica a mensagem**, não só a saída.
-- [ ] T009 [US1] Rodar `./mvnw test -Dtest='ValidacaoPullRequestWorkflowTest,VerificarTestesPuladosTest'` e ver **todos** falharem pelo motivo esperado (quickstart Q1):
+- [X] T009 [US1] Rodar `./mvnw test -Dtest='ValidacaoPullRequestWorkflowTest,VerificarTestesPuladosTest'` e ver **todos** falharem pelo motivo esperado (quickstart Q1):
   - T004–T007 com `NoSuchFileException` em `.github/workflows/validacao-pr.yml`;
   - T008 porque o verificador não existe: a aprovação sai com ≠0 e as reprovações não trazem a mensagem esperada.
 
@@ -157,7 +157,7 @@ português.
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Criar `.github/scripts/VerificarTestesPulados.java`. É um programa Java de arquivo único, só com JDK (`java.nio.file`, `javax.xml.parsers`), com um comentário de cabeçalho em português apontando para o contrato W17. O comportamento:
+- [X] T010 [US1] Criar `.github/scripts/VerificarTestesPulados.java`. É um programa Java de arquivo único, só com JDK (`java.nio.file`, `javax.xml.parsers`), com um comentário de cabeçalho em português apontando para o contrato W17. O comportamento:
   - O argumento único é o diretório de relatórios.
   - Lista os `TEST-*.xml` do diretório.
   - Se o diretório não existir ou não houver nenhum `TEST-*.xml`, imprime `Nenhum relatório de teste encontrado em <dir>` e sai com 1.
@@ -166,7 +166,7 @@ português.
   - Caso contrário, sai com 0.
 
   Rodar `./mvnw test -Dtest=VerificarTestesPuladosTest` até ficar verde. Se só passar mudando o teste, o problema é o verificador.
-- [ ] T011 [US1] Criar `.github/workflows/validacao-pr.yml` (research R1–R11), na ordem:
+- [X] T011 [US1] Criar `.github/workflows/validacao-pr.yml` (research R1–R11), na ordem:
   - **Topo do workflow**:
     - `name: Validação de PR`.
     - `on: pull_request` com `branches: [main]` e sem `types`.
@@ -186,8 +186,8 @@ português.
     4. `name: Nenhum teste pulado`, `run: java .github/scripts/VerificarTestesPulados.java target/surefire-reports`.
 
   Sem `continue-on-error` em lugar nenhum. Nenhum segredo. Um comentário curto no topo aponta para `docs/validacao-pr.md` e `specs/004-pr-validation-ci/`.
-- [ ] T012 [US1] Rodar `./mvnw test -Dtest='ValidacaoPullRequestWorkflowTest,VerificarTestesPuladosTest'` e ver T004–T008 verdes (quickstart Q2). Se algum só passar mudando o teste, o problema é o workflow ou o verificador: corrija-os, não o teste.
-- [ ] T013 [US1] Rodar `./mvnw -B verify` completo, com Docker (quickstart Q3), e em seguida `java .github/scripts/VerificarTestesPulados.java target/surefire-reports`. Esperado: verde e saída 0. Registrar o total de testes e a duração local.
+- [X] T012 [US1] Rodar `./mvnw test -Dtest='ValidacaoPullRequestWorkflowTest,VerificarTestesPuladosTest'` e ver T004–T008 verdes (quickstart Q2). Se algum só passar mudando o teste, o problema é o workflow ou o verificador: corrija-os, não o teste.
+- [X] T013 [US1] Rodar `./mvnw -B verify` completo, com Docker (quickstart Q3), e em seguida `java .github/scripts/VerificarTestesPulados.java target/surefire-reports`. Esperado: verde e saída 0. Registrar o total de testes e a duração local.
 
 **Checkpoint**: US1 completa localmente. O MVP já pode ir para PR (T021) mesmo sem a US3.
 
@@ -202,22 +202,22 @@ artefato `relatorios-de-teste` identifica o teste e a mensagem (Q6, T024).
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T014 [US3] Em `src/test/java/br/com/marden/habitattio/ValidacaoPullRequestWorkflowTest.java`, adicionar `deveAnexarRelatoriosDeTesteQuandoFalhar` (W14). `passoQueUsa("actions/upload-artifact")` existe e cumpre:
+- [X] T014 [US3] Em `src/test/java/br/com/marden/habitattio/ValidacaoPullRequestWorkflowTest.java`, adicionar `deveAnexarRelatoriosDeTesteQuandoFalhar` (W14). `passoQueUsa("actions/upload-artifact")` existe e cumpre:
   - `if` é `"failure()"` ou `"${{ failure() }}"`;
   - `with.name` é `"relatorios-de-teste"`;
   - `with.path` contém `target/surefire-reports`;
   - `with.retention-days` é `14`;
   - `with.if-no-files-found` é `"ignore"`.
-- [ ] T015 [US3] Rodar `./mvnw test -Dtest=ValidacaoPullRequestWorkflowTest#deveAnexarRelatoriosDeTesteQuandoFalhar` e ver falhar por **asserção** (passo de upload ausente), não por arquivo ausente. Registrar. A partir daqui, T014 é read-only.
+- [X] T015 [US3] Rodar `./mvnw test -Dtest=ValidacaoPullRequestWorkflowTest#deveAnexarRelatoriosDeTesteQuandoFalhar` e ver falhar por **asserção** (passo de upload ausente), não por arquivo ausente. Registrar. A partir daqui, T014 é read-only.
 
 ### Implementation for User Story 3
 
-- [ ] T016 [US3] Em `.github/workflows/validacao-pr.yml`, adicionar como último passo, com o `with` em forma de bloco:
+- [X] T016 [US3] Em `.github/workflows/validacao-pr.yml`, adicionar como último passo, com o `with` em forma de bloco:
   - `name: Relatórios de teste`;
   - `if: failure()`;
   - `uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2`;
   - `with`: `name: relatorios-de-teste`, `path: target/surefire-reports/`, `retention-days: 14`, `if-no-files-found: ignore`.
-- [ ] T017 [US3] Rodar `./mvnw test -Dtest='ValidacaoPullRequestWorkflowTest,VerificarTestesPuladosTest'` e ver todos os 21 métodos verdes: os 17 do workflow (T004–T007 e T014) e os 4 do verificador (T008).
+- [X] T017 [US3] Rodar `./mvnw test -Dtest='ValidacaoPullRequestWorkflowTest,VerificarTestesPuladosTest'` e ver todos os 21 métodos verdes: os 17 do workflow (T004–T007 e T014) e os 4 do verificador (T008).
 
 **Checkpoint**: workflow e verificador completos, com contrato W1–W17 coberto.
 
@@ -227,7 +227,7 @@ artefato `relatorios-de-teste` identifica o teste e a mensagem (Q6, T024).
 
 **Purpose**: documentação (FR-017, entrega a parte documental da US2), suíte completa e PR.
 
-- [ ] T018 [P] Criar `docs/validacao-pr.md`, em português e no estilo do `docs/container.md`, com estas seções:
+- [X] T018 [P] Criar `docs/validacao-pr.md`, em português e no estilo do `docs/container.md`, com estas seções:
   - (1) **O que roda**: gatilho (PR com alvo `main`; abrir, reabrir, novo commit; inclusive draft), merge ref com `main`, `ubuntu-24.04`, Temurin 25, `./mvnw -B verify` (o "build completo" do AGENTS.md) e o verificador de testes pulados.
   - (2) **Como ler uma falha**: "Details" do check `validar` → log, mais o artefato `relatorios-de-teste` (14 dias). Uma falha de compilação não gera artefato.
   - (3) **Re-run**: "Re-run jobs" ou `gh run rerun <id>`. Uma falha de infraestrutura reprova, nunca aprova.
@@ -235,14 +235,14 @@ artefato `relatorios-de-teste` identifica o teste e a mensagem (Q6, T024).
   - (5) **Segurança**: token só de leitura, sem segredos, PRs de fork, ações fixadas por SHA. Inclui como atualizar: `gh api repos/<ação>/releases/latest` e `gh api repos/<ação>/commits/<tag> --jq .sha`, atualizando o SHA e o comentário de versão juntos. O `ValidacaoPullRequestWorkflowTest` exige o SHA.
   - (6) **Tornar obrigatório (passo do dono)**: *Settings → Rules → Rulesets → `block-main`* → **Require status checks to pass** → adicionar `validar` (GitHub Actions). Opcionalmente, **Require a pull request before merging**. Registrar o achado: hoje o `block-main` só bloqueia exclusão e force-push (research R13).
   - (7) **Por que um `@Disabled` reprova o PR** (research R6): como rodar o mesmo verificador localmente (`java .github/scripts/VerificarTestesPulados.java target/surefire-reports`).
-- [ ] T019 [P] Em `AGENTS.md` §1, logo após a subseção "Imagem de container", adicionar a subseção `### Validação de PR (CI)`. Em no máximo 6 linhas, ela diz que:
+- [X] T019 [P] Em `AGENTS.md` §1, logo após a subseção "Imagem de container", adicionar a subseção `### Validação de PR (CI)`. Em no máximo 6 linhas, ela diz que:
   - todo PR com alvo `main` roda o check obrigatório `validar` (`./mvnw -B verify` sobre o merge com `main`, com Docker, no GitHub Actions);
   - um teste pulado reprova o PR, e o verificador pode ser rodado localmente;
   - os relatórios de falha ficam no artefato do run;
   - o `ValidacaoPullRequestWorkflowTest` e o `VerificarTestesPuladosTest` protegem o contrato.
 
   Fecha com o link para [`docs/validacao-pr.md`](docs/validacao-pr.md). Nenhuma outra seção do AGENTS.md muda. Em particular, a frase do `.dockerignore` como única exceção ao TDD continua verdadeira.
-- [ ] T020 Rodar `./mvnw test` completo com Docker e registrar total, falhas (0) e pulados (0). Conferir com `git status`/`git diff --stat` que só mudaram estes arquivos:
+- [X] T020 Rodar `./mvnw test` completo com Docker e registrar total, falhas (0) e pulados (0). Conferir com `git status`/`git diff --stat` que só mudaram estes arquivos:
   - `.github/workflows/validacao-pr.yml`;
   - `.github/scripts/VerificarTestesPulados.java`;
   - `src/test/java/br/com/marden/habitattio/ValidacaoPullRequestWorkflowTest.java`;
@@ -252,7 +252,7 @@ artefato `relatorios-de-teste` identifica o teste e a mensagem (Q6, T024).
   - `specs/004-pr-validation-ci/tasks.md`.
 
   Em particular, `pom.xml`, `src/main/`, o `Dockerfile` e os testes existentes ficam intactos.
-- [ ] T021 Commitar e fazer push de `004-pr-validation-ci` e abrir um PR **draft** com alvo `main` (`gh pr create --draft --base main --head 004-pr-validation-ci`). A descrição do PR cita a spec e lista o passo manual do ruleset (T028). Anotar o número do PR para a Phase 6.
+- [X] T021 Commitar e fazer push de `004-pr-validation-ci` e abrir um PR **draft** com alvo `main` (`gh pr create --draft --base main --head 004-pr-validation-ci`). A descrição do PR cita a spec e lista o passo manual do ruleset (T028). Anotar o número do PR para a Phase 6.
 
 ---
 
