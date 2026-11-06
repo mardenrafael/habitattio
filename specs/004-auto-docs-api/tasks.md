@@ -287,3 +287,12 @@ descrição incompleta (a guarda chega na US4).
 - Anotações só em `adapters/`; `domain/`, `application/`, `ports/` intocados (T045).
 - O arquivo `docs/api/openapi.yaml` nunca é editado à mão a partir de T019.
 - "Try it out" com CSRF é desejável, não obrigatório (spec, Assumptions).
+
+---
+
+## Phase 8: Convergence
+
+- [ ] T048 Acrescentar a `src/test/java/br/com/marden/habitattio/DescricaoApiTest.java` o teste novo `deveTerExemploNaRespostaDeConsultarImovel` (resposta 200 de `GET /imoveis/{id}` com exemplo), ver falhar e acrescentar o exemplo em `src/main/java/br/com/marden/habitattio/adapters/inbound/rest/ImovelController.java` per FR-006 (partial)
+- [ ] T049 Resolver a divergência de `DELETE /sessao`: anônimo com CSRF válido responde 204, mas `docs/api/openapi.yaml` e o contrato da feature 003 dizem 401. **Exige decisão do dono**: corrigir o código por `/speckit-bug-assess` (o FR-011 proíbe mudar comportamento nesta feature) ou descrever o 204 em `src/main/java/br/com/marden/habitattio/adapters/config/DocumentacaoApiConfiguration.java`, com teste novo, per FR-003 (partial)
+- [ ] T050 Obter a decisão do dono sobre `src/test/java/br/com/marden/habitattio/SaudeAplicacaoTest.java` (`naoDeveExporOutrosEndpointsOperacionais` espera 404 e recebe 401, com ou sem esta feature) e deixar `./mvnw test` verde; o teste só muda com decisão explícita (AGENTS §3) per plan: Definition of Done (partial)
+- [ ] T051 Acrescentar a `src/test/java/br/com/marden/habitattio/DescricaoApiTest.java` o teste novo `deveExigirValorSugeridoEstritamentePositivo` (`exclusiveMinimum` 0 em `CadastrarImovelRequest.valorSugerido`), ver falhar e definir o valor no customizer de `src/main/java/br/com/marden/habitattio/adapters/config/DocumentacaoApiConfiguration.java` per data-model: restrições dos esquemas (partial)
