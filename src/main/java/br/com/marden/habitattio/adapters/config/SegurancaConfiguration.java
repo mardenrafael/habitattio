@@ -29,6 +29,7 @@ public class SegurancaConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/proprietarios").permitAll()
                         .requestMatchers(HttpMethod.POST, "/sessao").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/**").permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/sessao")
