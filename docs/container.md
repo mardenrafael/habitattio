@@ -20,8 +20,8 @@ O que a imagem é, em resumo:
   `gcr.io/distroless/java25-debian13:nonroot`, só com o JRE, sem shell, `curl` ou `wget`;
 - as duas bases fixadas por digest;
 - processo com uid **65532** (`nonroot`), nunca root;
-- jar extraído nas 4 camadas do Spring Boot (`dependencies`, `spring-boot-loader`,
-  `snapshot-dependencies`, `application`);
+- jar extraído pelas camadas do Spring Boot (`dependencies`, `spring-boot-loader` e, num só passo,
+  `snapshot-dependencies` e `application`);
 - plataforma `linux/amd64`;
 - nenhum segredo dentro: toda configuração entra por variável de ambiente.
 
@@ -45,7 +45,7 @@ docker build -t habitattio:local .   # BuildKit; não roda testes
   fora por construção. O `Dockerfile` precisa estar na lista, porque o docker-java, usado pelo
   teste, recusa construir se o próprio `Dockerfile` for excluído.
 - Rebuild depois de mudar só código reaproveita a camada de dependências (passo
-  `dependency:go-offline` e as três primeiras camadas da aplicação vêm do cache).
+  `dependency:go-offline` e as duas primeiras camadas da aplicação vêm do cache).
 
 ## Execução
 

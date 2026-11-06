@@ -10,7 +10,7 @@ item tem o identificador do teste ou da verificação que o garante.
 | C1 | `docker build -t <ref> .` na raiz do repositório produz a imagem, sem rodar testes | quickstart V1; `ImagemContainerTest` (build via Testcontainers) |
 | C2 | O Dockerfile só usa instruções comuns ao BuildKit e ao builder clássico. O operador constrói com BuildKit e o teste no clássico | quickstart V1 (os dois builds); `ImagemContainerTest` (clássico) |
 | C3 | As bases são fixadas por digest (`@sha256:`) | revisão do Dockerfile; quickstart V7 |
-| C4 | Depois de mudar só `src/`, o rebuild reaproveita o passo de dependências e as 3 primeiras camadas da aplicação | quickstart V5 |
+| C4 | Depois de mudar só `src/`, o rebuild reaproveita o passo de dependências e as 2 primeiras camadas da aplicação | quickstart V5 |
 | C5 | O contexto de build só contém `mvnw`, `pom.xml`, `.mvn/`, `src/` e `docker/` | quickstart V6 (`.dockerignore` em lista de permissão; **exceção de TDD** decidida pelo dono, só verificação manual) |
 | C6 | `--build-arg VERSION=… --build-arg REVISION=…` viram os labels OCI `version` e `revision` | `deveRegistrarVersaoERevisaoNosLabels`; quickstart V7 |
 | C7 | A imagem é `linux/amd64` | `deveSerConstruidaParaLinuxAmd64`; quickstart V7 |
