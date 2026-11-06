@@ -111,7 +111,7 @@ itens UNVERIFIED) e as escolhas de desenho do plan. Fontes conferidas nesta etap
 ## R7 — Exposição por modo (FR-010)
 
 - **Decision**:
-  - Cadeia de segurança: `permitAll` para `GET /v3/api-docs`, `/v3/api-docs/**`,
+  - Cadeia de segurança: `permitAll` para `GET /v3/api-docs`, `/v3/api-docs.yaml`, `/v3/api-docs/**`,
     `/swagger-ui.html` e `/swagger-ui/**` em `SegurancaConfiguration`, valendo nos dois modos.
   - `application-prod.properties`: `springdoc.api-docs.enabled=false`,
     `springdoc.swagger-ui.enabled=false` e **`spring.web.resources.add-mappings=false`**. Sem os

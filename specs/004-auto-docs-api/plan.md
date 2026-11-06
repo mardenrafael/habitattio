@@ -96,7 +96,7 @@ src/main/java/br/com/marden/habitattio/
     │   ├── DocumentacaoApiConfiguration.java      # NOVO: bean OpenAPI (info+guia, servers, securitySchemes,
     │   │                                          #   respostas/esquemas compartilhados) + OpenApiCustomizer
     │   │                                          #   (POST/DELETE /sessao, GET /actuator/health)
-    │   └── SegurancaConfiguration.java            # + permitAll GET /v3/api-docs, /v3/api-docs/**, /swagger-ui.html, /swagger-ui/**
+    │   └── SegurancaConfiguration.java            # + permitAll GET /v3/api-docs, /v3/api-docs.yaml, /v3/api-docs/**, /swagger-ui.html, /swagger-ui/**
     └── inbound/rest/
         ├── ProprietarioController.java            # + @Tag/@Operation/@ApiResponse/@SecurityRequirement; @Schema nos records
         ├── SessaoController.java                  # idem
