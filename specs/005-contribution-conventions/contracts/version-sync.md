@@ -21,6 +21,7 @@ Cobre FR-019 a FR-028. Regras detalhadas em [data-model.md](../data-model.md) e 
 | write | 0 | `outcome=write from=<base> to=<next> commits=<n>` | altera `pom.xml`, commita, faz push |
 | mark (promoção 1.0.0) | 0 | `outcome=mark version=1.0.0` | commit vazio, push |
 | fail | 1 | `outcome=fail reason=<invalid-version\|manual-version-change\|push-rejected>` + detalhe no stderr | nenhum |
+| erro inesperado (argumento desconhecido, falha de git fora dos casos acima) | 1 | `outcome=fail reason=error` + mensagem no stderr | nenhum |
 
 `--dry-run`: calcula e imprime, sem commitar nem fazer push (usado nos testes e no quickstart).
 `--no-push`: commita localmente, sem push (testes). `--repo`: diretório do repositório (padrão: cwd).

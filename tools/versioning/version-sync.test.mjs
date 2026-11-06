@@ -282,3 +282,15 @@ test('S18 deve falhar de forma visível quando o remote recusa o push', () => {
   assert.equal(result.code, 1);
   assert.equal(git(base, ['--git-dir', remote, 'log', '-1', '--format=%B', 'main']), syncMessage('0.4.2'));
 });
+
+test('deve falhar com reason=error para argumento desconhecido', () => {
+  const repo = newRepo('0.4.2');
+  commit(repo, 'fix(x): a');
+
+  const result = sync(repo, '--bogus');
+
+  assert.equal(result.line, 'outcome=fail reason=error');
+  assert.equal(result.code, 1);
+  assert.match(result.stderr, /unknown argument: --bogus/);
+  assert.equal(lastMessage(repo), 'fix(x): a');
+});
