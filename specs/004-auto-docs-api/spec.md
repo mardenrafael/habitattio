@@ -35,6 +35,8 @@ concreto, onde fica o texto explicativo e como o teste sobe a aplicação ficam 
 
 - Q: A página de documentação e a descrição bruta ficam disponíveis no modo produção? → A: Não. Ficam fechadas em `prod` para qualquer pessoa, autenticada ou não; só o modo rápido as expõe (FR-010).
 - Q (do plan, R7): Os arquivos estáticos da Swagger UI podem continuar alcançáveis em `prod` por quem está autenticado (resíduo do comportamento padrão)? → A: Não. Em `prod` nenhum arquivo da Swagger UI fica online, para ninguém; a descrição existe só no repositório (`docs/api/openapi.yaml`) (FR-010).
+- Q (do converge, T049): `DELETE /sessao` anônimo com CSRF válido responde 204, mas a descrição e o contrato da feature 003 dizem 401. O que fazer? → A: Aceito, sem mexer agora: código e descrição ficam como estão, e a divergência é conhecida (exceção a FR-003).
+- Q (do converge, T050): `SaudeAplicacaoTest.naoDeveExporOutrosEndpointsOperacionais` falha desde a feature 003 (espera 404, recebe 401). O que fazer? → A: O teste não precisa existir; foi removido.
 - Q: Depois desta feature, qual é a referência do contrato HTTP? → A: A descrição gerada (`docs/api/openapi.yaml`). `specs/003-.../contracts/api-http.md` vira histórico da feature 003 (FR-012).
 
 ## User Scenarios & Testing *(mandatory)*
