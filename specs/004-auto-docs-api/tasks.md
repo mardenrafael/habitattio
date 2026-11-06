@@ -189,13 +189,13 @@ teste remove/altera **uma** coisa numa cópia; a gravação usa `@TempDir`.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T041 [P] Acrescentar no topo de `specs/003-proprietario-login-isolamento/contracts/api-http.md` um aviso: histórico da feature 003; a referência do contrato HTTP é `docs/api/openapi.yaml`, gerado pela suíte (`./mvnw test`) a partir da feature 004 (FR-012)
-- [ ] T042 [P] Atualizar a seção API de `README.md`: `docs/api/openapi.yaml` é gerado (não editar), é a referência do contrato, regenera com `./mvnw test`; Swagger UI em `http://localhost:8080/swagger-ui.html` só no modo rápido; em `prod` nada da documentação fica online; a coleção Bruno continua manual
-- [ ] T043 [P] Atualizar `AGENTS.md`: §1 — regenerar a descrição é rodar `./mvnw test` (`DescricaoApiTest`), URLs da UI no modo rápido; §9 — springdoc-openapi entrou por acordo na feature 004; documentação (`/v3/api-docs`, `/swagger-ui`) só no modo rápido, desligada em `prod` com recursos estáticos desligados
-- [ ] T044 Rodar `/speckit-constitution` com a emenda PATCH 1.0.2 → **1.0.3** (Governance (b)), arquivo `.specify/memory/constitution.md`: novo bloco no Sync Impact Report (feature 004, task T044; springdoc acrescentado à stack com acordo do dono; seções modificadas: Stack Tecnológico e Restrições e lista do Princípio IV; AGENTS.md §1/§9 sincronizados em T043); acrescentar à lista da stack "springdoc-openapi (descrição da API e Swagger UI só no modo rápido; desligado em `prod`, acordado na feature 004)" e à lista do Princípio IV; atualizar a linha `**Version**: 1.0.3 | ... | **Last Amended**: 2026-11-02`
-- [ ] T045 Conferir a arquitetura: `grep -rn "io.swagger\|springdoc" src/main/java/br/com/marden/habitattio/domain src/main/java/br/com/marden/habitattio/application src/main/java/br/com/marden/habitattio/ports` não retorna nada (FR-013)
+- [X] T041 [P] Acrescentar no topo de `specs/003-proprietario-login-isolamento/contracts/api-http.md` um aviso: histórico da feature 003; a referência do contrato HTTP é `docs/api/openapi.yaml`, gerado pela suíte (`./mvnw test`) a partir da feature 004 (FR-012)
+- [X] T042 [P] Atualizar a seção API de `README.md`: `docs/api/openapi.yaml` é gerado (não editar), é a referência do contrato, regenera com `./mvnw test`; Swagger UI em `http://localhost:8080/swagger-ui.html` só no modo rápido; em `prod` nada da documentação fica online; a coleção Bruno continua manual
+- [X] T043 [P] Atualizar `AGENTS.md`: §1 — regenerar a descrição é rodar `./mvnw test` (`DescricaoApiTest`), URLs da UI no modo rápido; §9 — springdoc-openapi entrou por acordo na feature 004; documentação (`/v3/api-docs`, `/swagger-ui`) só no modo rápido, desligada em `prod` com recursos estáticos desligados
+- [X] T044 Rodar `/speckit-constitution` com a emenda PATCH 1.0.2 → **1.0.3** (Governance (b)), arquivo `.specify/memory/constitution.md`: novo bloco no Sync Impact Report (feature 004, task T044; springdoc acrescentado à stack com acordo do dono; seções modificadas: Stack Tecnológico e Restrições e lista do Princípio IV; AGENTS.md §1/§9 sincronizados em T043); acrescentar à lista da stack "springdoc-openapi (descrição da API e Swagger UI só no modo rápido; desligado em `prod`, acordado na feature 004)" e à lista do Princípio IV; atualizar a linha `**Version**: 1.0.3 | ... | **Last Amended**: 2026-11-02`
+- [X] T045 Conferir a arquitetura: `grep -rn "io.swagger\|springdoc" src/main/java/br/com/marden/habitattio/domain src/main/java/br/com/marden/habitattio/application src/main/java/br/com/marden/habitattio/ports` não retorna nada (FR-013)
 - [ ] T046 Executar `specs/004-auto-docs-api/quickstart.md` cenários 1, 2 e 4 (incluindo o fluxo no API client e o "Try it out" opcional, registrando se funcionou ou se a UI fica só de leitura)
-- [ ] T047 Rodar `./mvnw test` completo (com Docker) e registrar no relatório: total de testes, se os de integração rodaram, e que nenhum teste existente foi alterado. Commitar `docs/api/openapi.yaml` gerado junto com o código
+- [X] T047 Rodar `./mvnw test` completo (com Docker) e registrar no relatório: total de testes, se os de integração rodaram, e que nenhum teste existente foi alterado. Commitar `docs/api/openapi.yaml` gerado junto com o código
 
 ---
 
@@ -258,6 +258,28 @@ descrição incompleta (a guarda chega na US4).
 2. US3: UI no modo rápido e `prod` fechado (pode vir antes, em paralelo).
 3. US4: guarda contra descrição incompleta.
 4. Polish: referência do contrato, README, AGENTS, constitution, suíte completa.
+
+## Resultado da implementação (2026-11-05)
+
+- **T047**: `./mvnw test` com Docker: 231 testes, 230 passam, 1 falha. A falha é
+  `SaudeAplicacaoTest.naoDeveExporOutrosEndpointsOperacionais` (espera 404, recebe 401) e **não
+  vem desta feature**: falha igual sem o springdoc. Nenhum teste existente foi alterado; a decisão
+  sobre esse teste é do dono (AGENTS §3).
+- **T046 aberta**: cenários 1, 2 e 4 executados, com o fluxo do guia rodado por `curl` e cookie jar
+  (todos os status conforme o contrato; YAML servido igual ao arquivo). Faltam, à mão: importar
+  o arquivo num API client real (SC-006) e o "Try it out" no navegador (opcional).
+- **Desvios do texto das tarefas**:
+  - T015/T017: "sessão E csrf" vem do `security` global do bean `OpenAPI`, porque
+    `@SecurityRequirement` repetido gera alternativas ("OU"). Os testes comparam a segurança
+    efetiva; `POST /imoveis`, inativação e `DELETE /sessao` não têm `security` próprio.
+  - T025: `EntrarForm` e `Saude` são registrados no customizer, não no bean: o springdoc descarta
+    esquemas sem referência antes dos customizers.
+  - T031: a regra inclui `/v3/api-docs.yaml`, que `/v3/api-docs/**` não cobre.
+  - T006: `deveUsarOpenApi31` também foi visto vermelho por mutação (`openapi_3_0`).
+- **Limitação aceita**: `valorSugerido` sai com `minimum: 0` e a descrição "estritamente positivo",
+  sem `exclusiveMinimum`: o swagger-core 2.2.55 não expressa `exclusiveMinimum: 0` por anotação.
+  Os exemplos perdem zeros à direita (`1500.0000` vira `1500.0`); a descrição do campo explica a
+  escala.
 
 ## Notes
 

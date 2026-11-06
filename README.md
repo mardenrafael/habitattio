@@ -125,8 +125,14 @@ O modo produção (`SPRING_PROFILES_ACTIVE=prod` + `SPRING_DATASOURCE_*`), a sa�
 ## API
 
 A especificação OpenAPI 3.1 está em [`docs/api/openapi.yaml`](docs/api/openapi.yaml): importe-a
-no Bruno, Insomnia, Postman ou Swagger UI para testar. O contrato de referência continua sendo o
-da spec ([`api-http.md`](specs/003-proprietario-login-isolamento/contracts/api-http.md)).
+no Bruno, Insomnia ou Postman para testar. Esse arquivo é a referência do contrato HTTP e é
+**gerado** a partir do código: não edite à mão. Para regenerá-lo, rode `./mvnw test`
+(`DescricaoApiTest`); um `git diff` nele mostra o que mudou no contrato.
+
+Com a aplicação rodando no modo rápido, a documentação navegável fica em
+<http://localhost:8080/swagger-ui.html> e a descrição bruta em
+<http://localhost:8080/v3/api-docs.yaml>. Em produção nada disso fica online: a descrição existe
+só no repositório. A coleção Bruno (`docs/api/habitattion-api/`) continua manual.
 
 | Método e rota | O quê | Autenticação |
 |---|---|---|
