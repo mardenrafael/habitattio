@@ -1,5 +1,23 @@
 <!--
 Sync Impact Report
+Version change: 1.0.2 → 1.0.3 (PATCH)
+Rationale: amendment from feature 005-contribution-conventions (task T027, analyze F1). The
+repository gained tooling outside the Maven build: Node >= 20 running @commitlint/cli (pinned,
+via npx) in the commit-msg hook and the tools/ scripts, and a GitHub Actions workflow that syncs
+the project version on main. The owner agreed to the commitlint exception on 2026-11-02. The
+"Stack Tecnológico e Restrições" list now describes it; no principle, MUST rule or governance
+procedure changes, so PATCH (same treatment as Flyway, Actuator and Spring Security).
+Modified principles: none
+Modified sections: Stack Tecnológico e Restrições (repository tooling bullet added)
+Added sections: none
+Removed sections: none
+Templates requiring follow-up: none (.specify/templates/* do not reference the stack list)
+Related sync: AGENTS.md §1 (activation and tooling tests), §9 (commitlint exception) and §10
+(contribution conventions) updated in T008/T016/T025; §4 version reference bumped to v1.0.3 in
+the same change set.
+Deferred items: none
+
+Previous report — 1.0.1 → 1.0.2 (PATCH, two concurrent amendments merged on main):
 Version change: 1.0.1 → 1.0.2 (PATCH)
 Rationale: amendment from feature 003-proprietario-login-isolamento (task T066). Spring Security
 was added to the stack with explicit owner agreement (Q19 of the feature 003 clarifications).
@@ -143,6 +161,10 @@ Testcontainers (PostgreSQL + Redis, versões fixas) para testes de integração.
   Spring e o núcleo da aplicação. Todo novo adapter/caso de uso ganha seu `@Bean` ali.
 - Alteração de `.specify/scripts/` ou `.specify/templates/` está fora do escopo de qualquer
   tarefa de feature.
+- Tooling de repositório (fora do build Maven): Node ≥ 20 para o hook `commit-msg`
+  (`@commitlint/cli` em versão fixa via `npx`, acordo do dono em 2026-11-02) e para `tools/`;
+  GitHub Actions para a sincronização de versão na `main`. Esse tooling não entra no `pom.xml`
+  nem no runtime da aplicação.
 
 ## Fluxo de Desenvolvimento e Definition of Done
 
@@ -186,4 +208,4 @@ consistência.
   não-negociáveis; `AGENTS.md` documenta como aplicá-los no dia a dia — os dois MUST permanecer
   consistentes.
 
-**Version**: 1.0.2 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-10-30
+**Version**: 1.0.3 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-02

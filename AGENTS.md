@@ -19,6 +19,8 @@ Sempre use o wrapper (`./mvnw`), nunca um `mvn` global.
 ./mvnw test -Dtest=FaturaTest#deveMarcarComoPagaQuandoValorIntegral   # um método
 ./mvnw spring-boot:run               # sobe a app (H2 em memória, porta 8080)
 ./mvnw verify                        # build completo
+git config core.hooksPath .githooks  # ativa a barreira de commit (uma vez por clone, ver §10)
+node --test "tools/**/*.test.mjs"    # testes do tooling de repositório (hook, versão)
 ```
 
 Os testes de integração usam **Testcontainers** (PostgreSQL e Redis) — exigem Docker rodando.
@@ -206,6 +208,9 @@ Fluxo para uma feature nova:
 5. `/speckit.analyze` — checa consistência entre spec, plan e tasks antes de codar.
 6. `/speckit.implement` — executa as tasks, em TDD.
 
+Para publicar as tasks como issues, `/speckit-taskstoissues` gera títulos `[NNN] TXXX: …` em
+inglês (ver §10).
+
 Regras de uso:
 
 - **Não implemente feature sem spec.** Se o pedido chega direto como código e é maior que um
@@ -216,7 +221,7 @@ Regras de uso:
   requisito — a spec é.
 - Correção de bug trivial, renomeação, ajuste de formatação: direto, sem spec.
 
-> A constitution (`.specify/memory/constitution.md`, v1.0.2) define os princípios
+> A constitution (`.specify/memory/constitution.md`, v1.0.3) define os princípios
 > não-negociáveis e prevalece em caso de conflito; este AGENTS.md documenta como aplicá-los no
 > dia a dia. Toda emenda da constitution sincroniza a seção correspondente daqui na mesma
 > mudança.
@@ -345,3 +350,112 @@ Relate o que foi verificado e o que não foi. Não afirme que algo passa sem ter
 - Não crie camada de abstração "para o futuro". YAGNI: porta se cria quando há um caso de uso
   que precisa dela.
 - Não altere nada em `.specify/scripts/` ou `.specify/templates/`.
+- Exceção acordada (2026-11-02, feature 005): `@commitlint/cli` **21.2.4**, executado via `npx`
+  pelo hook `commit-msg`, **fora** do `pom.xml`. Atualizar a versão é um commit
+  `build(commitlint): …` que muda `COMMITLINT_VERSION` em `.githooks/commit-msg`.
+
+---
+
+## 10. Contribuição: commits, PRs, issues e versão
+
+Commits, PRs e issues são escritos em **inglês**. Specs, docs, `tasks.md` e o domínio continuam
+em português. Contratos completos em `specs/005-contribution-conventions/contracts/`.
+
+### Commits
+
+Formato (Conventional Commits):
+
+```text
+<type>(<scope>)[!]: <description>
+
+[body]
+
+[footers]
+```
+
+- `type`: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+  (minúsculo).
+- `scope`: **obrigatório**, livre (ex.: `fatura`, `persistence`, `specs`, `agents`).
+- Breaking change: `!` antes dos dois-pontos e/ou rodapé `BREAKING CHANGE: <texto>`.
+- Cabeçalho com no máximo 100 caracteres; descrição não vazia.
+- Merges usam a mensagem padrão do git (`Merge branch '…'`, `Merge pull request #…`). Nunca
+  `merge: …`.
+- **Proibido `--no-verify`.** Uma recusa do hook se corrige reescrevendo a mensagem, nunca
+  contornando a barreira.
+- Commits feitos no github.com (editor web, sugestões de revisão, merge) também seguem a
+  convenção: a barreira não os vê. Ao mesclar um PR na web, mantenha a mensagem padrão do
+  GitHub.
+
+Exemplos: `feat(fatura): add late fee calculation`, `fix(contrato)!: clamp due day to month end`.
+
+### Ativação da barreira
+
+```bash
+git config core.hooksPath .githooks   # uma vez por clone; vale para todos os worktrees
+git config --get core.hooksPath       # verificação: imprime .githooks
+```
+
+O hook `.githooks/commit-msg` roda o commitlint (`commitlint.config.mjs`) via `npx` e exige
+Node ≥ 20. Se o Node faltar ou o commitlint não puder ser obtido (offline na primeira
+execução), o commit é **recusado** (fail closed). Instale o Node; não pule o hook.
+
+### Pull requests
+
+- **Título** no formato do commit, descrevendo a mudança inteira:
+  `feat(conventions): enforce commit format and sync version`.
+- **Corpo** com as cinco seções do `.github/pull_request_template.md`, nesta ordem e sem faltar
+  nenhuma: `## Summary`, `## Notable changes`, `## Breaking changes` (`None` se não houver),
+  `## Related` (spec/issue ou `None`), `## Verification` (o que rodou e o que não rodou).
+- Por CLI/MCP o GitHub **não** aplica o template: monte o corpo você mesmo.
+
+```bash
+gh pr create --title "feat(<scope>): <description>" --body-file <arquivo com as 5 seções>
+```
+
+### Issues
+
+O formulário web só oferece **Feature request** e **Bug report** (`.github/ISSUE_TEMPLATE/`).
+Ao criar por CLI/MCP, produza o mesmo título e o mesmo corpo que o formulário geraria: um bloco
+`### <label>` por campo, na ordem abaixo, e `_No response_` em campo opcional vazio.
+
+| Tipo | Título | Campos (`### <label>`) | Próximo fluxo |
+|---|---|---|---|
+| Feature request | `feat(<scope>): <short summary>` | Problem / motivation · Desired behavior · Who benefits · Out of scope (opcional) · Suggested acceptance criteria | `/speckit-specify` |
+| Bug report | `fix(<scope>): <short summary>` | Description · Steps to reproduce · Expected result · Actual result · Run mode (`fast (H2, no profile)` / `prod (PostgreSQL, profile prod)` / `tests`) · Evidence (logs, stack trace) (opcional) | `/speckit-bug-assess` → `/speckit-bug-fix` |
+
+```bash
+gh issue create --title "fix(<scope>): <summary>" --body-file <arquivo com os blocos ###>
+```
+
+**Issues de task** (geradas por `/speckit-taskstoissues` a partir do `tasks.md`):
+
+- Título `[NNN] TXXX: <description in English>`: `NNN` é o prefixo de 3 dígitos da feature em
+  `specs/`, e a descrição é traduzida mantendo identificadores, caminhos e termos de domínio. Ex.:
+  `[005] T004: Add commit message table test`.
+- Corpo: `Task (tasks.md): <linha original em português, sem checkbox>` e
+  `Source: specs/NNN-<name>/tasks.md`.
+- A regra mora em `.claude/skills/speckit-taskstoissues/SKILL.md` (alteração local, marcada com
+  comentário). Se uma atualização do Spec Kit sobrescrever a skill, reaplique a partir daqui.
+
+Issues, PRs e commits já existentes **não** são renomeados nem reescritos.
+
+### Versão
+
+A `<version>` do projeto no `pom.xml` da `main` é **SemVer sem `-SNAPSHOT`** e é gravada só pela
+automação (`.github/workflows/version-sync.yml` → `tools/versioning/version-sync.mjs`). A cada
+push na `main`, ela soma os commits desde o último commit de sincronização
+(`chore(release): set version to X.Y.Z` com o rodapé `Version-Sync: X.Y.Z`) e aplica o de maior
+impacto:
+
+| Commit | Série `0.x` | A partir de `1.0.0` |
+|---|---|---|
+| breaking (`!` ou `BREAKING CHANGE:`) | MINOR | MAJOR |
+| `feat` | MINOR | MINOR |
+| qualquer outro tipo válido | PATCH | PATCH |
+
+Merges, reverts, o próprio commit de sincronização e mensagens fora do padrão não contam.
+
+- **Agentes não editam a `<version>`.** Uma alteração manual faz a sincronização falhar.
+- A única alteração manual aceita é a **promoção para `1.0.0`**, por commit explícito do dono
+  que muda a versão de `0.x` para `1.0.0`.
+- Para ver o que seria gravado, sem efeito: `node tools/versioning/version-sync.mjs --dry-run`.

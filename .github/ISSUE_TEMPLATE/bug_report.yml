@@ -1,0 +1,50 @@
+name: Bug report
+description: Report wrong behavior. The issue feeds /speckit-bug-assess, then /speckit-bug-fix.
+title: "fix(<scope>): "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep the title as `fix(<scope>): <short summary of the wrong behavior>`, in English.
+        This issue is the input for `/speckit-bug-assess` → `/speckit-bug-fix`.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Run mode
+      options:
+        - fast (H2, no profile)
+        - prod (PostgreSQL, profile prod)
+        - tests
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence (logs, stack trace)
+      render: shell
+    validations:
+      required: false

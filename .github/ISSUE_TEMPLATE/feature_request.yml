@@ -1,0 +1,42 @@
+name: Feature request
+description: Propose a new capability. The issue feeds /speckit-specify (or /speckit-assess-intake).
+title: "feat(<scope>): "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep the title as `feat(<scope>): <short summary>`, in English.
+        This issue is the input for `/speckit-specify`: describe **what** and **why**, not how.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What hurts today, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Desired behavior
+      description: Observable behavior once this exists.
+    validations:
+      required: true
+  - type: textarea
+    id: beneficiaries
+    attributes:
+      label: Who benefits
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Suggested acceptance criteria
+      description: Given / When / Then, or a checklist.
+    validations:
+      required: true

@@ -1,0 +1,33 @@
+#!/bin/sh
+# commit-msg: enforce the commit convention (AGENTS.md §10).
+# Activate once per clone: git config core.hooksPath .githooks
+# Fails closed: if commitlint cannot run, the commit is refused.
+set -u
+
+COMMITLINT_VERSION=21.2.4
+NPX="${HABITATTIO_NPX:-npx}"
+HOOK_DIR=$(cd "$(dirname "$0")" && pwd)
+CONFIG="$HOOK_DIR/../commitlint.config.mjs"
+
+if ! command -v "$NPX" >/dev/null 2>&1; then
+  echo "commit-msg: Node.js (npx) not found. Install Node >= 20 and retry. Check: npx --version" >&2
+  exit 1
+fi
+
+if ! "$NPX" --yes -p "@commitlint/cli@$COMMITLINT_VERSION" commitlint --version >/dev/null 2>&1; then
+  echo "commit-msg: could not run commitlint@$COMMITLINT_VERSION (offline on first run?). Retry with network access." >&2
+  exit 1
+fi
+
+if ! "$NPX" --yes -p "@commitlint/cli@$COMMITLINT_VERSION" commitlint --config "$CONFIG" --edit "$1" >&2; then
+  {
+    echo ""
+    echo "Expected: <type>(<scope>)[!]: <description>"
+    echo "Example:  feat(fatura): add late fee calculation"
+    echo "Types:    feat fix docs style refactor perf test build ci chore"
+    echo "See AGENTS.md §10"
+  } >&2
+  exit 1
+fi
+
+exit 0
