@@ -1,5 +1,22 @@
 <!--
 Sync Impact Report
+Version change: 1.0.3 → 1.1.0 (MINOR)
+Rationale: amendment proposed by the owner in feature 006-jwt-sessao-cookie. Authentication moves
+from server sessions to JWT in a protected cookie, and the application MUST be stateless: a new
+MUST rule in "Stack Tecnológico e Restrições" (material expansion of guidance), so MINOR. No
+principle is removed or redefined. The library that issues and validates JWT is not named here:
+it needs its own dependency agreement in the feature plan (Principle IV).
+Modified principles: none
+Modified sections: Stack Tecnológico e Restrições (Spring Security description; stateless bullet)
+Added sections: none
+Removed sections: none
+Templates requiring follow-up: none (.specify/templates/* do not reference the stack list)
+Related sync: AGENTS.md §2 (security wiring), §4 (version reference) and §9 (stack) updated in
+the same change set.
+Deferred items: the code still uses server sessions until feature 006 is implemented; this
+amendment MUST NOT reach main ahead of that implementation.
+
+Previous report — 1.0.2 → 1.0.3 (PATCH):
 Version change: 1.0.2 → 1.0.3 (PATCH)
 Rationale: amendment from feature 005-contribution-conventions (task T027, analyze F1). The
 repository gained tooling outside the Maven build: Node >= 20 running @commitlint/cli (pinned,
@@ -146,12 +163,16 @@ negócio do sistema) e mantém o domínio legível para quem conhece o vocabulá
 ## Stack Tecnológico e Restrições
 
 Java 25, Spring Boot 4.1.2, Spring Web MVC, Spring Data JPA, Spring Data Redis, Bean Validation,
-Spring Security (login por sessão e isolamento por proprietário, acordado na feature 003),
-PostgreSQL (runtime), H2 (dev/test em memória), Flyway (migrações versionadas, só no PostgreSQL:
+Spring Security (login com JWT em cookie e isolamento por proprietário; acordado na feature 003,
+com o mecanismo revisto na feature 006), PostgreSQL (runtime), H2 (dev/test em memória), Flyway (migrações versionadas, só no PostgreSQL:
 profile `prod` com `ddl-auto=validate`; o modo rápido com H2 usa `ddl-auto=update`, sem
 migrações), Spring Boot Actuator (só o endpoint `health`, sem detalhes e sem o Redis no cálculo),
 Testcontainers (PostgreSQL + Redis, versões fixas) para testes de integração.
 
+- A aplicação MUST ser stateless: não existe sessão de servidor, e nenhuma instância guarda em
+  memória estado de cliente. A identidade do proprietário vem só do JWT assinado, enviado em
+  cookie `HttpOnly`, com `SameSite` e, no profile `prod`, `Secure`. O container é descartável:
+  reiniciar ou substituir uma instância MUST NOT desconectar nenhum proprietário.
 - Sempre use o wrapper `./mvnw`, nunca um `mvn` global.
 - Testes de integração exigem Docker rodando. Na ausência de Docker, execute apenas os testes de
   domínio/aplicação (`-Dtest=...`) e declare explicitamente no relatório que os testes de
@@ -208,4 +229,4 @@ consistência.
   não-negociáveis; `AGENTS.md` documenta como aplicá-los no dia a dia — os dois MUST permanecer
   consistentes.
 
-**Version**: 1.0.3 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-02
+**Version**: 1.1.0 | **Ratified**: 2026-10-29 | **Last Amended**: 2026-11-06

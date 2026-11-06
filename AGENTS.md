@@ -88,7 +88,7 @@ src/main/java/br/com/marden/habitattio/
 └── adapters/
     ├── config/
     │   ├── BeanConfiguration.java        # beans de domínio/aplicação/persistência
-    │   └── SegurancaConfiguration.java   # Spring Security: filtros, sessão, 401, BCrypt
+    │   └── SegurancaConfiguration.java   # Spring Security: filtros, JWT em cookie, 401, BCrypt
     ├── inbound/
     │   ├── rest/                     # controllers, requests/responses HTTP
     │   └── security/                 # proprietário autenticado, AuthenticationProvider, respostas 401/403
@@ -98,9 +98,12 @@ src/main/java/br/com/marden/habitattio/
 ```
 
 A segurança (Spring Security) tem configuração própria, `SegurancaConfiguration`, ao lado de
-`BeanConfiguration`: ela monta a cadeia de filtros, a sessão e o `AuthenticationProvider`, que
-só delega aos casos de uso. A regra de fiação continua valendo — o domínio e a aplicação não
-importam `org.springframework.security`.
+`BeanConfiguration`: ela monta a cadeia de filtros, a autenticação por JWT em cookie e o
+`AuthenticationProvider`, que só delega aos casos de uso. A regra de fiação continua valendo — o
+domínio e a aplicação não importam `org.springframework.security`.
+
+A aplicação é **stateless**: não existe sessão de servidor, e nenhuma instância guarda em memória
+estado de cliente. O container é descartável; reiniciá-lo não desconecta ninguém.
 
 Regras concretas, verificáveis em revisão:
 
@@ -229,7 +232,7 @@ Regras de uso:
   requisito — a spec é.
 - Correção de bug trivial, renomeação, ajuste de formatação: direto, sem spec.
 
-> A constitution (`.specify/memory/constitution.md`, v1.0.3) define os princípios
+> A constitution (`.specify/memory/constitution.md`, v1.1.0) define os princípios
 > não-negociáveis e prevalece em caso de conflito; este AGENTS.md documenta como aplicá-los no
 > dia a dia. Toda emenda da constitution sincroniza a seção correspondente daqui na mesma
 > mudança.
@@ -349,7 +352,8 @@ Relate o que foi verificado e o que não foi. Não afirme que algo passa sem ter
   Validation, Security, PostgreSQL/H2, Flyway, Actuator, Testcontainers) cobre o escopo. O Actuator expõe
   **só** `/actuator/health`, sem detalhes e sem Redis no cálculo; não exponha outros endpoints
   sem acordo.
-  Spring Security entrou por acordo na feature 003 (login por sessão e isolamento por proprietário).
+  Spring Security entrou por acordo na feature 003 (login e isolamento por proprietário); a feature
+  006 trocou a sessão de servidor por JWT em cookie.
 - Não troque H2 por outro banco em `application.properties` nem mude `ddl-auto` sem acordo. O
   acordado é: `update` no modo rápido (`application.properties`) e `validate` no profile
   `prod` (`application-prod.properties`). Estrutura de produção só muda por migração nova.
